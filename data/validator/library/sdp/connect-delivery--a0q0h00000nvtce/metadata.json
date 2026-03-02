@@ -1,0 +1,25 @@
+{
+  "source_row": 9,
+  "designation_id": "a0Q0h00000NvTCe",
+  "designation": "Connect Delivery",
+  "domain": "Industries",
+  "business_domain_leader": "Ryan Thomas",
+  "partner_type_path": "Services",
+  "accepting_applications": "Yes",
+  "business_owner": "Lawrence Tse",
+  "business_owner_email": "ltse@amazon.com",
+  "technical_owner": "Puneet Badlani",
+  "technical_owner_email": "bapuneet@amazon.com",
+  "technical_validation_administrator": "Scale PSA Team",
+  "program_pm": "Andrea Nieto Velasco",
+  "program_pm_email": "anietov@amazon.es",
+  "marketing_contact": "",
+  "sfdc_designation": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000NvTCeEAN/view",
+  "checklist_url": "https://apn-checklists.s3.amazonaws.com/service-delivery/amazon-connect/Cjl5a0cJe.html",
+  "calibration_guide_url": "",
+  "tracks": [
+    "sdp"
+  ],
+  "track": "sdp",
+  "folder": "library/sdp/connect-delivery--a0q0h00000nvtce"
+}

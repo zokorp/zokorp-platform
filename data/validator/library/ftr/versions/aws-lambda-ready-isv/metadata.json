@@ -1,0 +1,16 @@
+{
+  "service": "AWS Lambda Ready (ISV)",
+  "service_category": "COMPUTE",
+  "team_alias": "apn-skills-lambda@",
+  "designation_webpage": "https://aws.amazon.com/lambda/partners/",
+  "versions": [
+    {
+      "source_row": 9,
+      "status": "Launched",
+      "delivery_count": "",
+      "ready_count": "2",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AWS+Lambda+Service+Delivery+Partner+Validation+Checklist_09182018_V2.pdf",
+      "notes": "Rumi Olsen <rumi@amazon.com>"
+    }
+  ]
+}

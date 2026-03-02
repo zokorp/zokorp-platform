@@ -1,0 +1,16 @@
+{
+  "service": "Amazon Connect",
+  "service_category": "CUSTOMER ENGAGEMENT",
+  "team_alias": "",
+  "designation_webpage": "https://aws.amazon.com/connect/partners/",
+  "versions": [
+    {
+      "source_row": 27,
+      "status": "Launched",
+      "delivery_count": "23",
+      "ready_count": "",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AmazonConnect_Validation_Checklist.pdf",
+      "notes": "Sam Khidhir <khidhir@amazon.com>"
+    }
+  ]
+}

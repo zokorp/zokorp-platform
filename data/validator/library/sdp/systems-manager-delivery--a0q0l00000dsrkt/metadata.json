@@ -1,0 +1,25 @@
+{
+  "source_row": 27,
+  "designation_id": "a0Q0L00000DSrkT",
+  "designation": "Systems Manager Delivery",
+  "domain": "Cloud Foundations and Accelerated Services",
+  "business_domain_leader": "Ryan Orsi",
+  "partner_type_path": "Services",
+  "accepting_applications": "Yes",
+  "business_owner": "Kadambi, Vyshu",
+  "business_owner_email": "vkadambi@amazon.com",
+  "technical_owner": "Kishore Vinjam",
+  "technical_owner_email": "vinjak@amazon.com",
+  "technical_validation_administrator": "Scale PSA Team",
+  "program_pm": "Francisco Lorenzo Fernandez-Shaw",
+  "program_pm_email": "pacolor@amazon.es",
+  "marketing_contact": "",
+  "sfdc_designation": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000DSrkTUAT/view",
+  "checklist_url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-systems-manager/CFncgG_Eb.html",
+  "calibration_guide_url": "",
+  "tracks": [
+    "sdp"
+  ],
+  "track": "sdp",
+  "folder": "library/sdp/systems-manager-delivery--a0q0l00000dsrkt"
+}

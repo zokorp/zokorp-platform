@@ -1,0 +1,16 @@
+{
+  "service": "AWS Service Catalog",
+  "service_category": "MANAGEMENT & GOVERNANCE",
+  "team_alias": "aws-sc-partner@",
+  "designation_webpage": "https://aws.amazon.com/servicecatalog/partners/",
+  "versions": [
+    {
+      "source_row": 20,
+      "status": "Launched",
+      "delivery_count": "16",
+      "ready_count": "",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AWS+Systems+Manager+Service+Delivery+Partner+Validation+Checklist_06272018.pdf",
+      "notes": "Robinson, Thomas <trobiv@amazon.com>"
+    }
+  ]
+}

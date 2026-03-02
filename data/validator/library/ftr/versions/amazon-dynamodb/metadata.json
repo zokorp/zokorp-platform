@@ -1,0 +1,16 @@
+{
+  "service": "Amazon DynamoDB",
+  "service_category": "DATABASE,",
+  "team_alias": "apn-skills-ml@",
+  "designation_webpage": "https://aws.amazon.com/dynamodb/partners/",
+  "versions": [
+    {
+      "source_row": 11,
+      "status": "Launched",
+      "delivery_count": "8",
+      "ready_count": "",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/Amazon+DynamoDB+Service+Delivery+Partner+Validation+Checklist_05302018.pdf",
+      "notes": "Hansen, Trevor <trevhan@amazon.com>"
+    }
+  ]
+}

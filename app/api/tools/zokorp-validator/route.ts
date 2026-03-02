@@ -6,12 +6,14 @@ import { db } from "@/lib/db";
 import { decrementUsesAtomically, requireEntitlement } from "@/lib/entitlements";
 import { maxUploadBytes, isAllowedFileType } from "@/lib/security";
 import { parseValidatorInput } from "@/lib/validator";
+import { getValidatorTargetOptions, resolveValidatorTargetContext } from "@/lib/validator-library";
 import { VALIDATION_PROFILES } from "@/lib/zokorp-validator-engine";
 
 export const runtime = "nodejs";
 
 const formSchema = z.object({
   validationProfile: z.enum(VALIDATION_PROFILES),
+  validationTargetId: z.string().max(160).optional(),
   additionalContext: z.string().max(1200).optional(),
 });
 
@@ -27,9 +29,13 @@ export async function POST(request: Request) {
 
     const formData = await request.formData();
     const file = formData.get("file");
+    const rawProfile = formData.get("validationProfile");
+    const rawTargetId = formData.get("validationTargetId");
+    const rawContext = formData.get("additionalContext");
     const parsedForm = formSchema.safeParse({
-      validationProfile: formData.get("validationProfile"),
-      additionalContext: formData.get("additionalContext"),
+      validationProfile: typeof rawProfile === "string" ? rawProfile : undefined,
+      validationTargetId: typeof rawTargetId === "string" && rawTargetId.trim() ? rawTargetId : undefined,
+      additionalContext: typeof rawContext === "string" && rawContext.trim() ? rawContext : undefined,
     });
 
     if (!(file instanceof File)) {
@@ -53,6 +59,26 @@ export async function POST(request: Request) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
+    const targetOptions = getValidatorTargetOptions(parsedForm.data.validationProfile);
+    const selectedTarget = resolveValidatorTargetContext(
+      parsedForm.data.validationProfile,
+      parsedForm.data.validationTargetId || undefined,
+    );
+
+    if (parsedForm.data.validationTargetId && !selectedTarget) {
+      return NextResponse.json(
+        { error: "Invalid checklist selection. Please choose a valid target and retry." },
+        { status: 400 },
+      );
+    }
+
+    if (!parsedForm.data.validationTargetId && targetOptions.length > 0 && !selectedTarget) {
+      return NextResponse.json(
+        { error: "Checklist targets unavailable. Please retry in a moment." },
+        { status: 503 },
+      );
+    }
+
     if (!isAllowedFileType(file.name, file.type, buffer)) {
       return NextResponse.json(
         {
@@ -75,6 +101,7 @@ export async function POST(request: Request) {
       mimeType: file.type,
       buffer,
       profile: parsedForm.data.validationProfile,
+      target: selectedTarget,
       additionalContext: parsedForm.data.additionalContext,
     });
 
@@ -103,6 +130,12 @@ export async function POST(request: Request) {
           mimeType: file.type,
           bytes: buffer.length,
           profile: parsedForm.data.validationProfile,
+          targetId: selectedTarget?.id ?? null,
+          targetLabel: selectedTarget?.label ?? null,
+          score: result.report.score,
+          rulepackId: result.report.rulepack.id,
+          redactions: result.meta?.redactions ?? null,
+          controlCalibrationTotal: result.report.controlCalibration?.totalControls ?? null,
         },
       },
     });
@@ -111,6 +144,9 @@ export async function POST(request: Request) {
       output: result.output,
       meta: result.meta,
       report: result.report,
+      reviewedWorkbookBase64: result.reviewedWorkbookBase64,
+      reviewedWorkbookFileName: result.reviewedWorkbookFileName,
+      reviewedWorkbookMimeType: result.reviewedWorkbookMimeType,
       remainingUses: entitlement?.remainingUses ?? 0,
     });
   } catch (error) {

@@ -7,6 +7,7 @@ import { ValidatorForm } from "@/components/validator-form";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getProductBySlug } from "@/lib/catalog";
+import { getValidatorTargetOptions } from "@/lib/validator-library";
 
 export const dynamic = "force-dynamic";
 
@@ -162,6 +163,7 @@ export default async function SoftwareDetailPage({
   const currentEmail = session?.user?.email;
   const signedIn = Boolean(currentEmail);
   const isValidator = product.slug === "zokorp-validator";
+  const validatorTargets = isValidator ? getValidatorTargetOptions() : [];
 
   let entitlement: { status: EntitlementStatus; remainingUses: number } | null = null;
   if (currentEmail) {
@@ -282,7 +284,11 @@ export default async function SoftwareDetailPage({
       )}
 
       {isValidator ? (
-        <ValidatorForm requiresAuth={!signedIn} authUnavailable={authUnavailable} />
+        <ValidatorForm
+          requiresAuth={!signedIn}
+          authUnavailable={authUnavailable}
+          validationTargets={validatorTargets}
+        />
       ) : (
         <section className="surface rounded-2xl p-6">
           <h2 className="font-display text-2xl font-semibold text-slate-900">Product workflow</h2>

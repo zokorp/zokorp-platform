@@ -1,0 +1,16 @@
+{
+  "service": "AWS IoT Core",
+  "service_category": "INTERNET OF THINGS",
+  "team_alias": "apn-skills-govcloudus@",
+  "designation_webpage": "https://aws.amazon.com/iot-core/partners/",
+  "versions": [
+    {
+      "source_row": 22,
+      "status": "Launched",
+      "delivery_count": "18",
+      "ready_count": "",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/IoT/AWS+IoT+Core+Service+Delivery+Partner+Validation+Checklist_10042018.pdf",
+      "notes": "Williams, Craig <craiwill@amazon.com>"
+    }
+  ]
+}

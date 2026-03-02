@@ -1,0 +1,16 @@
+{
+  "service": "Amazon EC2 for Microsoft Windows Server",
+  "service_category": "COMPUTE",
+  "team_alias": "n/a",
+  "designation_webpage": "https://aws.amazon.com/windows/products/ec2/partners/",
+  "versions": [
+    {
+      "source_row": 5,
+      "status": "Launched",
+      "delivery_count": "3",
+      "ready_count": "",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/Amazon+EC2+for+Windows+Service+Delivery+Partner+Validation+Checklist_06062018.pdf",
+      "notes": "Kalberer, Mike <mjk@amazon.com>"
+    }
+  ]
+}

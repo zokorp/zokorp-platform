@@ -1,0 +1,15 @@
+{
+  "generated_at_utc": "2026-03-02T19:46:11.634702+00:00",
+  "source_workbook": "/Users/zohaibkhawaja/Downloads/AWS Specialization Owners, Regional Leads, Resources copy.xlsx",
+  "counts": {
+    "ftr_services": 25,
+    "sdp_designations": 32,
+    "srp_designations": 16,
+    "competency_designations": 77
+  },
+  "notes": [
+    "This dataset is generated from workbook links and metadata; it does not require LLM inference.",
+    "Checklist and calibration links may require AWS Partner Central authentication.",
+    "Use this as deterministic source-of-truth for validator rulepack design."
+  ]
+}

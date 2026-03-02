@@ -1,0 +1,25 @@
+{
+  "source_row": 32,
+  "designation_id": "a0Q8W0000295RIk",
+  "designation": "Control Tower Ready",
+  "domain": "Cloud Foundations and Accelerated Services",
+  "business_domain_leader": "Ryan Orsi",
+  "partner_type_path": "Software",
+  "accepting_applications": "Yes",
+  "business_owner": "Jacob Abbott",
+  "business_owner_email": "jacobbo@amazon.com",
+  "technical_owner": "Kishore Vinjam",
+  "technical_owner_email": "vinjak@amazon.com",
+  "technical_validation_administrator": "Scale PSA Team",
+  "program_pm": "Andrea Nieto Velasco",
+  "program_pm_email": "anietov@amazon.es",
+  "marketing_contact": "",
+  "sfdc_designation": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W0000295RIkUAM/view",
+  "checklist_url": "https://apn-checklists.s3.amazonaws.com/service-ready/aws-control-tower/Cj_aCRC23.html",
+  "calibration_guide_url": "",
+  "tracks": [
+    "srp"
+  ],
+  "track": "srp",
+  "folder": "library/srp/control-tower-ready--a0q8w0000295rik"
+}

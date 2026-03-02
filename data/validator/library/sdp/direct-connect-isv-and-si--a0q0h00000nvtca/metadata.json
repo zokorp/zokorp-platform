@@ -1,0 +1,26 @@
+{
+  "source_row": 11,
+  "designation_id": "a0Q0h00000NvTCa",
+  "designation": "Direct Connect (ISV and SI)",
+  "domain": "Cloud Foundations and Accelerated Services",
+  "business_domain_leader": "Ryan Orsi",
+  "partner_type_path": "Services, Software",
+  "accepting_applications": "Yes",
+  "business_owner": "Saptarshi Moitra",
+  "business_owner_email": "smoitra@amazon.com",
+  "technical_owner": "Cristian Critelli",
+  "technical_owner_email": "criscrit@amazon.ch",
+  "technical_validation_administrator": "Scale PSA Team",
+  "program_pm": "Francisco Lorenzo Fernandez-Shaw",
+  "program_pm_email": "pacolor@amazon.es",
+  "marketing_contact": "",
+  "sfdc_designation": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000NvTCaEAN/view",
+  "checklist_url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-direct-connect/CS6TcH0aK.html",
+  "calibration_guide_url": "",
+  "tracks": [
+    "sdp",
+    "srp"
+  ],
+  "track": "sdp",
+  "folder": "library/sdp/direct-connect-isv-and-si--a0q0h00000nvtca"
+}

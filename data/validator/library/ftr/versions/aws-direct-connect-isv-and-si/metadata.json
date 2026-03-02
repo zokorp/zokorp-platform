@@ -1,0 +1,16 @@
+{
+  "service": "AWS Direct Connect (ISV and SI)",
+  "service_category": "NETWORKING & CONTENT DELIVERY",
+  "team_alias": "",
+  "designation_webpage": "https://aws.amazon.com/partners/directconnect/",
+  "versions": [
+    {
+      "source_row": 25,
+      "status": "Launched",
+      "delivery_count": "21",
+      "ready_count": "",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AWS_Direct_Connect_Validation_Checklist.pdf",
+      "notes": "Sam Khidhir <khidhir@amazon.com>"
+    }
+  ]
+}

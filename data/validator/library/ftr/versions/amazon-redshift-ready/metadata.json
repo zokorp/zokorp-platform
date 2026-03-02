@@ -1,0 +1,16 @@
+{
+  "service": "Amazon Redshift (Ready)",
+  "service_category": "ANALYTICS, DATABASE",
+  "team_alias": "apn-skills-redshift@",
+  "designation_webpage": "https://aws.amazon.com/redshift/partners/",
+  "versions": [
+    {
+      "source_row": 15,
+      "status": "Launched",
+      "delivery_count": "",
+      "ready_count": "3",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/Amazon+Redshift+Service+Delivery+Partner+Validation+Checklist_05302018.pdf",
+      "notes": "Mike Deck (mikedeck@amazon.com), Arun Bhalla (arunb@amazon.com),Saunak Chandra (saunak@amazon.com),Sudhir Gupta (sudhig@amazon.com),"
+    }
+  ]
+}

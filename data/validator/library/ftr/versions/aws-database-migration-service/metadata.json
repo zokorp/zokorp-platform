@@ -1,0 +1,16 @@
+{
+  "service": "AWS Database Migration Service",
+  "service_category": "DATABASE, MIGRATION & TRANSFER",
+  "team_alias": "apn-skills-dms@",
+  "designation_webpage": "https://aws.amazon.com/dms/partners/",
+  "versions": [
+    {
+      "source_row": 4,
+      "status": "Launched",
+      "delivery_count": "2",
+      "ready_count": "",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AWS+DMS+Service+Delivery+Partner+Validation+Checklist_052018.pdf",
+      "notes": "Sam Khidhir <khidhir@amazon.com>"
+    }
+  ]
+}

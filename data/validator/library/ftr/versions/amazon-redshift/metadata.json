@@ -1,0 +1,16 @@
+{
+  "service": "Amazon Redshift",
+  "service_category": "ANALYTICS, DATABASE",
+  "team_alias": "apn-skills-redshift@",
+  "designation_webpage": "https://aws.amazon.com/redshift/partners/",
+  "versions": [
+    {
+      "source_row": 14,
+      "status": "Launched",
+      "delivery_count": "11",
+      "ready_count": "",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/Amazon+Redshift+Service+Delivery+Partner+Validation+Checklist_05302018.pdf",
+      "notes": "Beard, Eric <ezbeard@amazon.com>"
+    }
+  ]
+}

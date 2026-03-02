@@ -1,0 +1,16 @@
+{
+  "service": "Amazon QuickSight",
+  "service_category": "ANALYTICS",
+  "team_alias": "",
+  "designation_webpage": "https://aws.amazon.com/quicksight/resources/partners/",
+  "versions": [
+    {
+      "source_row": 16,
+      "status": "Launched",
+      "delivery_count": "12",
+      "ready_count": "",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/Amazon_QuickSight_Validation_Checklist.pdf",
+      "notes": "Sam Khidhir <khidhir@amazon.com>"
+    }
+  ]
+}

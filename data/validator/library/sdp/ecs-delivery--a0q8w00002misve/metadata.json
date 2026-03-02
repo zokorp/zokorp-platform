@@ -1,0 +1,25 @@
+{
+  "source_row": 34,
+  "designation_id": "a0Q8W00002MisvE",
+  "designation": "ECS Delivery",
+  "domain": "Migrations and Modernization",
+  "business_domain_leader": "Keith Groom",
+  "partner_type_path": "Services",
+  "accepting_applications": "Yes",
+  "business_owner": "Vijay Rangaswamy",
+  "business_owner_email": "vyrang@amazon.com",
+  "technical_owner": "Curtis Rissi",
+  "technical_owner_email": "crissi@amazon.com",
+  "technical_validation_administrator": "Scale PSA Team",
+  "program_pm": "Eduardo Piquard",
+  "program_pm_email": "piquard@amazon.es",
+  "marketing_contact": "",
+  "sfdc_designation": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002MisvEUAR/view?ws=%252Flightning%252Fr%252FReport%252F00O8W000007d3XJUAY%252Fview",
+  "checklist_url": "https://apn-checklists.s3.amazonaws.com/service-delivery/amazon-ecs/Ck95eBZfm.html",
+  "calibration_guide_url": "",
+  "tracks": [
+    "sdp"
+  ],
+  "track": "sdp",
+  "folder": "library/sdp/ecs-delivery--a0q8w00002misve"
+}

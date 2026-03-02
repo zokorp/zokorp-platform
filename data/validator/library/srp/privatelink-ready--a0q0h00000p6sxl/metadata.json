@@ -1,0 +1,25 @@
+{
+  "source_row": 23,
+  "designation_id": "a0Q0h00000P6sxL",
+  "designation": "PrivateLink Ready",
+  "domain": "Cloud Foundations and Accelerated Services",
+  "business_domain_leader": "Ryan Orsi",
+  "partner_type_path": "Software",
+  "accepting_applications": "Yes",
+  "business_owner": "",
+  "business_owner_email": "",
+  "technical_owner": "Wafa Adeel",
+  "technical_owner_email": "wafadeel@amazon.com",
+  "technical_validation_administrator": "Scale PSA Team",
+  "program_pm": "Francisco Lorenzo Fernandez-Shaw",
+  "program_pm_email": "pacolor@amazon.es",
+  "marketing_contact": "",
+  "sfdc_designation": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000P6sxLEAR/view",
+  "checklist_url": "https://apn-checklists.s3.amazonaws.com/service-ready/aws-privatelink/C_0AlpPtk.html",
+  "calibration_guide_url": "",
+  "tracks": [
+    "srp"
+  ],
+  "track": "srp",
+  "folder": "library/srp/privatelink-ready--a0q0h00000p6sxl"
+}

@@ -1,0 +1,25 @@
+{
+  "source_row": 38,
+  "designation_id": "a0Q8a00000Y7aRk",
+  "designation": "Graviton Delivery",
+  "domain": "Migrations and Modernization",
+  "business_domain_leader": "Keith Groom",
+  "partner_type_path": "Services",
+  "accepting_applications": "Yes",
+  "business_owner": "Mario Popish",
+  "business_owner_email": "mpopish@amazon.com",
+  "technical_owner": "Mario Popish",
+  "technical_owner_email": "mpopish@amazon.com",
+  "technical_validation_administrator": "Scale PSA Team",
+  "program_pm": "Maria Jiang",
+  "program_pm_email": "mengyuam@amazon.es",
+  "marketing_contact": "",
+  "sfdc_designation": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8a00000Y7aRkEAJ/view",
+  "checklist_url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-graviton/CX6uvz1aw.html",
+  "calibration_guide_url": "",
+  "tracks": [
+    "sdp"
+  ],
+  "track": "sdp",
+  "folder": "library/sdp/graviton-delivery--a0q8a00000y7ark"
+}

@@ -1,0 +1,16 @@
+{
+  "service": "AWS Systems Manager",
+  "service_category": "MANAGEMENT & GOVERNANCE",
+  "team_alias": "n/a",
+  "designation_webpage": "https://aws.amazon.com/systems-manager/partners/",
+  "versions": [
+    {
+      "source_row": 19,
+      "status": "Launched",
+      "delivery_count": "15",
+      "ready_count": "",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AWS+Config+Service+Delivery+Partner+Validation+Checklist_8292018.pdf",
+      "notes": "Robinson, Thomas <trobiv@amazon.com>"
+    }
+  ]
+}

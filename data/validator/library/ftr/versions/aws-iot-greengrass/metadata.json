@@ -1,0 +1,16 @@
+{
+  "service": "AWS IoT GreenGrass",
+  "service_category": "INTERNET OF THINGS",
+  "team_alias": "apn-skills-govcloudus@",
+  "designation_webpage": "https://aws.amazon.com/greengrass/partners/",
+  "versions": [
+    {
+      "source_row": 24,
+      "status": "Launched",
+      "delivery_count": "20",
+      "ready_count": "",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/IoT/AWS+Greengrass+Service+Delivery+Partner+Validation+Checklist_10042018.pdf",
+      "notes": "Williams, Craig <craiwill@amazon.com>"
+    }
+  ]
+}

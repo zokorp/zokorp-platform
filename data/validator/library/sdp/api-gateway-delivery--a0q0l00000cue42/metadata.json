@@ -1,0 +1,25 @@
+{
+  "source_row": 7,
+  "designation_id": "a0Q0L00000CUe42",
+  "designation": "API Gateway Delivery",
+  "domain": "Cloud Foundations and Accelerated Services",
+  "business_domain_leader": "Ryan Orsi",
+  "partner_type_path": "Services",
+  "accepting_applications": "Yes",
+  "business_owner": "Vijay Rangaswamy",
+  "business_owner_email": "vyrang@amazon.com",
+  "technical_owner": "Thiago Padua\nJeong, Young",
+  "technical_owner_email": "tgpadua@amazon.com;youngj@amazon.com",
+  "technical_validation_administrator": "Scale PSA Team",
+  "program_pm": "Andrea Nieto Velasco",
+  "program_pm_email": "anietov@amazon.es",
+  "marketing_contact": "",
+  "sfdc_designation": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe42UAD/view",
+  "checklist_url": "https://apn-checklists.s3.amazonaws.com/service-delivery/amazon-api-gateway/ConfRrxCL.html",
+  "calibration_guide_url": "",
+  "tracks": [
+    "sdp"
+  ],
+  "track": "sdp",
+  "folder": "library/sdp/api-gateway-delivery--a0q0l00000cue42"
+}

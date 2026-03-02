@@ -1,0 +1,16 @@
+{
+  "service": "AWS CloudFormation",
+  "service_category": "MANAGEMENT & GOVERNANCE",
+  "team_alias": "n/a",
+  "designation_webpage": "https://aws.amazon.com/cloudformation/partners/",
+  "versions": [
+    {
+      "source_row": 17,
+      "status": "Launched",
+      "delivery_count": "13",
+      "ready_count": "",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AWS+CloudFormation+Service+Delivery+Partner+Validation+Checklist_06272018.pdf",
+      "notes": "McGill, Erin <erinmc@amazon.com>"
+    }
+  ]
+}

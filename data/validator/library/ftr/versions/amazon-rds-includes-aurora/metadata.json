@@ -1,0 +1,16 @@
+{
+  "service": "Amazon RDS (includes aurora)",
+  "service_category": "DATABASE",
+  "team_alias": "apn-skills-rds-postgres@",
+  "designation_webpage": "http://aws.amazon.com/rds/postgresql/partners/",
+  "versions": [
+    {
+      "source_row": 2,
+      "status": "Launched",
+      "delivery_count": "1",
+      "ready_count": "",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/Amazon+RDS+Service+Delivery+Partner+Validation+Checklist_052018.pdf",
+      "notes": "Sam Khidhir <khidhir@amazon.com>"
+    }
+  ]
+}

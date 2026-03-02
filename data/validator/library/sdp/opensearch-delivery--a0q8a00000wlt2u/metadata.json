@@ -1,0 +1,25 @@
+{
+  "source_row": 43,
+  "designation_id": "a0Q8a00000Wlt2U",
+  "designation": "OpenSearch Delivery",
+  "domain": "Data & Analytics",
+  "business_domain_leader": "Dan Kenshalo",
+  "partner_type_path": "Services",
+  "accepting_applications": "Yes",
+  "business_owner": "",
+  "business_owner_email": "",
+  "technical_owner": "Angel Conde Manjon",
+  "technical_owner_email": "acmanjon@amazon.com",
+  "technical_validation_administrator": "Scale PSA Team",
+  "program_pm": "Alexandra Morais",
+  "program_pm_email": "axmorais@amazon.es",
+  "marketing_contact": "",
+  "sfdc_designation": "https://apn-portal.lightning.force.com/lightning/r/a0Q8a00000Wlt2UEAR/view",
+  "checklist_url": "https://apn-checklists.s3.amazonaws.com/service-delivery/amazon-opensearch-service/CYZXEBabs.html",
+  "calibration_guide_url": "",
+  "tracks": [
+    "sdp"
+  ],
+  "track": "sdp",
+  "folder": "library/sdp/opensearch-delivery--a0q8a00000wlt2u"
+}

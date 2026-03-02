@@ -1,0 +1,25 @@
+{
+  "source_row": 26,
+  "designation_id": "a0Q0L00000CUe4G",
+  "designation": "Service Catalog Delivery",
+  "domain": "Cloud Foundations and Accelerated Services",
+  "business_domain_leader": "Ryan Orsi",
+  "partner_type_path": "Services",
+  "accepting_applications": "Yes",
+  "business_owner": "Jacob Abbott",
+  "business_owner_email": "jacobbo@amazon.com",
+  "technical_owner": "Gabriel Costa de Andrade Silva",
+  "technical_owner_email": "gcasilva@amazon.com",
+  "technical_validation_administrator": "Scale PSA Team",
+  "program_pm": "Alexandra Morais",
+  "program_pm_email": "axmorais@amazon.es",
+  "marketing_contact": "",
+  "sfdc_designation": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe4GUAT/view",
+  "checklist_url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-service-catalog/Ci8C2fJmH.html",
+  "calibration_guide_url": "",
+  "tracks": [
+    "sdp"
+  ],
+  "track": "sdp",
+  "folder": "library/sdp/service-catalog-delivery--a0q0l00000cue4g"
+}

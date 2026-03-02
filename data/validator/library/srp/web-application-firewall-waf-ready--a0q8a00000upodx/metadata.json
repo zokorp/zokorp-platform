@@ -1,0 +1,25 @@
+{
+  "source_row": 49,
+  "designation_id": "a0Q8a00000UpoDx",
+  "designation": "Web Application Firewall (WAF) Ready",
+  "domain": "Edge Services",
+  "business_domain_leader": "Shawn Brady",
+  "partner_type_path": "Software",
+  "accepting_applications": "Yes",
+  "business_owner": "Mysty Lawrence",
+  "business_owner_email": "mystylaw@amazon.com",
+  "technical_owner": "Mark Mac Ewen",
+  "technical_owner_email": "mmacewen@amazon.com",
+  "technical_validation_administrator": "Scale PSA Team",
+  "program_pm": "Eduardo Piquard",
+  "program_pm_email": "piquard@amazon.es",
+  "marketing_contact": "",
+  "sfdc_designation": "https://apn-portal.lightning.force.com/lightning/r/a0Q8a00000UpoDxEAJ/view",
+  "checklist_url": "https://apn-checklists.s3.amazonaws.com/service-ready/aws-waf/CaroRs7kO.html",
+  "calibration_guide_url": "",
+  "tracks": [
+    "srp"
+  ],
+  "track": "srp",
+  "folder": "library/srp/web-application-firewall-waf-ready--a0q8a00000upodx"
+}

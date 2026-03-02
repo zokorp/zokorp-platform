@@ -1,0 +1,1 @@
+https://aws.amazon.com/hpc/partner-solutions/?partner-solutions-cards.sort-by=item.additionalFields.partnerNameLower&partner-solutions-cards.sort-order=asc

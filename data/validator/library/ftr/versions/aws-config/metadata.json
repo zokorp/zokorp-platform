@@ -1,0 +1,16 @@
+{
+  "service": "AWS Config",
+  "service_category": "MANAGEMENT & GOVERNANCE",
+  "team_alias": "n/a",
+  "designation_webpage": "https://aws.amazon.com/config/partners/",
+  "versions": [
+    {
+      "source_row": 18,
+      "status": "Launched",
+      "delivery_count": "14",
+      "ready_count": "",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AWS+Service+Catalog+Service+Delivery+Partner+Validation+Checklist_06272018.pdf",
+      "notes": "Cornell, Jonathan <jonacorn@amazon.com>"
+    }
+  ]
+}

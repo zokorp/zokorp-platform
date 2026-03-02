@@ -1,0 +1,25 @@
+{
+  "source_row": 47,
+  "designation_id": "#N/A",
+  "designation": "Security Lake Ready",
+  "domain": "Cloud Foundations and Accelerated Services",
+  "business_domain_leader": "Ryan Orsi",
+  "partner_type_path": "Software",
+  "accepting_applications": "Yes",
+  "business_owner": "Ella Gille",
+  "business_owner_email": "btmend@amazon.com",
+  "technical_owner": "Aliaksei Ivanou",
+  "technical_owner_email": "ivanou@amazon.com",
+  "technical_validation_administrator": "Scale PSA Team",
+  "program_pm": "Alexandra Morais",
+  "program_pm_email": "axmorais@amazon.es",
+  "marketing_contact": "",
+  "sfdc_designation": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002MiznxUAB/view",
+  "checklist_url": "https://apn-checklists.s3.amazonaws.com/service-ready/amazon-security-lake/CJIWcuPTM.html",
+  "calibration_guide_url": "",
+  "tracks": [
+    "srp"
+  ],
+  "track": "srp",
+  "folder": "library/srp/security-lake-ready--n-a"
+}

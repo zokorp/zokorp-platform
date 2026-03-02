@@ -1,0 +1,16 @@
+{
+  "service": "Amazon CloudFront",
+  "service_category": "NETWORKING & CONTENT DELIVERY",
+  "team_alias": "apn-skills-cf@",
+  "designation_webpage": "https://aws.amazon.com/cloudfront/partners/",
+  "versions": [
+    {
+      "source_row": 26,
+      "status": "Launched",
+      "delivery_count": "22",
+      "ready_count": "",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/Amazon+CloudFront+Service+Delivery+Partner+Validation+Checklist_06062018.pdf",
+      "notes": "Beard, Eric <ezbeard@amazon.com>"
+    }
+  ]
+}

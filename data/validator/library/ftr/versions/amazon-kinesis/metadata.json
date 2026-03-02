@@ -1,0 +1,16 @@
+{
+  "service": "Amazon Kinesis",
+  "service_category": "ANALYTICS",
+  "team_alias": "apn-skills-kinesis@",
+  "designation_webpage": "https://aws.amazon.com/kinesis/partners/",
+  "versions": [
+    {
+      "source_row": 13,
+      "status": "Launched",
+      "delivery_count": "10",
+      "ready_count": "",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/Amazon+Kinesis+Service+Delivery+Partner+Validation+Checklist_08292018.pdf",
+      "notes": "Binoy Das <binoyd@amazon.com>"
+    }
+  ]
+}

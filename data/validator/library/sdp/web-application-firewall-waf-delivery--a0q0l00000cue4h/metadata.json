@@ -1,0 +1,25 @@
+{
+  "source_row": 28,
+  "designation_id": "a0Q0L00000CUe4H",
+  "designation": "Web Application Firewall (WAF) Delivery",
+  "domain": "Edge Services",
+  "business_domain_leader": "Shawn Brady",
+  "partner_type_path": "Services",
+  "accepting_applications": "Yes",
+  "business_owner": "Shawn Brady",
+  "business_owner_email": "shbrady@amazon.com",
+  "technical_owner": "Mark Mac Ewen",
+  "technical_owner_email": "mmacewen@amazon.com",
+  "technical_validation_administrator": "Scale PSA Team",
+  "program_pm": "Alexandra Morais",
+  "program_pm_email": "axmorais@amazon.es",
+  "marketing_contact": "",
+  "sfdc_designation": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe4HUAT/view",
+  "checklist_url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-waf/C2UHVslcz.html",
+  "calibration_guide_url": "",
+  "tracks": [
+    "sdp"
+  ],
+  "track": "sdp",
+  "folder": "library/sdp/web-application-firewall-waf-delivery--a0q0l00000cue4h"
+}

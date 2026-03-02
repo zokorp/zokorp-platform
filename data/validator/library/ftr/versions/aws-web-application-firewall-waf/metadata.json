@@ -1,0 +1,16 @@
+{
+  "service": "AWS Web Application Firewall (WAF)",
+  "service_category": "SECURITY, IDENTITY & COMPLIANCE",
+  "team_alias": "apn-skills-waf@",
+  "designation_webpage": "https://aws.amazon.com/waf/partners/",
+  "versions": [
+    {
+      "source_row": 7,
+      "status": "Launched",
+      "delivery_count": "5",
+      "ready_count": "",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AWS+WAF+Service+Delivery+Partner+Validation+Checklist_06062018.pdf",
+      "notes": "Matt Herscovitch <hersco@amazon.com>"
+    }
+  ]
+}

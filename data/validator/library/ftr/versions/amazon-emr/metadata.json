@@ -1,0 +1,16 @@
+{
+  "service": "Amazon EMR",
+  "service_category": "ANALYTICS",
+  "team_alias": "apn-skills-ml@",
+  "designation_webpage": "https://aws.amazon.com/emr/partners/",
+  "versions": [
+    {
+      "source_row": 12,
+      "status": "Launched",
+      "delivery_count": "9",
+      "ready_count": "",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/Amazon+EMR+Service+Delivery+Partner+Validation+Checklist_06272018.pdf",
+      "notes": "Binoy Das <binoyd@amazon.com>"
+    }
+  ]
+}

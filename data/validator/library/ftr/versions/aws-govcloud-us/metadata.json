@@ -1,0 +1,16 @@
+{
+  "service": "AWS GovCloud (US)",
+  "service_category": "AWS GOVCLOUD (US)",
+  "team_alias": "apn-skills-govcloudus@",
+  "designation_webpage": "https://aws.amazon.com/govcloud-us/partners/",
+  "versions": [
+    {
+      "source_row": 21,
+      "status": "Launched",
+      "delivery_count": "17",
+      "ready_count": "",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AWS+GovCloud(US)+Service+Delivery+Partner+Validation+Checklist_06132018.pdf",
+      "notes": "Anand, Shwetha <shanand@amazon.com>;Brooks, Keith <brookskl@amazon.com>"
+    }
+  ]
+}

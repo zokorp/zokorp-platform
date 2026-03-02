@@ -1,0 +1,25 @@
+{
+  "source_row": 3,
+  "designation_id": "a0Q0L00000DSrl1",
+  "designation": "CloudFormation Delivery",
+  "domain": "Cloud Foundations and Accelerated Services",
+  "business_domain_leader": "Ryan Orsi",
+  "partner_type_path": "Services",
+  "accepting_applications": "Yes",
+  "business_owner": "Jacob Abbott",
+  "business_owner_email": "jacabbo@amazon.com",
+  "technical_owner": "Gabriel Costa de Andrade Silva",
+  "technical_owner_email": "gcasilva@amazon.com",
+  "technical_validation_administrator": "Scale PSA Team",
+  "program_pm": "Andrea Nieto Velasco",
+  "program_pm_email": "anietov@amazon.es",
+  "marketing_contact": "",
+  "sfdc_designation": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000DSrl1UAD/view",
+  "checklist_url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-cloudformation/CCCLz9V9V.html",
+  "calibration_guide_url": "",
+  "tracks": [
+    "sdp"
+  ],
+  "track": "sdp",
+  "folder": "library/sdp/cloudformation-delivery--a0q0l00000dsrl1"
+}

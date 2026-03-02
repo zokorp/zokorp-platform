@@ -1,0 +1,25 @@
+{
+  "source_row": 46,
+  "designation_id": "a0Q8a00000Wlt2Z",
+  "designation": "SageMaker Ready",
+  "domain": "AIML",
+  "business_domain_leader": "Adam Taisch or PRIYA ARORA",
+  "partner_type_path": "Software",
+  "accepting_applications": "Yes",
+  "business_owner": "Chris Dally",
+  "business_owner_email": "dallchri@amazon.com",
+  "technical_owner": "David Potes",
+  "technical_owner_email": "potesd@amazon.com",
+  "technical_validation_administrator": "Scale PSA Team",
+  "program_pm": "Andrea Nieto Velasco",
+  "program_pm_email": "anietov@amazon.es",
+  "marketing_contact": "",
+  "sfdc_designation": "https://apn-portal.lightning.force.com/lightning/r/a0Q8a00000Wlt2ZEAR/view",
+  "checklist_url": "https://apn-checklists.s3.amazonaws.com/service-ready/amazon-sagemaker/CH8VgU-nG.html",
+  "calibration_guide_url": "",
+  "tracks": [
+    "srp"
+  ],
+  "track": "srp",
+  "folder": "library/srp/sagemaker-ready--a0q8a00000wlt2z"
+}

@@ -1,0 +1,25 @@
+{
+  "source_row": 12,
+  "designation_id": "a0Q0L00000CUe45",
+  "designation": "DynamoDB Delivery",
+  "domain": "Database",
+  "business_domain_leader": "Milan Thanawala",
+  "partner_type_path": "Services",
+  "accepting_applications": "Yes",
+  "business_owner": "Valaree Landry",
+  "business_owner_email": "valtang@amazon.com",
+  "technical_owner": "Navneet Deshmukh",
+  "technical_owner_email": "deshmun@amazon.com",
+  "technical_validation_administrator": "Scale PSA Team",
+  "program_pm": "Francisco Lorenzo Fernandez-Shaw",
+  "program_pm_email": "pacolor@amazon.es",
+  "marketing_contact": "",
+  "sfdc_designation": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe45UAD/view",
+  "checklist_url": "https://apn-checklists.s3.amazonaws.com/service-delivery/amazon-dynamodb/C4r6lcZPM.html",
+  "calibration_guide_url": "",
+  "tracks": [
+    "sdp"
+  ],
+  "track": "sdp",
+  "folder": "library/sdp/dynamodb-delivery--a0q0l00000cue45"
+}

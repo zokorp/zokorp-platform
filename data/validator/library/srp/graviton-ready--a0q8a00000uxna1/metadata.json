@@ -1,0 +1,25 @@
+{
+  "source_row": 39,
+  "designation_id": "a0Q8a00000UXNA1",
+  "designation": "Graviton Ready",
+  "domain": "Migrations and Modernization",
+  "business_domain_leader": "Keith Groom",
+  "partner_type_path": "Software",
+  "accepting_applications": "Yes",
+  "business_owner": "Mario Popish",
+  "business_owner_email": "mpopish@amazon.com",
+  "technical_owner": "Mario Popish",
+  "technical_owner_email": "mpopish@amazon.com",
+  "technical_validation_administrator": "Scale PSA Team",
+  "program_pm": "Eduardo Piquard",
+  "program_pm_email": "piquard@amazon.es",
+  "marketing_contact": "",
+  "sfdc_designation": "https://apn-portal.lightning.force.com/lightning/r/a0Q8a00000UXNA1EAP/view",
+  "checklist_url": "https://apn-checklists.s3.amazonaws.com/service-ready/aws-graviton/CP2teLJMR.html",
+  "calibration_guide_url": "",
+  "tracks": [
+    "srp"
+  ],
+  "track": "srp",
+  "folder": "library/srp/graviton-ready--a0q8a00000uxna1"
+}

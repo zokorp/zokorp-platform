@@ -1,0 +1,402 @@
+[
+  {
+    "service": "Amazon API Gateway",
+    "service_category": "MOBILE, NETWORKING & CONTENT DELIVERY",
+    "team_alias": "apn-skills-apigateway@",
+    "designation_webpage": "https://aws.amazon.com/api-gateway/partners/",
+    "versions": [
+      {
+        "source_row": 10,
+        "status": "Launched",
+        "delivery_count": "7",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/Amazon+API+Gateway+Service+Delivery+Partner+Validation+Checklist_052018.pdf",
+        "notes": "Scofield, Ian <iscofiel@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "Amazon CloudFront",
+    "service_category": "NETWORKING & CONTENT DELIVERY",
+    "team_alias": "apn-skills-cf@",
+    "designation_webpage": "https://aws.amazon.com/cloudfront/partners/",
+    "versions": [
+      {
+        "source_row": 26,
+        "status": "Launched",
+        "delivery_count": "22",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/Amazon+CloudFront+Service+Delivery+Partner+Validation+Checklist_06062018.pdf",
+        "notes": "Beard, Eric <ezbeard@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "Amazon Connect",
+    "service_category": "CUSTOMER ENGAGEMENT",
+    "team_alias": "",
+    "designation_webpage": "https://aws.amazon.com/connect/partners/",
+    "versions": [
+      {
+        "source_row": 27,
+        "status": "Launched",
+        "delivery_count": "23",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AmazonConnect_Validation_Checklist.pdf",
+        "notes": "Sam Khidhir <khidhir@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "Amazon DynamoDB",
+    "service_category": "DATABASE,",
+    "team_alias": "apn-skills-ml@",
+    "designation_webpage": "https://aws.amazon.com/dynamodb/partners/",
+    "versions": [
+      {
+        "source_row": 11,
+        "status": "Launched",
+        "delivery_count": "8",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/Amazon+DynamoDB+Service+Delivery+Partner+Validation+Checklist_05302018.pdf",
+        "notes": "Hansen, Trevor <trevhan@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "Amazon EC2 for Microsoft Windows Server",
+    "service_category": "COMPUTE",
+    "team_alias": "n/a",
+    "designation_webpage": "https://aws.amazon.com/windows/products/ec2/partners/",
+    "versions": [
+      {
+        "source_row": 5,
+        "status": "Launched",
+        "delivery_count": "3",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/Amazon+EC2+for+Windows+Service+Delivery+Partner+Validation+Checklist_06062018.pdf",
+        "notes": "Kalberer, Mike <mjk@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "Amazon EMR",
+    "service_category": "ANALYTICS",
+    "team_alias": "apn-skills-ml@",
+    "designation_webpage": "https://aws.amazon.com/emr/partners/",
+    "versions": [
+      {
+        "source_row": 12,
+        "status": "Launched",
+        "delivery_count": "9",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/Amazon+EMR+Service+Delivery+Partner+Validation+Checklist_06272018.pdf",
+        "notes": "Binoy Das <binoyd@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "Amazon Kinesis",
+    "service_category": "ANALYTICS",
+    "team_alias": "apn-skills-kinesis@",
+    "designation_webpage": "https://aws.amazon.com/kinesis/partners/",
+    "versions": [
+      {
+        "source_row": 13,
+        "status": "Launched",
+        "delivery_count": "10",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/Amazon+Kinesis+Service+Delivery+Partner+Validation+Checklist_08292018.pdf",
+        "notes": "Binoy Das <binoyd@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "Amazon QuickSight",
+    "service_category": "ANALYTICS",
+    "team_alias": "",
+    "designation_webpage": "https://aws.amazon.com/quicksight/resources/partners/",
+    "versions": [
+      {
+        "source_row": 16,
+        "status": "Launched",
+        "delivery_count": "12",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/Amazon_QuickSight_Validation_Checklist.pdf",
+        "notes": "Sam Khidhir <khidhir@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "Amazon RDS (includes aurora)",
+    "service_category": "DATABASE",
+    "team_alias": "apn-skills-rds-postgres@",
+    "designation_webpage": "http://aws.amazon.com/rds/postgresql/partners/",
+    "versions": [
+      {
+        "source_row": 2,
+        "status": "Launched",
+        "delivery_count": "1",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/Amazon+RDS+Service+Delivery+Partner+Validation+Checklist_052018.pdf",
+        "notes": "Sam Khidhir <khidhir@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "Amazon Redshift",
+    "service_category": "ANALYTICS, DATABASE",
+    "team_alias": "apn-skills-redshift@",
+    "designation_webpage": "https://aws.amazon.com/redshift/partners/",
+    "versions": [
+      {
+        "source_row": 14,
+        "status": "Launched",
+        "delivery_count": "11",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/Amazon+Redshift+Service+Delivery+Partner+Validation+Checklist_05302018.pdf",
+        "notes": "Beard, Eric <ezbeard@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "Amazon Redshift (Ready)",
+    "service_category": "ANALYTICS, DATABASE",
+    "team_alias": "apn-skills-redshift@",
+    "designation_webpage": "https://aws.amazon.com/redshift/partners/",
+    "versions": [
+      {
+        "source_row": 15,
+        "status": "Launched",
+        "delivery_count": "",
+        "ready_count": "3",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/Amazon+Redshift+Service+Delivery+Partner+Validation+Checklist_05302018.pdf",
+        "notes": "Mike Deck (mikedeck@amazon.com), Arun Bhalla (arunb@amazon.com),Saunak Chandra (saunak@amazon.com),Sudhir Gupta (sudhig@amazon.com),"
+      }
+    ]
+  },
+  {
+    "service": "AWS CloudFormation",
+    "service_category": "MANAGEMENT & GOVERNANCE",
+    "team_alias": "n/a",
+    "designation_webpage": "https://aws.amazon.com/cloudformation/partners/",
+    "versions": [
+      {
+        "source_row": 17,
+        "status": "Launched",
+        "delivery_count": "13",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AWS+CloudFormation+Service+Delivery+Partner+Validation+Checklist_06272018.pdf",
+        "notes": "McGill, Erin <erinmc@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "AWS Config",
+    "service_category": "MANAGEMENT & GOVERNANCE",
+    "team_alias": "n/a",
+    "designation_webpage": "https://aws.amazon.com/config/partners/",
+    "versions": [
+      {
+        "source_row": 18,
+        "status": "Launched",
+        "delivery_count": "14",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AWS+Service+Catalog+Service+Delivery+Partner+Validation+Checklist_06272018.pdf",
+        "notes": "Cornell, Jonathan <jonacorn@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "AWS Database Migration Service",
+    "service_category": "DATABASE, MIGRATION & TRANSFER",
+    "team_alias": "apn-skills-dms@",
+    "designation_webpage": "https://aws.amazon.com/dms/partners/",
+    "versions": [
+      {
+        "source_row": 4,
+        "status": "Launched",
+        "delivery_count": "2",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AWS+DMS+Service+Delivery+Partner+Validation+Checklist_052018.pdf",
+        "notes": "Sam Khidhir <khidhir@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "AWS Direct Connect (ISV and SI)",
+    "service_category": "NETWORKING & CONTENT DELIVERY",
+    "team_alias": "",
+    "designation_webpage": "https://aws.amazon.com/partners/directconnect/",
+    "versions": [
+      {
+        "source_row": 25,
+        "status": "Launched",
+        "delivery_count": "21",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AWS_Direct_Connect_Validation_Checklist.pdf",
+        "notes": "Sam Khidhir <khidhir@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "AWS GovCloud (US)",
+    "service_category": "AWS GOVCLOUD (US)",
+    "team_alias": "apn-skills-govcloudus@",
+    "designation_webpage": "https://aws.amazon.com/govcloud-us/partners/",
+    "versions": [
+      {
+        "source_row": 21,
+        "status": "Launched",
+        "delivery_count": "17",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AWS+GovCloud(US)+Service+Delivery+Partner+Validation+Checklist_06132018.pdf",
+        "notes": "Anand, Shwetha <shanand@amazon.com>;Brooks, Keith <brookskl@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "AWS IoT Analytics",
+    "service_category": "INTERNET OF THINGS",
+    "team_alias": "apn-skills-govcloudus@",
+    "designation_webpage": "https://aws.amazon.com/iot-analytics/partners/",
+    "versions": [
+      {
+        "source_row": 23,
+        "status": "Launched",
+        "delivery_count": "19",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/IoT/AWS+IoT+Analytics+Service+Delivery+Partner+Validation+Checklist_10042018.pdf",
+        "notes": "Williams, Craig <craiwill@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "AWS IoT Core",
+    "service_category": "INTERNET OF THINGS",
+    "team_alias": "apn-skills-govcloudus@",
+    "designation_webpage": "https://aws.amazon.com/iot-core/partners/",
+    "versions": [
+      {
+        "source_row": 22,
+        "status": "Launched",
+        "delivery_count": "18",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/IoT/AWS+IoT+Core+Service+Delivery+Partner+Validation+Checklist_10042018.pdf",
+        "notes": "Williams, Craig <craiwill@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "AWS IoT GreenGrass",
+    "service_category": "INTERNET OF THINGS",
+    "team_alias": "apn-skills-govcloudus@",
+    "designation_webpage": "https://aws.amazon.com/greengrass/partners/",
+    "versions": [
+      {
+        "source_row": 24,
+        "status": "Launched",
+        "delivery_count": "20",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/IoT/AWS+Greengrass+Service+Delivery+Partner+Validation+Checklist_10042018.pdf",
+        "notes": "Williams, Craig <craiwill@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "AWS Lambda",
+    "service_category": "COMPUTE",
+    "team_alias": "apn-skills-lambda@",
+    "designation_webpage": "https://aws.amazon.com/lambda/partners/",
+    "versions": [
+      {
+        "source_row": 8,
+        "status": "Launched",
+        "delivery_count": "6",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AWS+Lambda+Service+Delivery+Partner+Validation+Checklist_09182018_V2.pdf",
+        "notes": "Rumi Olsen <rumi@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "AWS Lambda Ready (ISV)",
+    "service_category": "COMPUTE",
+    "team_alias": "apn-skills-lambda@",
+    "designation_webpage": "https://aws.amazon.com/lambda/partners/",
+    "versions": [
+      {
+        "source_row": 9,
+        "status": "Launched",
+        "delivery_count": "",
+        "ready_count": "2",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AWS+Lambda+Service+Delivery+Partner+Validation+Checklist_09182018_V2.pdf",
+        "notes": "Rumi Olsen <rumi@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "AWS Server Migration Service",
+    "service_category": "COMPUTE, MIGRATION & TRANSFER",
+    "team_alias": "n/a",
+    "designation_webpage": "https://aws.amazon.com/server-migration-service/partners/",
+    "versions": [
+      {
+        "source_row": 6,
+        "status": "Launched",
+        "delivery_count": "4",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AWS+SMS+Service+Delivery+Partner+Validation+Checklist_10162018.pdf",
+        "notes": "Roy Rodan <royrodan@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "AWS Service Catalog",
+    "service_category": "MANAGEMENT & GOVERNANCE",
+    "team_alias": "aws-sc-partner@",
+    "designation_webpage": "https://aws.amazon.com/servicecatalog/partners/",
+    "versions": [
+      {
+        "source_row": 20,
+        "status": "Launched",
+        "delivery_count": "16",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AWS+Systems+Manager+Service+Delivery+Partner+Validation+Checklist_06272018.pdf",
+        "notes": "Robinson, Thomas <trobiv@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "AWS Systems Manager",
+    "service_category": "MANAGEMENT & GOVERNANCE",
+    "team_alias": "n/a",
+    "designation_webpage": "https://aws.amazon.com/systems-manager/partners/",
+    "versions": [
+      {
+        "source_row": 19,
+        "status": "Launched",
+        "delivery_count": "15",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AWS+Config+Service+Delivery+Partner+Validation+Checklist_8292018.pdf",
+        "notes": "Robinson, Thomas <trobiv@amazon.com>"
+      }
+    ]
+  },
+  {
+    "service": "AWS Web Application Firewall (WAF)",
+    "service_category": "SECURITY, IDENTITY & COMPLIANCE",
+    "team_alias": "apn-skills-waf@",
+    "designation_webpage": "https://aws.amazon.com/waf/partners/",
+    "versions": [
+      {
+        "source_row": 7,
+        "status": "Launched",
+        "delivery_count": "5",
+        "ready_count": "",
+        "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AWS+WAF+Service+Delivery+Partner+Validation+Checklist_06062018.pdf",
+        "notes": "Matt Herscovitch <hersco@amazon.com>"
+      }
+    ]
+  }
+]

@@ -60,4 +60,26 @@ describe("zokorp validator engine", () => {
     expect(formatted).toContain("ZoKorpValidator Report (SDP/SRP)");
     expect(formatted).toContain("Checklist results:");
   });
+
+  it("adds a checklist-alignment check when target context is provided", () => {
+    const report = buildValidationReport({
+      profile: "FTR",
+      rawText: "Architecture diagram and scope objective are documented.",
+      target: {
+        id: "ftr:aws-lambda",
+        label: "AWS Lambda",
+        track: "ftr",
+        checklistUrl: "https://example.com/checklist",
+        keywords: ["lambda", "compute", "serverless"],
+      },
+      context: {
+        sourceType: "pdf",
+        filename: "lambda-ftr.pdf",
+        pages: 1,
+      },
+    });
+
+    expect(report.target?.label).toBe("AWS Lambda");
+    expect(report.checks.some((check) => check.id === "target-alignment")).toBe(true);
+  });
 });

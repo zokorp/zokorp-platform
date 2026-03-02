@@ -1,0 +1,25 @@
+{
+  "source_row": 42,
+  "designation_id": "a0Q8a00000XOUsz",
+  "designation": "Managed Streaming for Kafka (MSK) Delivery",
+  "domain": "Data & Analytics",
+  "business_domain_leader": "Dan Kenshalo",
+  "partner_type_path": "Services",
+  "accepting_applications": "Yes",
+  "business_owner": "Sam Anand",
+  "business_owner_email": "anandjey@amazon.com",
+  "technical_owner": "Hari Ramesh",
+  "technical_owner_email": "rarhari@amazon.com",
+  "technical_validation_administrator": "Scale PSA Team",
+  "program_pm": "Maria Jiang",
+  "program_pm_email": "mengyuam@amazon.es",
+  "marketing_contact": "",
+  "sfdc_designation": "https://apn-portal.lightning.force.com/lightning/r/a0Q8a00000XOUszEAH/view",
+  "checklist_url": "https://apn-checklists.s3.amazonaws.com/service-delivery/amazon-msk/CUVdWOTSo.html",
+  "calibration_guide_url": "",
+  "tracks": [
+    "sdp"
+  ],
+  "track": "sdp",
+  "folder": "library/sdp/managed-streaming-for-kafka-msk-delivery--a0q8a00000xousz"
+}

@@ -1,0 +1,25 @@
+{
+  "source_row": 20,
+  "designation_id": "a0Q0L00000CUe4E",
+  "designation": "Lambda Delivery",
+  "domain": "Migrations and Modernization",
+  "business_domain_leader": "Keith Groom",
+  "partner_type_path": "Services",
+  "accepting_applications": "Yes",
+  "business_owner": "Vijay Rangaswamy",
+  "business_owner_email": "vyrang@amazon.com",
+  "technical_owner": "Thiago Padua; Jeong, Young",
+  "technical_owner_email": "tgpadua@amazon.com; yojeo@amazon.com",
+  "technical_validation_administrator": "Scale PSA Team",
+  "program_pm": "Alexandra Morais",
+  "program_pm_email": "axmorais@amazon.es",
+  "marketing_contact": "",
+  "sfdc_designation": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe4EUAT/view",
+  "checklist_url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-lambda/CHKIoBy4V.html",
+  "calibration_guide_url": "",
+  "tracks": [
+    "sdp"
+  ],
+  "track": "sdp",
+  "folder": "library/sdp/lambda-delivery--a0q0l00000cue4e"
+}

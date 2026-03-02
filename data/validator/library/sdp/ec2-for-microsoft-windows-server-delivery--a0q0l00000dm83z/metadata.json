@@ -1,0 +1,25 @@
+{
+  "source_row": 13,
+  "designation_id": "a0Q0L00000DM83Z",
+  "designation": "EC2 for Microsoft Windows Server Delivery",
+  "domain": "Migrations and Modernization",
+  "business_domain_leader": "Keith Groom",
+  "partner_type_path": "Services",
+  "accepting_applications": "Yes",
+  "business_owner": "Melissa Brune",
+  "business_owner_email": "mlbrune@amazon.com",
+  "technical_owner": "Charlie Shen",
+  "technical_owner_email": "charshen@amazon.com",
+  "technical_validation_administrator": "Scale PSA Team",
+  "program_pm": "Alexandra Morais",
+  "program_pm_email": "axmorais@amazon.es",
+  "marketing_contact": "",
+  "sfdc_designation": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000DM83ZUAT/view",
+  "checklist_url": "https://apn-checklists.s3.amazonaws.com/service-delivery/amazon-ec2-for-microsoft-windows-server/CgF-bN5ZQ.html",
+  "calibration_guide_url": "",
+  "tracks": [
+    "sdp"
+  ],
+  "track": "sdp",
+  "folder": "library/sdp/ec2-for-microsoft-windows-server-delivery--a0q0l00000dm83z"
+}

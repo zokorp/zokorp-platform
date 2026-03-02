@@ -1,0 +1,149 @@
+[
+  {
+    "COE Lead": "Chris Niederman",
+    "__row_number": 2
+  },
+  {
+    "Focus Area": "Products and Services",
+    "__row_number": 3
+  },
+  {
+    "COE Lead": "Dan Kenshalo",
+    "Focus Area": "Data/Analytics",
+    "Email": "kenshalo@amazon.com",
+    "Email__link": "mailto:kenshalo@amazon.com",
+    "__row_number": 4
+  },
+  {
+    "COE Lead": "Ryan Orsi",
+    "Focus Area": "Cloud Foundations and Advanced Services",
+    "Email": "orsir@amazon.com",
+    "Email__link": "mailto:orsir@amazon.com",
+    "__row_number": 5
+  },
+  {
+    "COE Lead": "Milan Thanawala",
+    "Focus Area": "Database and Search",
+    "Email": "mtthanaw@amazon.com",
+    "__row_number": 6
+  },
+  {
+    "COE Lead": "Jon Melamut",
+    "Focus Area": "IoT",
+    "Email": "jonmelam@amazon.com",
+    "Email__link": "mailto:jonmelam@amazon.com",
+    "__row_number": 7
+  },
+  {
+    "COE Lead": "Keith Groom",
+    "Focus Area": "Modernization/Migration",
+    "Email": "groomk@amazon.com",
+    "Email__link": "mailto:groomk@amazon.com",
+    "__row_number": 8
+  },
+  {
+    "COE Lead": "Ryan Thomas",
+    "Focus Area": "Industries",
+    "Email": "ryanjth@amazon.com",
+    "Email__link": "mailto:ryanjth@amazon.com",
+    "__row_number": 9
+  },
+  {
+    "COE Lead": "Sandrine Perino",
+    "Focus Area": "Manufacturing",
+    "Email": "perinosp@amazon.fr",
+    "Email__link": "mailto:perinosp@amazon.fr",
+    "__row_number": 10
+  },
+  {
+    "COE Lead": "Ajit Kolhe",
+    "Focus Area": "Automotive",
+    "Email": "kolheaji@amazon.com",
+    "__row_number": 11
+  },
+  {
+    "COE Lead": "Peter Ferri",
+    "Focus Area": "Energy and Utilities",
+    "Email": "pfferri@amazon.com",
+    "__row_number": 12
+  },
+  {
+    "COE Lead": "Addy Dubhashi",
+    "Focus Area": "Financial Services",
+    "Email": "addyd@amazon.com",
+    "Email__link": "mailto:addyd@amazon.com",
+    "__row_number": 13
+  },
+  {
+    "COE Lead": "Teresa Crabtree",
+    "Focus Area": "HCLS",
+    "Email": "teresact@amazon.com",
+    "Email__link": "mailto:teresact@amazon.com",
+    "__row_number": 14
+  },
+  {
+    "COE Lead": "Stuart Lepkowsky",
+    "Focus Area": "Telco, M&E, Gametech and Sports",
+    "Email": "stulep@amazon.com",
+    "Email__link": "mailto:stulep@amazon.com",
+    "__row_number": 15
+  },
+  {
+    "COE Lead": "Derek Seymour",
+    "Focus Area": "Applications/Emerging Industries",
+    "Email": "dereksey@amazon.com",
+    "Email__link": "mailto:dereksey@amazon.com",
+    "__row_number": 16
+  },
+  {
+    "COE Lead": "Adam Taisch",
+    "Focus Area": "AiML",
+    "__row_number": 17
+  },
+  {
+    "COE Lead": "Priya Arora",
+    "Focus Area": "GenAI",
+    "Email": "aropriya@amazon.com",
+    "Email__link": "mailto:aropriya@amazon.com",
+    "__row_number": 18
+  },
+  {
+    "COE Lead": "Chris Dally",
+    "Focus Area": "GenAI lead, previously Graviton",
+    "Email": "dallchri@amazon.com",
+    "Email__link": "mailto:dallchri@amazon.com",
+    "__row_number": 19
+  },
+  {
+    "COE Lead": "Lysa Clavenna",
+    "Focus Area": "Leader, Strategic Initiatives, IPS COE",
+    "Email": "lysac@amazon.com",
+    "Email__link": "mailto:lysac@amazon.com",
+    "__row_number": 20
+  },
+  {
+    "Focus Area": "Nicole Hyland",
+    "Email": "nhyland@amazon.com",
+    "Email__link": "mailto:nhyland@amazon.com",
+    "__row_number": 21
+  },
+  {
+    "COE Lead": "Other",
+    "Focus Area": "Karen Hildebrand",
+    "Email": "hildkare@amazon.com",
+    "__row_number": 22
+  },
+  {
+    "COE Lead": "Other",
+    "Focus Area": "Obaid Kazi",
+    "Email": "okazi@amazon.com",
+    "Email__link": "mailto:okazi@amazon.com",
+    "__row_number": 23
+  },
+  {
+    "COE Lead": "Pierce Hofman",
+    "Focus Area": "Partner Solutions",
+    "Email": "pshofman@amazon.com",
+    "__row_number": 24
+  }
+]

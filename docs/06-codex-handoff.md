@@ -94,6 +94,33 @@
   - `private-uploads` for authenticated/gated uploads
 - Enforce row-level and storage policies so private uploads are only accessible by authorized users/admins.
 
+## Validator knowledge + scoring status
+- Knowledge library is generated from workbook data in:
+  - `data/validator/library/ftr`
+  - `data/validator/library/sdp`
+  - `data/validator/library/srp`
+  - `data/validator/library/competency`
+- Validator UI/API now support selecting a specific checklist target (designation/competency) per run.
+- Current scoring is deterministic and non-LLM:
+  - profile baseline checks
+  - weighted rulepack scoring with severity levels
+  - track-specific controls (`ftr`, `sdp`, `srp`, `competency`)
+  - target-alignment check from selected designation keywords
+  - extracted text from uploaded PDF/XLSX content
+  - regex-based evidence signals (dates, references, IDs, links, etc.)
+- Spreadsheet-specific control workflow:
+  - row-level control calibration (`PASS` / `PARTIAL` / `MISSING`)
+  - row-level recommendations
+  - reviewed Excel download with annotation columns + summary tab
+  - reference-material fetch attempt for selected checklist/calibration URLs (reachable/public URLs only)
+- No hallucination policy for suggested edits:
+  - edits normalize existing user text and add placeholder prompts for missing evidence
+  - no fabricated facts are inserted
+- Sensitive-data guardrail:
+  - extracted text is sanitized before scoring/output (emails/phones/SSN/long numeric identifiers redacted)
+- Remaining gap for future phase:
+  - ingesting and codifying per-checklist calibration-guide rules at deeper field-level precision.
+
 ## Admin/back-office requirements
 - Admin dashboard capabilities:
   - view users and entitlement status

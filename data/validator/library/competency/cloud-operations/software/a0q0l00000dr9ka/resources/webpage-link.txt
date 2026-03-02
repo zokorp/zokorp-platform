@@ -1,0 +1,1 @@
+https://aws.amazon.com/cloudops/partners/?partner-solutions-cards.sort-by=item.additionalFields.partnerNameLower&partner-solutions-cards.sort-order=asc&awsf.partner-solutions-filter-partner-type=*all&awsf.Filter%2520Name%253A%2520partner-solutions-filter-partner-use-case=*all&awsf.partner-solutions-filter-partner-location=*all

@@ -1,0 +1,16 @@
+{
+  "service": "Amazon API Gateway",
+  "service_category": "MOBILE, NETWORKING & CONTENT DELIVERY",
+  "team_alias": "apn-skills-apigateway@",
+  "designation_webpage": "https://aws.amazon.com/api-gateway/partners/",
+  "versions": [
+    {
+      "source_row": 10,
+      "status": "Launched",
+      "delivery_count": "7",
+      "ready_count": "",
+      "checklist_url": "https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/Amazon+API+Gateway+Service+Delivery+Partner+Validation+Checklist_052018.pdf",
+      "notes": "Scofield, Ian <iscofiel@amazon.com>"
+    }
+  ]
+}

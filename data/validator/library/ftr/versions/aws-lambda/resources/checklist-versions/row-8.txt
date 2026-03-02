@@ -1,0 +1,1 @@
+https://s3-us-west-2.amazonaws.com/service-delivery.awspartner.com/Checklists/AWS+Lambda+Service+Delivery+Partner+Validation+Checklist_09182018_V2.pdf

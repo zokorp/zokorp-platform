@@ -1,0 +1,25 @@
+{
+  "source_row": 6,
+  "designation_id": "a0Q0h00000P6sxJ",
+  "designation": "Redshift Ready",
+  "domain": "Data & Analytics",
+  "business_domain_leader": "Dan Kenshalo",
+  "partner_type_path": "Software",
+  "accepting_applications": "Yes",
+  "business_owner": "",
+  "business_owner_email": "",
+  "technical_owner": "Sudhir Gupta",
+  "technical_owner_email": "sudhig@amazon.com",
+  "technical_validation_administrator": "Scale PSA Team",
+  "program_pm": "Francisco Lorenzo Fernandez-Shaw",
+  "program_pm_email": "pacolor@amazon.es",
+  "marketing_contact": "",
+  "sfdc_designation": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000P6sxJEAR/view",
+  "checklist_url": "https://apn-checklists.s3.amazonaws.com/service-ready/amazon-redshift/CFADhtt9R.html",
+  "calibration_guide_url": "",
+  "tracks": [
+    "srp"
+  ],
+  "track": "srp",
+  "folder": "library/srp/redshift-ready--a0q0h00000p6sxj"
+}
