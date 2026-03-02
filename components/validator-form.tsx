@@ -25,6 +25,7 @@ type ValidatorFormProps = {
   requiresAuth?: boolean;
   authUnavailable?: boolean;
   validationTargets?: ValidationTargetOption[];
+  profileCredits?: Record<ValidationProfile, number>;
 };
 
 const profileOptions: Array<{
@@ -34,17 +35,22 @@ const profileOptions: Array<{
 }> = [
   {
     value: "FTR",
-    label: "FTR Review",
-    help: "Foundational readiness review for architecture, controls, testing, and risk evidence.",
+    label: "Foundational Technical Review (FTR)",
+    help: "Foundational readiness review for either a service offering or software offering submission.",
   },
   {
-    value: "SDP_SRP",
-    label: "SDP/SRP Review",
-    help: "Service/software readiness check for delivery operations, support, and controls.",
+    value: "SDP",
+    label: "Service Delivery Program (SDP)",
+    help: "Service-delivery readiness check for repeatability, support, and operational controls.",
+  },
+  {
+    value: "SRP",
+    label: "Service Ready Program (SRP)",
+    help: "Service/software readiness check for release quality, support model, and control evidence.",
   },
   {
     value: "COMPETENCY",
-    label: "Competency Review",
+    label: "Competency",
     help: "Competency evidence check for references, capabilities, staffing, and operational maturity.",
   },
 ];
@@ -53,12 +59,14 @@ export function ValidatorForm({
   requiresAuth = false,
   authUnavailable = false,
   validationTargets = [],
+  profileCredits = { FTR: 0, SDP: 0, SRP: 0, COMPETENCY: 0 },
 }: ValidatorFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<ValidatorResponse | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<ValidationProfile>("FTR");
   const [selectedTargetId, setSelectedTargetId] = useState<string>("");
   const [targetSearch, setTargetSearch] = useState("");
+  const [selectedFileName, setSelectedFileName] = useState("");
 
   const statusBadgeClass: Record<ValidationCheckStatus, string> = {
     PASS: "border-emerald-300 bg-emerald-50 text-emerald-700",
@@ -69,7 +77,8 @@ export function ValidatorForm({
   const targetsByProfile = useMemo(() => {
     const grouped: Record<ValidationProfile, ValidationTargetOption[]> = {
       FTR: [],
-      SDP_SRP: [],
+      SDP: [],
+      SRP: [],
       COMPETENCY: [],
     };
 
@@ -81,7 +90,7 @@ export function ValidatorForm({
   }, [validationTargets]);
 
   const activeTargets = targetsByProfile[selectedProfile];
-  const selectedTarget = activeTargets.find((target) => target.id === selectedTargetId);
+
   const filteredTargets = useMemo(() => {
     if (!targetSearch.trim()) {
       return activeTargets;
@@ -101,14 +110,40 @@ export function ValidatorForm({
       return;
     }
 
-    const currentStillValid = activeTargets.some((target) => target.id === selectedTargetId);
-    if (!currentStillValid) {
+    if (!activeTargets.some((target) => target.id === selectedTargetId)) {
       setSelectedTargetId(activeTargets[0].id);
     }
-  }, [activeTargets, selectedTargetId, selectedProfile]);
+  }, [activeTargets, selectedTargetId]);
+
+  const selectedProfileCredits = profileCredits[selectedProfile] ?? 0;
+  const submitDisabledReason =
+    selectedProfileCredits > 0
+      ? undefined
+      : "No credits available for this review type. Purchase that tier, then retry.";
+
+  const canSubmitNow =
+    selectedProfileCredits > 0 &&
+    Boolean(selectedTargetId) &&
+    filteredTargets.length > 0 &&
+    Boolean(selectedFileName) &&
+    !isLoading;
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (selectedProfileCredits <= 0) {
+      setResult({
+        output: "",
+        error: submitDisabledReason ?? "Purchase a credit first, then run the validator.",
+      });
+      return;
+    }
+
+    if (!selectedTargetId || filteredTargets.length === 0) {
+      setResult({ output: "", error: "Select a checklist target before submitting." });
+      return;
+    }
+
     setIsLoading(true);
     setResult(null);
 
@@ -208,6 +243,13 @@ export function ValidatorForm({
       <p className="mt-1 text-xs text-slate-500">
         Sensitive values like emails, phone numbers, and long account-like numbers are redacted before scoring output.
       </p>
+      <p className="mt-1 text-xs text-slate-500">
+        Available credits for selected profile: {selectedProfileCredits}. Each run uses 1 credit.
+      </p>
+      <p className="mt-1 text-xs text-slate-500">
+        Wallets: FTR {profileCredits.FTR} · SDP {profileCredits.SDP} · SRP {profileCredits.SRP} · Competency{" "}
+        {profileCredits.COMPETENCY}
+      </p>
 
       <form onSubmit={onSubmit} className="mt-4 space-y-3">
         <div className="grid gap-3 md:grid-cols-2">
@@ -243,9 +285,12 @@ export function ValidatorForm({
             <textarea
               name="additionalContext"
               maxLength={1200}
-              placeholder="Example: Focus on IAM policy evidence and incident response readiness."
+              placeholder="Examples: “This is a Service Offering FTR for AI/ML advisory.” “Prioritize IAM least privilege, control owners, and evidence links.” “Flag vague answers that need measurable outcomes.”"
               className="focus-ring min-h-24 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
             />
+            <p className="text-xs text-slate-500">
+              Optional. Add review priorities like control ownership, test evidence quality, risk mitigations, or approval traceability.
+            </p>
           </label>
         </div>
 
@@ -276,7 +321,7 @@ export function ValidatorForm({
                   </option>
                 ))
               ) : (
-                <option value={selectedTargetId}>No matching target in current filter</option>
+                <option value="">No matching target in current filter</option>
               )}
             </select>
             <p className="text-xs text-slate-500">
@@ -291,55 +336,46 @@ export function ValidatorForm({
           </div>
         ) : (
           <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            Checklist library targets are not loaded yet. The validator will use generic profile rules.
+            Checklist targets are unavailable for this profile right now.
           </p>
         )}
 
-        {selectedTarget ? (
-          <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-            <p>
-              Target scope: <span className="font-semibold text-slate-800">{selectedTarget.label}</span>
-              {selectedTarget.domain ? ` (${selectedTarget.domain})` : ""}
-            </p>
-            <div className="mt-1 flex flex-wrap gap-3">
-              {selectedTarget.checklistUrl ? (
-                <a
-                  href={selectedTarget.checklistUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline decoration-slate-400 underline-offset-2 hover:text-slate-900"
-                >
-                  Checklist reference
-                </a>
-              ) : null}
-              {selectedTarget.calibrationGuideUrl ? (
-                <a
-                  href={selectedTarget.calibrationGuideUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline decoration-slate-400 underline-offset-2 hover:text-slate-900"
-                >
-                  Calibration guide
-                </a>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
+        <div className="space-y-2">
+          <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Upload Checklist</span>
+          <input
+            id="validator-file"
+            name="file"
+            type="file"
+            accept=".pdf,.xlsx,.xls,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+            required
+            className="sr-only"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              setSelectedFileName(file?.name ?? "");
+            }}
+          />
+          <label
+            htmlFor="validator-file"
+            className="focus-ring flex cursor-pointer items-center justify-between rounded-md border border-slate-300 bg-white px-3 py-3 text-sm"
+          >
+            <span className="truncate text-slate-700">{selectedFileName || "No file selected yet"}</span>
+            <span className="ml-3 rounded-md border border-slate-300 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-800">
+              Choose File
+            </span>
+          </label>
+        </div>
 
-        <input
-          name="file"
-          type="file"
-          accept=".pdf,.xlsx,.xls,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-          required
-          className="focus-ring block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
-        />
         <button
           type="submit"
-          disabled={isLoading}
-          className="focus-ring rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={!canSubmitNow}
+          className="focus-ring rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
         >
           {isLoading ? "Processing..." : "Process File"}
         </button>
+
+        {selectedProfileCredits <= 0 ? (
+          <p className="text-sm text-amber-700">{submitDisabledReason ?? "Purchase a credit first, then run the validator."}</p>
+        ) : null}
       </form>
 
       {result?.error ? <p className="mt-3 text-sm text-red-600">{result.error}</p> : null}
@@ -348,9 +384,7 @@ export function ValidatorForm({
         <div className="mt-4 space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Validation Report
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Validation Report</p>
               <h4 className="font-display text-xl font-semibold text-slate-900">
                 {result.report.profileLabel} · Score {result.report.score}%
               </h4>
@@ -358,12 +392,9 @@ export function ValidatorForm({
               {result.report.target ? (
                 <div className="mt-1 text-xs text-slate-500">
                   <p>Checklist target: {result.report.target.label}</p>
-                  {result.report.rulepack ? (
-                    <p>
-                      Rulepack: {result.report.rulepack.id} (v{result.report.rulepack.version}) ·{" "}
-                      {result.report.rulepack.ruleCount} checks
-                    </p>
-                  ) : null}
+                  <p>
+                    Rulepack: {result.report.rulepack.id} (v{result.report.rulepack.version}) · {result.report.rulepack.ruleCount} checks
+                  </p>
                 </div>
               ) : null}
             </div>
@@ -377,9 +408,7 @@ export function ValidatorForm({
 
           {result.reviewedWorkbookBase64 && result.reviewedWorkbookFileName ? (
             <div className="flex items-center gap-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
-              <p className="text-xs text-emerald-900">
-                Reviewed workbook is ready with row-level status/recommendations.
-              </p>
+              <p className="text-xs text-emerald-900">Reviewed workbook is ready with row-level status/recommendations.</p>
               <button
                 type="button"
                 onClick={downloadReviewedWorkbook}
@@ -404,9 +433,7 @@ export function ValidatorForm({
 
           {result.report.topGaps.length > 0 ? (
             <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
-                Priority Improvements
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">Priority Improvements</p>
               <ul className="mt-2 list-disc space-y-1 pl-4 text-sm text-amber-900">
                 {result.report.topGaps.map((gap) => (
                   <li key={gap}>{gap}</li>
@@ -417,9 +444,7 @@ export function ValidatorForm({
 
           {result.report.processingNotes.length > 0 ? (
             <div className="rounded-md border border-sky-200 bg-sky-50 p-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-sky-800">
-                Processing Notes
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-sky-800">Processing Notes</p>
               <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-sky-900">
                 {result.report.processingNotes.map((note) => (
                   <li key={note}>{note}</li>
@@ -431,12 +456,8 @@ export function ValidatorForm({
           {result.report.controlCalibration ? (
             <div className="space-y-3 rounded-md border border-slate-200 bg-white p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">
-                  Control-by-Control Calibration
-                </p>
-                <p className="text-xs text-slate-500">
-                  {result.report.controlCalibration.totalControls} controls analyzed
-                </p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">Control-by-Control Calibration</p>
+                <p className="text-xs text-slate-500">{result.report.controlCalibration.totalControls} controls analyzed</p>
               </div>
               <div className="flex flex-wrap gap-2 text-xs">
                 <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-700">
@@ -452,7 +473,10 @@ export function ValidatorForm({
 
               <div className="max-h-96 space-y-2 overflow-auto rounded-md border border-slate-200 bg-slate-50 p-2">
                 {result.report.controlCalibration.controls.map((control) => (
-                  <article key={`${control.sheetName}-${control.rowNumber}-${control.controlId}`} className="rounded-md border border-slate-200 bg-white p-3">
+                  <article
+                    key={`${control.sheetName}-${control.rowNumber}-${control.controlId}`}
+                    className="rounded-md border border-slate-200 bg-white p-3"
+                  >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="text-sm font-semibold text-slate-900">
                         {control.controlId} · {control.sheetName} row {control.rowNumber}
@@ -474,57 +498,17 @@ export function ValidatorForm({
                     <p className="mt-1 text-xs text-slate-500">
                       Missing signals: {control.missingSignals.length ? control.missingSignals.join(", ") : "none"}
                     </p>
-                    <p className="mt-1 text-xs text-slate-600">
-                      Suggested edit (no new facts): {control.suggestedEdit}
-                    </p>
+                    <p className="mt-1 text-xs text-slate-600">Suggested edit (no new facts): {control.suggestedEdit}</p>
                   </article>
                 ))}
               </div>
             </div>
           ) : null}
 
-          <div className="space-y-2">
-            {result.report.checks.map((check) => (
-              <article key={check.id} className="rounded-md border border-slate-200 bg-white p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h5 className="text-sm font-semibold text-slate-900">{check.title}</h5>
-                  <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusBadgeClass[check.status]}`}>
-                    {check.status}
-                  </span>
-                </div>
-                <p className="mt-1 text-sm text-slate-600">{check.description}</p>
-                <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                  Severity: {check.severity} · Weight: {check.weight.toFixed(1)}
-                </p>
-                <p className="mt-2 text-xs text-slate-500">
-                  Matched keywords: {check.hitKeywords.length ? check.hitKeywords.join(", ") : "none"}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Matched patterns: {check.hitPatterns.length ? check.hitPatterns.join(", ") : "none"}
-                </p>
-                {check.evidence ? (
-                  <p className="mt-2 text-xs text-slate-600">Evidence: {check.evidence}</p>
-                ) : null}
-              </article>
-            ))}
-          </div>
-
           <details className="rounded-md border border-slate-200 bg-white p-3">
-            <summary className="cursor-pointer text-sm font-semibold text-slate-800">
-              View raw output
-            </summary>
-            <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap text-xs text-slate-700">
-              {result.output}
-            </pre>
+            <summary className="cursor-pointer text-sm font-semibold text-slate-800">View raw output</summary>
+            <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap text-xs text-slate-700">{result.output}</pre>
           </details>
-        </div>
-      ) : result?.output ? (
-        <div className="mt-4 space-y-2 rounded-md bg-slate-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Output</p>
-          <pre className="max-h-80 overflow-auto whitespace-pre-wrap text-sm text-slate-700">{result.output}</pre>
-          {typeof result.remainingUses === "number" ? (
-            <p className="text-xs text-slate-500">Remaining uses: {result.remainingUses}</p>
-          ) : null}
         </div>
       ) : null}
     </section>

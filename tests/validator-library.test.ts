@@ -6,12 +6,14 @@ describe("validator library", () => {
   it("loads profile-aware target options from generated library", () => {
     const all = getValidatorTargetOptions();
     const ftr = getValidatorTargetOptions("FTR");
-    const sdpSrp = getValidatorTargetOptions("SDP_SRP");
+    const sdp = getValidatorTargetOptions("SDP");
+    const srp = getValidatorTargetOptions("SRP");
     const competency = getValidatorTargetOptions("COMPETENCY");
 
     expect(all.length).toBeGreaterThan(100);
-    expect(ftr.length).toBeGreaterThan(10);
-    expect(sdpSrp.length).toBeGreaterThan(10);
+    expect(ftr.length).toBe(2);
+    expect(sdp.length).toBeGreaterThan(10);
+    expect(srp.length).toBeGreaterThan(10);
     expect(competency.length).toBeGreaterThan(10);
   });
 

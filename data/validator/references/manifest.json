@@ -1,0 +1,2587 @@
+{
+  "generatedAt": "2026-03-02T21:17:27.687287+00:00",
+  "libraryRoot": "data/validator/library",
+  "outputRoot": "data/validator/references",
+  "totalUrls": 335,
+  "summary": {
+    "downloaded": 300,
+    "network_error": 35
+  },
+  "results": [
+    {
+      "url": "http://aws.amazon.com/rds/postgresql/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 269930,
+      "file": "data/validator/references/files/partners-d0a871aa1b80.html"
+    },
+    {
+      "url": "https://amazon.awsapps.com/workdocs-amazon/index.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 1393,
+      "file": "data/validator/references/files/index-0047e27bda68.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/built-in/built-in/Cg-L4pmxC.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 109158,
+      "file": "data/validator/references/files/cg-l4pmxc-7c8674254646.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/advertising-and-marketing/consulting/C2ZvfgxUO.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 118313,
+      "file": "data/validator/references/files/c2zvfgxuo-d5499812dcb0.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/advertising-and-marketing/technology/CC2pZkK1g.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 102357,
+      "file": "data/validator/references/files/cc2pzkk1g-ffefa85b753e.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/automotive/consulting/C8PVb8qS5.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 111520,
+      "file": "data/validator/references/files/c8pvb8qs5-052036fe4882.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/automotive/technology/CYwes634c.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 111944,
+      "file": "data/validator/references/files/cywes634c-63b12af11468.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/cloud-operations/consulting/Cb6z66gKQ.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 201855,
+      "file": "data/validator/references/files/cb6z66gkq-75acc20d1740.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/cloud-operations/technology/CIBVL4voO.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 238084,
+      "file": "data/validator/references/files/cibvl4voo-f51c0c92aace.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/consumer-goods/consulting/C0QoKI8vB.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 94188,
+      "file": "data/validator/references/files/c0qoki8vb-9b429a133e40.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/consumer-goods/technology/CiFXgNhjU.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 108971,
+      "file": "data/validator/references/files/cifxgnhju-2d9140e6cee7.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/container/technology/CUrwMcJGm.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 3010,
+      "file": "data/validator/references/files/curwmcjgm-dabdc010b667.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/conversational-ai/consulting/Cvkq1FdL1.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 3895,
+      "file": "data/validator/references/files/cvkq1fdl1-07734199a5e6.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/conversational-ai/technology/CfLLK8yu0.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 3895,
+      "file": "data/validator/references/files/cfllk8yu0-c9b1e40fff96.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/cyber-insurance/technology/C7U1v5RqK.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 108313,
+      "file": "data/validator/references/files/c7u1v5rqk-0d69a7dc7fa9.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/data-and-analytics/consulting/CwDeMHw3L.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 126731,
+      "file": "data/validator/references/files/cwdemhw3l-bb85b7899d8d.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/data-and-analytics/technology/C603rlm2F.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 113646,
+      "file": "data/validator/references/files/c603rlm2f-fb70462c344a.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/devops/consulting/Cm5yq5ehT.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 111263,
+      "file": "data/validator/references/files/cm5yq5eht-81351fb48861.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/devops/technology/CenAm4qx8.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 99852,
+      "file": "data/validator/references/files/cenam4qx8-21bf161509e9.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/digital-sovereignty/consulting/Catt68z6t.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 145248,
+      "file": "data/validator/references/files/catt68z6t-a7b34e9a2b06.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/digital-workplace/consulting/C2dAFThUn.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 100905,
+      "file": "data/validator/references/files/c2dafthun-203a5c9457b2.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/digital-workplace/technology/CyDFJfFoj.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 105539,
+      "file": "data/validator/references/files/cydfjffoj-0810376df760.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/education/consulting/Ccf_WVoOo.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 103939,
+      "file": "data/validator/references/files/ccf_wvooo-63f403502836.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/education/technology/CXo959TDB.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 101978,
+      "file": "data/validator/references/files/cxo959tdb-54f772ab432c.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/energy-and-utilities/consulting/Cu3rm0RH0.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 85267,
+      "file": "data/validator/references/files/cu3rm0rh0-602776155b4e.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/energy-and-utilities/technology/CtkL8g-GN.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 100807,
+      "file": "data/validator/references/files/ctkl8g-gn-b825f7dd26d3.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/financial-services/consulting/CWNIstW4j.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 106900,
+      "file": "data/validator/references/files/cwnistw4j-21b6bc062501.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/financial-services/technology/CL9ScWvfj.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 111847,
+      "file": "data/validator/references/files/cl9scwvfj-8d4ee965144a.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/generative-ai/consulting/Cks9Pu3tv.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 454,
+      "file": "data/validator/references/files/cks9pu3tv-a9730b91d868.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/generative-ai/technology/CA8hD0o5c.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 454,
+      "file": "data/validator/references/files/ca8hd0o5c-e31ea0d5406f.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/government/consulting/CMl0egivR.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 104814,
+      "file": "data/validator/references/files/cml0egivr-3a6fbdab120c.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/government/technology/CiV-cxmx2.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 36983,
+      "file": "data/validator/references/files/civ-cxmx2-6c5b069b1e94.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/healthcare/consulting/CsccFEePA.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 108575,
+      "file": "data/validator/references/files/csccfeepa-5e6a67451246.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/healthcare/technology/ChW-HhYmZ.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 100806,
+      "file": "data/validator/references/files/chw-hhymz-81015d73cba2.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/high-performance-computing/technology/CC--znu7a.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 130113,
+      "file": "data/validator/references/files/cc--znu7a-2b735449b382.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/iot/consulting/CyWGioP41.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 130273,
+      "file": "data/validator/references/files/cywgiop41-a1284295c11a.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/iot/technology/CUNshn9aZ.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 129486,
+      "file": "data/validator/references/files/cunshn9az-f35cbbe61fae.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/level-1-managed-security-service-provider/consulting/CuHDOh7ex.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 547,
+      "file": "data/validator/references/files/cuhdoh7ex-f5bfab4f5869.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/life-sciences/consulting/CmovQSyz4.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 110800,
+      "file": "data/validator/references/files/cmovqsyz4-9d5b4046eb88.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/life-sciences/technology/CrFcRKB1V.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 100305,
+      "file": "data/validator/references/files/crfcrkb1v-8a37aefe26a7.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/machine-learning/consulting/CDrF84yod.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 111193,
+      "file": "data/validator/references/files/cdrf84yod-93fa0876336a.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/machine-learning/technology/CDzy_YSts.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 112908,
+      "file": "data/validator/references/files/cdzy_ysts-f26d28e7536d.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/mainframe-migration/consulting/CoRyFqKj8.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 447,
+      "file": "data/validator/references/files/coryfqkj8-c057f99d1211.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/mainframe-migration/technology/C8nABEZCV.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 447,
+      "file": "data/validator/references/files/c8nabezcv-9ca714444d08.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/manufacturing-and-industrial/consulting/CVCGwZCPT.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 117807,
+      "file": "data/validator/references/files/cvcgwzcpt-522fe4a5779b.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/manufacturing-and-industrial/technology/CKp8Omu8v.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 105404,
+      "file": "data/validator/references/files/ckp8omu8v-89aa984352be.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/media-and-entertainment/consulting/CNY2VDYt3.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 117352,
+      "file": "data/validator/references/files/cny2vdyt3-08e35311b538.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/media-and-entertainment/technology/CubG2FRWg.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 137953,
+      "file": "data/validator/references/files/cubg2frwg-9807f0a5920d.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/microsoft-workloads/consulting/CR_Ysz-mn.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 112537,
+      "file": "data/validator/references/files/cr_ysz-mn-7bc42b41e8d9.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/microsoft-workloads/technology/CIr2c14XI.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 3777,
+      "file": "data/validator/references/files/cir2c14xi-721a201a7090.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/migration-and-modernization/consulting/CTsQuH-uL.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 115729,
+      "file": "data/validator/references/files/ctsquh-ul-31332df96f17.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/migration/technology/CPDwvjpPF.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 181220,
+      "file": "data/validator/references/files/cpdwvjppf-d19af7138f14.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/networking/consulting/CsbVu5IS0.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 100351,
+      "file": "data/validator/references/files/csbvu5is0-214b2be0153d.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/networking/technology/CEDjGvDRW.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 135894,
+      "file": "data/validator/references/files/cedjgvdrw-bdbcf51c9ffb.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/nonprofit/consulting/CtTq7MUa1.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 97003,
+      "file": "data/validator/references/files/cttq7mua1-4fcf77dd4ced.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/nonprofit/technology/C5WV1hDcV.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 102979,
+      "file": "data/validator/references/files/c5wv1hdcv-0462ab651db6.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/oracle/consulting/CUn__jMKN.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 107106,
+      "file": "data/validator/references/files/cun__jmkn-1d9a61a48374.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/public-safety-and-disaster-response/consulting/C2docFEMe.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 487,
+      "file": "data/validator/references/files/c2docfeme-7bdc389333a7.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/public-safety-and-disaster-response/technology/C3Xzrj3mU.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 487,
+      "file": "data/validator/references/files/c3xzrj3mu-760c3fc3e219.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/resilience/consulting/CIlsDAPaJ.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 210038,
+      "file": "data/validator/references/files/cilsdapaj-5c774ffa10f5.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/resilience/technology/C4H3VCsf0.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 93381,
+      "file": "data/validator/references/files/c4h3vcsf0-507f260d265b.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/retail/consulting/CsAUPyd4M.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 96732,
+      "file": "data/validator/references/files/csaupyd4m-d9174e4d26f8.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/retail/technology/CtZ2GsGJk.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 107579,
+      "file": "data/validator/references/files/ctz2gsgjk-b6d1b11dbe09.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/saas/consulting/CYNKvYL8K.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 127294,
+      "file": "data/validator/references/files/cynkvyl8k-64595bb19fe8.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/sap/consulting/CET9YPW2W.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 104342,
+      "file": "data/validator/references/files/cet9ypw2w-0257db0f157d.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/security/consulting/CXLOf6Hk3.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 218044,
+      "file": "data/validator/references/files/cxlof6hk3-2708b6114290.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/security/technology/C_Ss7_A10.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 266507,
+      "file": "data/validator/references/files/c_ss7_a10-5835e56368c5.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/small-and-medium-business-(smb)/consulting/CldTOTBg1.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 105830,
+      "file": "data/validator/references/files/cldtotbg1-94c5d851b824.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/small-and-medium-business-(smb)/technology/CQOokK8QS.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 109923,
+      "file": "data/validator/references/files/cqookk8qs-3323e4363882.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/smart-city/consulting/CAGUgbjvO.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 87501,
+      "file": "data/validator/references/files/cagugbjvo-a8244aa66fa6.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/smart-city/technology/CY2IZ5P6I.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 101881,
+      "file": "data/validator/references/files/cy2iz5p6i-0854b05d0ddc.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/storage/consulting/CL0TGLv2D.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 133849,
+      "file": "data/validator/references/files/cl0tglv2d-604eaeb59fe7.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/storage/technology/CU5laXMhF.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 113106,
+      "file": "data/validator/references/files/cu5laxmhf-c0f695eedd83.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/supply-chain/consulting/CHtgT_uIl.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 85847,
+      "file": "data/validator/references/files/chtgt_uil-7279569bfd1e.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/supply-chain/technology/C_VObxWX2.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 100594,
+      "file": "data/validator/references/files/c_vobxwx2-9c0ca4e747c8.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/telecom/consulting/CT-ZWAB-t.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 121252,
+      "file": "data/validator/references/files/ct-zwab-t-3be2c4e74d1e.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/travel-and-hospitality/consulting/Cva-Q6XkU.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 91409,
+      "file": "data/validator/references/files/cva-q6xku-e4748de59153.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/competency/travel-and-hospitality/technology/CdsfYcVQY.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 112044,
+      "file": "data/validator/references/files/cdsfycvqy-17826bad64d1.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/amazon-api-gateway/ConfRrxCL.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 73538,
+      "file": "data/validator/references/files/confrrxcl-ec5b511e55f9.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/amazon-cloudfront/CzXtsTito.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 67688,
+      "file": "data/validator/references/files/czxtstito-87688742ace4.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/amazon-connect/Cjl5a0cJe.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 77505,
+      "file": "data/validator/references/files/cjl5a0cje-a9507fb8d8bc.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/amazon-dynamodb/C4r6lcZPM.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 69373,
+      "file": "data/validator/references/files/c4r6lczpm-348fdc3fc351.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/amazon-ec2-for-microsoft-windows-server/CgF-bN5ZQ.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 69118,
+      "file": "data/validator/references/files/cgf-bn5zq-b3b6afb5d577.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/amazon-ecs/Ck95eBZfm.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 105922,
+      "file": "data/validator/references/files/ck95ebzfm-0b38e99800cf.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/amazon-eks/CPJBZ_3E6.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 108779,
+      "file": "data/validator/references/files/cpjbz_3e6-d93f312c6e6a.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/amazon-emr/CbrJ5P6rZ.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 69365,
+      "file": "data/validator/references/files/cbrj5p6rz-90230a774c1c.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/amazon-kinesis/C7nF8zJHn.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 70163,
+      "file": "data/validator/references/files/c7nf8zjhn-6701dcfe671e.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/amazon-msk/CUVdWOTSo.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 69809,
+      "file": "data/validator/references/files/cuvdwotso-75b352bb5793.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/amazon-opensearch-service/CYZXEBabs.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 70537,
+      "file": "data/validator/references/files/cyzxebabs-301f08daf2ce.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/amazon-quicksight/CRS6KofdM.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 70443,
+      "file": "data/validator/references/files/crs6kofdm-b1084b858983.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/amazon-rds/CwXqjf5lm.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 82864,
+      "file": "data/validator/references/files/cwxqjf5lm-b87ace80eeb4.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/amazon-redshift/CeacSJNpB.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 70988,
+      "file": "data/validator/references/files/ceacsjnpb-c83ea624ee42.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-cloudformation/CCCLz9V9V.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 75747,
+      "file": "data/validator/references/files/ccclz9v9v-ab61fc30744f.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-config/C66dxvlFt.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 72589,
+      "file": "data/validator/references/files/c66dxvlft-9730c65f5921.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-control-tower/CsALWNKWk.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 69801,
+      "file": "data/validator/references/files/csalwnkwk-39ca6c78d4b1.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-database-migration-service/C7aCIlUJs.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 70564,
+      "file": "data/validator/references/files/c7acilujs-f00cfbfa5309.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-direct-connect/CS6TcH0aK.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 33975,
+      "file": "data/validator/references/files/cs6tch0ak-d63b03ee5bb8.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-glue/CXOnRJ8z8.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 73161,
+      "file": "data/validator/references/files/cxonrj8z8-6ed3b6e0fcef.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-govcloud/Ce_hwy34f.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 71425,
+      "file": "data/validator/references/files/ce_hwy34f-203158b3344c.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-graviton/CX6uvz1aw.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 92648,
+      "file": "data/validator/references/files/cx6uvz1aw-a228ffd07032.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-iot-analytics/CChSwety9.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 3537,
+      "file": "data/validator/references/files/cchswety9-feabde85c165.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-iot-core/CR-bw8BtE.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 73306,
+      "file": "data/validator/references/files/cr-bw8bte-0e6540168b2b.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-iot-greengrass/Cu27kMYQl.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 71596,
+      "file": "data/validator/references/files/cu27kmyql-94a23c194f8b.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-lambda/CHKIoBy4V.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 74552,
+      "file": "data/validator/references/files/chkioby4v-c04dd885aade.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-security-incident-response/CDII3j4OU.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 75238,
+      "file": "data/validator/references/files/cdii3j4ou-246dbae1339a.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-service-catalog/Ci8C2fJmH.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 70341,
+      "file": "data/validator/references/files/ci8c2fjmh-d25cb2ede492.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-systems-manager/CFncgG_Eb.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 67980,
+      "file": "data/validator/references/files/cfncgg_eb-3755e6258bab.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-transfer-family/CuJSDnUyA.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 67495,
+      "file": "data/validator/references/files/cujsdnuya-4b66254412e3.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-delivery/aws-waf/C2UHVslcz.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 67857,
+      "file": "data/validator/references/files/c2uhvslcz-81cb5f706582.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-ready/amazon-cloudfront/CrEiOUSRn.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 103406,
+      "file": "data/validator/references/files/creiousrn-0d989ad0ba73.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-ready/amazon-connect/CJtKO2LLu.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 124245,
+      "file": "data/validator/references/files/cjtko2llu-40fac8460844.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-ready/amazon-ec2-spot/CCDdeAVUs.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 113796,
+      "file": "data/validator/references/files/ccddeavus-5b9aeba5c6b2.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-ready/amazon-eks-anywhere/Cyoltfi7U.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 454,
+      "file": "data/validator/references/files/cyoltfi7u-1b2dac81cfe4.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-ready/amazon-linux/CqVMk5qwC.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 105266,
+      "file": "data/validator/references/files/cqvmk5qwc-f730e6e7ae64.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-ready/amazon-redshift/CFADhtt9R.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 113814,
+      "file": "data/validator/references/files/cfadhtt9r-2a6dfe205714.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-ready/amazon-sagemaker/CH8VgU-nG.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 4320,
+      "file": "data/validator/references/files/ch8vgu-ng-97c45e6b927e.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-ready/amazon-security-lake/CJIWcuPTM.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 457,
+      "file": "data/validator/references/files/cjiwcuptm-7e6637df7686.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-ready/aws-control-tower/Cj_aCRC23.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 98481,
+      "file": "data/validator/references/files/cj_acrc23-2934f423d266.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-ready/aws-graviton/CP2teLJMR.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 113086,
+      "file": "data/validator/references/files/cp2teljmr-05ae8e9b302a.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-ready/aws-lambda/C4d1fm0Lh.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 110801,
+      "file": "data/validator/references/files/c4d1fm0lh-47fe1755cc74.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-ready/aws-outposts/C9yofAIc8.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 109601,
+      "file": "data/validator/references/files/c9yofaic8-343db076819a.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-ready/aws-privatelink/C_0AlpPtk.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 96863,
+      "file": "data/validator/references/files/c_0alpptk-4b85495824c6.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-ready/aws-security-incident-response/CudFDVELu.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 123854,
+      "file": "data/validator/references/files/cudfdvelu-9178807ef8e8.html"
+    },
+    {
+      "url": "https://apn-checklists.s3.amazonaws.com/service-ready/aws-waf/CaroRs7kO.html",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html",
+      "bytes": 103551,
+      "file": "data/validator/references/files/carors7ko-3aa75c0c1469.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q0L00000CUe3lUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-2bfdd0500923.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q0L00000CUe3mUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-dca0f6c06cca.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q0L00000CUe49UAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-22719927ac36.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q0L00000DRcvwUAD/view?ws=%252Flightning%252Fr%252FReport%252F00O8a000008AMmPEAW%252Fview%253FqueryScope%253DuserFolders",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 2033,
+      "file": "data/validator/references/files/view-08de56fe0743.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W0000295RIfUAM/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-e73a2c2b45a6.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W0000295RIkUAM/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-235e42966529.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002MioKlUAJ/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-3d152d41f5a5.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002MioKqUAJ/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-7573d2ddeca1.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002MioKvUAJ/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-c34e76684195.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002MioL0UAJ/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-b60383f9d760.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002MioL5UAJ/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-17ab5e89cc48.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002Misv9UAB/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-50197fb0b5fd.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002MisvEUAR/view?ws=%252Flightning%252Fr%252FReport%252F00O8W000007d3XJUAY%252Fview",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1994,
+      "file": "data/validator/references/files/view-c442577bcbba.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002MisvJUAR/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-fa7ea922fca1.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002MisvOUAR/view?ws=%252Flightning%252Fr%252FReport%252F00O8W000007d3YCUAY%252Fview",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1994,
+      "file": "data/validator/references/files/view-e5ba1e1aafca.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002MizndUAB/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-07e200e240e7.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002MizniUAB/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-d0020dcb3528.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002MiznnUAB/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-da2a5855d6ec.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002MiznsUAB/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-2e0da6e8fdb4.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002MiznxUAB/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-5edbd7d822e2.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002Mj6glUAB/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-62858fa26f2d.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002Mj848UAB/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-420ec846825e.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002Mj84IUAR/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-6ebcb57bc691.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002nJf8dUAC/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-88bc6e573e28.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002nJf8iUAC/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-85db8572d708.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002nJhUMUA0/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-6a6477168bf2.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002rriMSUAY/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-c61810e60049.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W00002rriMXUAY/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-99fb5a9270e7.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W000036AGHpUAO/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-e94877701502.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8W000036AGHuUAO/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-325c86abee20.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Q8a00000Y7aRkEAJ/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-dd04665bab85.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/Designation__c/a0Qaq000005oJkXEAU/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1899,
+      "file": "data/validator/references/files/view-8786a421cf51.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe2vUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-8df901f04abb.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe2wUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-b39a8af1f0da.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe2xUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-285a54dbef6d.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe2yUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-46a62f03ceaf.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe3YUAT/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-9003cfaad770.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe3ZUAT/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-a432fd7700cf.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe3aUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-ae9554b7c999.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe3bUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-31599e571f30.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe3cUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-506de780dc7c.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe3dUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-d19425ac4e18.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe3eUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-1438efe3411e.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe3fUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-096d10f2f460.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe3gUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-bcbeeb945f2c.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe3hUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-ca9edb9ce7b7.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe3iUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-12b43bb7f340.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe3jUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-1766bef51518.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe3pUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-e59f392ce5bd.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe3qUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-e8b70c8f8a60.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe3rUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-e90bd6e2e703.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe3uUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-28b90baeb20b.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe3wUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-37e14c0a5253.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe3xUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-4ad3bb6b3f8c.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe3yUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-16e22153a892.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe3zUAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-7924043cf056.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe40UAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-c9a14f39db7e.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe42UAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-da85de17825b.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe44UAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-e4064b614e9c.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe45UAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-a3e9e727ac4d.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe46UAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-113e00988fe6.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe47UAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-069128898fa3.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe4AUAT/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-3275697b6756.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe4CUAT/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-610ada6aa127.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe4DUAT/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-f49eb777b0a7.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe4EUAT/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-76aebf99547f.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe4GUAT/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-225a78dcd7af.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CUe4HUAT/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-4b3723349d3d.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CgI5nUAF/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-2b4a1f35ae65.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000CgLc0UAF/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-e5cb990afcdf.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000DLYrmUAH/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-7e2f1e26faa1.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000DM83ZUAT/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-c4054d75d797.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000DQwc1UAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-a7a743ba98f1.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000DQwcBUAT/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-277cb5c8768f.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000DR9KAUA1/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-441a5522147f.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000DSrkTUAT/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-653204c2777e.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0L00000DSrl1UAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-fe08dea816a3.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000NZVA5EAP/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-f0d73dfe6872.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000NvTCaEAN/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-5f8baa06d9e7.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000NvTCbEAN/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-917949b93f12.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000NvTCcEAN/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-3788563c8fd9.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000NvTCdEAN/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-2395bfdf4c08.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000NvTCeEAN/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-2db40a10698e.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000NvTCfEAN/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-ce068994344a.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000ONPMjEAP/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-28110e5928e2.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000OZya6EAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-73be75591a09.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000Or7DnEAJ/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-1ae095818b12.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000Ou08EEAR/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-388a2bbc825b.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000Ou08iEAB/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-a52e420afa2c.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000P4ZMAEA3/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-b9dfc44ff039.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000P6Jv9EAF/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-78d7e99adbc6.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000P6sxJEAR/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-9d9f6c07efa8.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000P6sxKEAR/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-3a91a630ac96.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000P6sxLEAR/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-df54170a9e0b.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000P6sxMEAR/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-28a2ed230d25.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000Q9f6wEAB/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-ed9e3ed8a497.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000QC5UXEA1/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-141785462ae3.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000QJXoiEAH/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-2aad180e8c2b.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000Qv6r4EAB/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-7551fa8824f4.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000RLQYXEA5/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-858e6bc59548.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000RLQZ6EAP/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-03f11f563182.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000Ru6n3EAB/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-83dd9eab7529.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000Rvg7eEAB/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-845b985f0c2a.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000S6myYEAR/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-8db9d788f54f.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000S6mydEAB/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-bbd9f083f746.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000S7XRqEAN/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-2bf88912340b.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000S7XRvEAN/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-2019bcfe1963.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000SDfCoEAL/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-ce03243cd8dc.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q0h00000SDfCyEAL/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-f9f945f656ff.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q8a00000QEyIjEAL/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-c8b8a2421a03.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q8a00000QEyIoEAL/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-7bd3fa85262d.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q8a00000QNzBZEA1/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-2a196f492f1b.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q8a00000UJ1TCEA1/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-e8adfa2ce960.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q8a00000UXNA1EAP/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-ee862369a972.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q8a00000UpoDxEAJ/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-6b573ddd2bae.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q8a00000UpoE7EAJ/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-40d0cfce9685.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q8a00000VTB7fEAH/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-1679865c14f8.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q8a00000VTB7gEAH/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-32438d890f16.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q8a00000Wlt2UEAR/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-a88dd42558c4.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q8a00000Wlt2ZEAR/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-f7e52343d5c6.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q8a00000XOUszEAH/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-23c49143e338.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q8a00000XOUt4EAH/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-dd2963831f5a.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q8a00000XOij9EAD/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-1747441d100c.html"
+    },
+    {
+      "url": "https://apn-portal.lightning.force.com/lightning/r/a0Q8a00000XOijEEAT/view",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 1880,
+      "file": "data/validator/references/files/view-22c139e8cc53.html"
+    },
+    {
+      "url": "https://aws.amazon.com/advertising-marketing/partners/?blog-posts-cards.sort-by=item.additionalFields.createdDate&blog-posts-cards.sort-order=desc",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 224312,
+      "file": "data/validator/references/files/partners-029145275627.html"
+    },
+    {
+      "url": "https://aws.amazon.com/api-gateway/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 219392,
+      "file": "data/validator/references/files/partners-9b40f302a48c.html"
+    },
+    {
+      "url": "https://aws.amazon.com/automotive/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 227919,
+      "file": "data/validator/references/files/partners-92b749709a81.html"
+    },
+    {
+      "url": "https://aws.amazon.com/backup-recovery/partner-solutions/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 264557,
+      "file": "data/validator/references/files/partner-solutions-dc8863010a13.html"
+    },
+    {
+      "url": "https://aws.amazon.com/big-data/datalakes-and-analytics/partner-solutions/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 275535,
+      "file": "data/validator/references/files/partner-solutions-006ec90cb941.html"
+    },
+    {
+      "url": "https://aws.amazon.com/cloudformation/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 215110,
+      "file": "data/validator/references/files/partners-b5a07f01edc1.html"
+    },
+    {
+      "url": "https://aws.amazon.com/cloudfront/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 273341,
+      "file": "data/validator/references/files/partners-7317c1b7fba2.html"
+    },
+    {
+      "url": "https://aws.amazon.com/cloudops/partners",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 231392,
+      "file": "data/validator/references/files/partners-f86ff1e7eaf6.html"
+    },
+    {
+      "url": "https://aws.amazon.com/cloudops/partners/?partner-solutions-cards.sort-by=item.additionalFields.partnerNameLower&partner-solutions-cards.sort-order=asc&awsf.partner-solutions-filter-partner-type=*all&awsf.Filter%2520Name%253A%2520partner-solutions-filter-partner-use-case=*all&awsf.partner-solutions-filter-partner-location=*all",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 231392,
+      "file": "data/validator/references/files/partners-aa009d9d4b48.html"
+    },
+    {
+      "url": "https://aws.amazon.com/compliance/digital-sovereignty/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 232281,
+      "file": "data/validator/references/files/partners-e8b76a1872cd.html"
+    },
+    {
+      "url": "https://aws.amazon.com/config/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 204299,
+      "file": "data/validator/references/files/partners-f587364ce400.html"
+    },
+    {
+      "url": "https://aws.amazon.com/connect/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 262404,
+      "file": "data/validator/references/files/partners-29ea7ae9e15d.html"
+    },
+    {
+      "url": "https://aws.amazon.com/containers/partner-solutions/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 235626,
+      "file": "data/validator/references/files/partner-solutions-4b7ab733b3a3.html"
+    },
+    {
+      "url": "https://aws.amazon.com/cpg/partner-solutions/?partner-case-studies-cards.sort-by=item.additionalFields.sortDate&partner-case-studies-cards.sort-order=desc",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 228122,
+      "file": "data/validator/references/files/partner-solutions-dca9fc404a82.html"
+    },
+    {
+      "url": "https://aws.amazon.com/devops/partner-solutions/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 239980,
+      "file": "data/validator/references/files/partner-solutions-61d28eea28e6.html"
+    },
+    {
+      "url": "https://aws.amazon.com/dms/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 243254,
+      "file": "data/validator/references/files/partners-10073df771a8.html"
+    },
+    {
+      "url": "https://aws.amazon.com/dynamodb/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 308087,
+      "file": "data/validator/references/files/partners-d0baad4c4e00.html"
+    },
+    {
+      "url": "https://aws.amazon.com/education/partner-solutions/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 237701,
+      "file": "data/validator/references/files/partner-solutions-6b202da4065a.html"
+    },
+    {
+      "url": "https://aws.amazon.com/emr/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 207859,
+      "file": "data/validator/references/files/partners-0871d3385aa5.html"
+    },
+    {
+      "url": "https://aws.amazon.com/energy/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 293630,
+      "file": "data/validator/references/files/partners-8c73640af1e9.html"
+    },
+    {
+      "url": "https://aws.amazon.com/financial-services/partner-solutions/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 232783,
+      "file": "data/validator/references/files/partner-solutions-3ca266e990e3.html"
+    },
+    {
+      "url": "https://aws.amazon.com/generative-ai/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 268483,
+      "file": "data/validator/references/files/partners-e9b3c6a49bcc.html"
+    },
+    {
+      "url": "https://aws.amazon.com/govcloud-us/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 218418,
+      "file": "data/validator/references/files/partners-3c6bdcf2d097.html"
+    },
+    {
+      "url": "https://aws.amazon.com/government-education/city-transformation/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 279364,
+      "file": "data/validator/references/files/partners-f67f023e47e9.html"
+    },
+    {
+      "url": "https://aws.amazon.com/government-education/nonprofits/partner-solutions/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 252886,
+      "file": "data/validator/references/files/partner-solutions-82df34a043ce.html"
+    },
+    {
+      "url": "https://aws.amazon.com/government-education/partner-solutions/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 279364,
+      "file": "data/validator/references/files/partner-solutions-928fb3219108.html"
+    },
+    {
+      "url": "https://aws.amazon.com/greengrass/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 210634,
+      "file": "data/validator/references/files/partners-64ef7a017f68.html"
+    },
+    {
+      "url": "https://aws.amazon.com/health/healthcare-partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 241254,
+      "file": "data/validator/references/files/healthcare-partners-f24d1971ca1e.html"
+    },
+    {
+      "url": "https://aws.amazon.com/health/life-sciences-partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 208170,
+      "file": "data/validator/references/files/life-sciences-partners-aa48aa6083a6.html"
+    },
+    {
+      "url": "https://aws.amazon.com/hpc/partner-solutions/?partner-solutions-cards.sort-by=item.additionalFields.partnerNameLower&partner-solutions-cards.sort-order=asc",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 222689,
+      "file": "data/validator/references/files/partner-solutions-66edaf0e48a8.html"
+    },
+    {
+      "url": "https://aws.amazon.com/industrial/supply-chain-management/partners/",
+      "status": "network_error",
+      "message": "[Errno 54] Connection reset by peer"
+    },
+    {
+      "url": "https://aws.amazon.com/iot-analytics/partners/",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://aws.amazon.com/iot-core/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 216765,
+      "file": "data/validator/references/files/partners-fd2b15b45139.html"
+    },
+    {
+      "url": "https://aws.amazon.com/iot/partner-solutions/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 211237,
+      "file": "data/validator/references/files/partner-solutions-de0132db4029.html"
+    },
+    {
+      "url": "https://aws.amazon.com/kinesis/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 213872,
+      "file": "data/validator/references/files/partners-116ebd864533.html"
+    },
+    {
+      "url": "https://aws.amazon.com/lambda/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 229386,
+      "file": "data/validator/references/files/partners-4e58641b976f.html"
+    },
+    {
+      "url": "https://aws.amazon.com/machine-learning/ml-use-cases/conversational-ai/partners/",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://aws.amazon.com/machine-learning/partner-solutions/",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://aws.amazon.com/mainframe/partner-solutions/?blog-posts-cards.sort-by=item.additionalFields.createdDate&blog-posts-cards.sort-order=desc&partner-case-studies-cards.sort-by=item.additionalFields.sortDate&partner-case-studies-cards.sort-order=desc",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://aws.amazon.com/manufacturing/partner-solutions/",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://aws.amazon.com/media/partners/",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://aws.amazon.com/migration/partner-solutions/",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://aws.amazon.com/mssp/partner-solutions/",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://aws.amazon.com/networking/partner-solutions/",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://aws.amazon.com/partners/built-in-partner-solutions/",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://aws.amazon.com/partners/competencies/oracle/",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://aws.amazon.com/partners/competencies/sap/",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://aws.amazon.com/partners/cyber-insurance-partner-solutions/",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://aws.amazon.com/partners/directconnect/",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://aws.amazon.com/partners/smb-partner-solutions/",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://aws.amazon.com/products/end-user-computing/partner-solutions/",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://aws.amazon.com/quicksight/resources/partners/",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://aws.amazon.com/redshift/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 238227,
+      "file": "data/validator/references/files/partners-a7417114f44d.html"
+    },
+    {
+      "url": "https://aws.amazon.com/resilience/partners/",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://aws.amazon.com/retail/partner-solutions/?partner-solutions-cards.sort-by=item.additionalFields.partnerName&partner-solutions-cards.sort-order=asc",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 240152,
+      "file": "data/validator/references/files/partner-solutions-a79938daccaf.html"
+    },
+    {
+      "url": "https://aws.amazon.com/security/partner-solutions/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 299499,
+      "file": "data/validator/references/files/partner-solutions-f77f52b5e405.html"
+    },
+    {
+      "url": "https://aws.amazon.com/server-migration-service/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 234638,
+      "file": "data/validator/references/files/partners-cc1a47c1f55a.html"
+    },
+    {
+      "url": "https://aws.amazon.com/servicecatalog/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 218834,
+      "file": "data/validator/references/files/partners-bc4e7c8f3385.html"
+    },
+    {
+      "url": "https://aws.amazon.com/stateandlocal/justice-and-public-safety/partner-solutions/?partner-solutions-cards.sort-by=item.additionalFields.partnerName&partner-solutions-cards.sort-order=asc",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 279364,
+      "file": "data/validator/references/files/partner-solutions-5d5f857aaf06.html"
+    },
+    {
+      "url": "https://aws.amazon.com/systems-manager/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 210197,
+      "file": "data/validator/references/files/partners-79bf92768f1b.html"
+    },
+    {
+      "url": "https://aws.amazon.com/telecom/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 218004,
+      "file": "data/validator/references/files/partners-4e968fd9d3b8.html"
+    },
+    {
+      "url": "https://aws.amazon.com/travel-and-hospitality/partner-solutions/?partner-solutions-cards.sort-by=item.additionalFields.partnerNameLower&partner-solutions-cards.sort-order=asc",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 215845,
+      "file": "data/validator/references/files/partner-solutions-8f8cc7433387.html"
+    },
+    {
+      "url": "https://aws.amazon.com/waf/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 242033,
+      "file": "data/validator/references/files/partners-741a10b2457f.html"
+    },
+    {
+      "url": "https://aws.amazon.com/windows/partner-solutions/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 272996,
+      "file": "data/validator/references/files/partner-solutions-640d61eee915.html"
+    },
+    {
+      "url": "https://aws.amazon.com/windows/products/ec2/partners/",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html;charset=utf-8",
+      "bytes": 202258,
+      "file": "data/validator/references/files/partners-02370160249f.html"
+    },
+    {
+      "url": "https://partnercentral.awspartner.com/partnercentral2/s/resources?Id=0698W00000rA9bhQAC",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 65654,
+      "file": "data/validator/references/files/resources-a4dd4cf3cc24.html"
+    },
+    {
+      "url": "https://partnercentral.awspartner.com/partnercentral2/s/resources?Id=0698W00000rADT3QAO",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 65654,
+      "file": "data/validator/references/files/resources-7ab34d9e8dbc.html"
+    },
+    {
+      "url": "https://partnercentral.awspartner.com/partnercentral2/s/resources?Id=0698W00000rBfQOQA0",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 65654,
+      "file": "data/validator/references/files/resources-688616cc4368.html"
+    },
+    {
+      "url": "https://partnercentral.awspartner.com/partnercentral2/s/resources?Id=0698W00000rBlPvQAK",
+      "status": "network_error",
+      "message": "[Errno 54] Connection reset by peer"
+    },
+    {
+      "url": "https://partnercentral.awspartner.com/partnercentral2/s/resources?Id=0698W00000scfleQAA",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 65654,
+      "file": "data/validator/references/files/resources-3e1f163dc768.html"
+    },
+    {
+      "url": "https://partnercentral.awspartner.com/partnercentral2/s/resources?Id=0698W00001046vEQAQ",
+      "status": "network_error",
+      "message": "[Errno 54] Connection reset by peer"
+    },
+    {
+      "url": "https://partnercentral.awspartner.com/partnercentral2/s/resources?Id=0698W00001047WFQAY",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 65654,
+      "file": "data/validator/references/files/resources-82886dbd1719.html"
+    },
+    {
+      "url": "https://partnercentral.awspartner.com/partnercentral2/s/resources?Id=0698W00001059xeQAA",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://partnercentral.awspartner.com/partnercentral2/s/resources?Id=0698W0000105DCDQA2",
+      "status": "downloaded",
+      "http_status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 65654,
+      "file": "data/validator/references/files/resources-3028851d4c85.html"
+    },
+    {
+      "url": "https://partnercentral.awspartner.com/partnercentral2/s/resources?Id=0698W0000105DCNQA2",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://partnercentral.awspartner.com/partnercentral2/s/resources?Id=0698W0000105DCYQA2",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://partnercentral.awspartner.com/partnercentral2/s/resources?Id=0698W0000105DM5QAM",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://partnercentral.awspartner.com/partnercentral2/s/resources?Id=0698W0000105DMDQA2",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://partnercentral.awspartner.com/partnercentral2/s/resources?Id=0698W0000105Us1QAE",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://partnercentral.awspartner.com/partnercentral2/s/resources?Id=0698W0000105Us2QAE",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://partnercentral.awspartner.com/partnercentral2/s/resources?Id=0698W0000105Us6QAE",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://partnercentral.awspartner.com/partnercentral2/s/resources?Id=0698W0000105Us7QAE",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://partnercentral.awspartner.com/partnercentral2/s/resources?Id=0698W00001067PrQAI",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://partnercentral.awspartner.com/partnercentral2/s/resources?Id=0698W00001067QzQAI",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://quip-amazon.com/QZiNAxJFIGEf",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://quip-amazon.com/et1EAD1DiLEt",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    },
+    {
+      "url": "https://w.amazon.com/bin/view/SaaS_Factory/Competency/",
+      "status": "network_error",
+      "message": "[Errno 61] Connection refused"
+    }
+  ]
+}

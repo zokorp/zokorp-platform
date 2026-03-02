@@ -25,6 +25,13 @@ enum PriceKind {
   CREDIT_PACK
 }
 
+enum CreditTier {
+  FTR
+  SDP_SRP
+  COMPETENCY
+  GENERAL
+}
+
 enum EntitlementStatus {
   ACTIVE
   EXPIRED
@@ -45,6 +52,7 @@ model User {
   accounts       Account[]
   sessions       Session[]
   entitlements   Entitlement[]
+  creditBalances CreditBalance[]
   auditLogs      AuditLog[]
   checkoutFulfillments CheckoutFulfillment[]
   usageEvents    UsageEvent[]
@@ -62,6 +70,7 @@ model Product {
 
   prices       Price[]
   entitlements Entitlement[]
+  creditBalances CreditBalance[]
   checkoutFulfillments CheckoutFulfillment[]
   usageEvents  UsageEvent[]
 }
@@ -74,6 +83,7 @@ model Price {
   currency      String    @default("usd")
   amount        Int
   creditsGranted Int      @default(1)
+  creditTier    CreditTier @default(GENERAL)
   active        Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -98,6 +108,23 @@ model Entitlement {
   @@unique([userId, productId])
   @@index([userId])
   @@index([productId])
+}
+
+model CreditBalance {
+  id            String            @id @default(cuid())
+  userId        String
+  productId     String
+  tier          CreditTier
+  remainingUses Int               @default(0)
+  status        EntitlementStatus @default(ACTIVE)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product       Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId, tier])
+  @@index([userId, productId])
 }
 
 model CheckoutFulfillment {

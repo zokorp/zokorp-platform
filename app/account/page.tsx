@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { CreditTier } from "@prisma/client";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -26,6 +27,14 @@ export default async function AccountPage() {
           },
           orderBy: {
             createdAt: "desc",
+          },
+        },
+        creditBalances: {
+          include: {
+            product: true,
+          },
+          orderBy: {
+            updatedAt: "desc",
           },
         },
         checkoutFulfillments: {
@@ -98,6 +107,30 @@ export default async function AccountPage() {
                     Valid until: {entitlement.validUntil.toLocaleDateString("en-US")}
                   </p>
                 ) : null}
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      <section className="surface rounded-2xl p-6">
+        <h2 className="font-display text-2xl font-semibold text-slate-900">Credit Wallets</h2>
+        <div className="mt-3 space-y-2">
+          {user.creditBalances.length === 0 ? (
+            <p className="text-sm text-slate-600">No credit wallets found yet.</p>
+          ) : (
+            user.creditBalances.map((wallet) => (
+              <div key={wallet.id} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+                <p className="font-semibold text-slate-900">
+                  {wallet.product.name} ·{" "}
+                  {wallet.tier === CreditTier.SDP_SRP
+                    ? "SDP/SRP"
+                    : wallet.tier === CreditTier.COMPETENCY
+                      ? "Competency"
+                      : wallet.tier}
+                </p>
+                <p className="text-slate-600">Remaining uses: {wallet.remainingUses}</p>
+                <p className="text-slate-600">Status: {wallet.status}</p>
               </div>
             ))
           )}

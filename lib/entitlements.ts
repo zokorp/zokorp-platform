@@ -1,11 +1,45 @@
-import { AccessModel, EntitlementStatus } from "@prisma/client";
+import { AccessModel, CreditTier, EntitlementStatus, Prisma } from "@prisma/client";
 
 import { db } from "@/lib/db";
+
+function isSchemaDriftError(error: unknown) {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
+    return false;
+  }
+
+  return error.code === "P2021" || error.code === "P2022";
+}
+
+async function syncEntitlementRemainingUses(tx: Prisma.TransactionClient, userId: string, productId: string) {
+  const aggregated = await tx.creditBalance.aggregate({
+    where: {
+      userId,
+      productId,
+      status: EntitlementStatus.ACTIVE,
+    },
+    _sum: {
+      remainingUses: true,
+    },
+  });
+
+  await tx.entitlement.updateMany({
+    where: {
+      userId,
+      productId,
+      status: EntitlementStatus.ACTIVE,
+    },
+    data: {
+      remainingUses: aggregated._sum.remainingUses ?? 0,
+    },
+  });
+}
 
 export async function requireEntitlement(input: {
   userId: string;
   productSlug: string;
   minUses?: number;
+  creditTier?: CreditTier;
+  allowGeneralCreditFallback?: boolean;
 }) {
   const minUses = input.minUses ?? 1;
 
@@ -36,7 +70,44 @@ export async function requireEntitlement(input: {
   }
 
   if (product.accessModel === AccessModel.ONE_TIME_CREDIT) {
-    if (entitlement.remainingUses < minUses) {
+    if (input.creditTier) {
+      try {
+        const candidateTiers = input.allowGeneralCreditFallback
+          ? [input.creditTier, CreditTier.GENERAL]
+          : [input.creditTier];
+        const balances = await db.creditBalance.findMany({
+          where: {
+            userId: input.userId,
+            productId: product.id,
+            status: EntitlementStatus.ACTIVE,
+            tier: { in: candidateTiers },
+          },
+          select: {
+            tier: true,
+            remainingUses: true,
+          },
+        });
+
+        const exactTierUses =
+          balances.find((item) => item.tier === input.creditTier)?.remainingUses ?? 0;
+        const fallbackUses =
+          input.allowGeneralCreditFallback
+            ? balances.find((item) => item.tier === CreditTier.GENERAL)?.remainingUses ?? 0
+            : 0;
+
+        if (exactTierUses + fallbackUses < minUses) {
+          throw new Error("INSUFFICIENT_USES");
+        }
+      } catch (error) {
+        if (!isSchemaDriftError(error)) {
+          throw error;
+        }
+
+        if (entitlement.remainingUses < minUses) {
+          throw new Error("INSUFFICIENT_USES");
+        }
+      }
+    } else if (entitlement.remainingUses < minUses) {
       throw new Error("INSUFFICIENT_USES");
     }
   }
@@ -57,6 +128,8 @@ export async function decrementUsesAtomically(input: {
   userId: string;
   productSlug: string;
   uses?: number;
+  creditTier?: CreditTier;
+  allowGeneralCreditFallback?: boolean;
 }) {
   const uses = input.uses ?? 1;
 
@@ -71,6 +144,57 @@ export async function decrementUsesAtomically(input: {
     }
 
     if (product.accessModel !== AccessModel.ONE_TIME_CREDIT) {
+      return;
+    }
+
+    if (input.creditTier) {
+      try {
+        const consumeFromTier = async (tier: CreditTier) =>
+          tx.creditBalance.updateMany({
+            where: {
+              userId: input.userId,
+              productId: product.id,
+              tier,
+              status: EntitlementStatus.ACTIVE,
+              remainingUses: { gte: uses },
+            },
+            data: {
+              remainingUses: { decrement: uses },
+            },
+          });
+
+        let updated = await consumeFromTier(input.creditTier);
+
+        if (updated.count === 0 && input.allowGeneralCreditFallback) {
+          updated = await consumeFromTier(CreditTier.GENERAL);
+        }
+
+        if (updated.count === 0) {
+          throw new Error("INSUFFICIENT_USES");
+        }
+
+        await syncEntitlementRemainingUses(tx, input.userId, product.id);
+      } catch (error) {
+        if (!isSchemaDriftError(error)) {
+          throw error;
+        }
+
+        const legacyUpdated = await tx.entitlement.updateMany({
+          where: {
+            userId: input.userId,
+            productId: product.id,
+            status: EntitlementStatus.ACTIVE,
+            remainingUses: { gte: uses },
+          },
+          data: {
+            remainingUses: { decrement: uses },
+          },
+        });
+
+        if (legacyUpdated.count === 0) {
+          throw new Error("INSUFFICIENT_USES");
+        }
+      }
       return;
     }
 

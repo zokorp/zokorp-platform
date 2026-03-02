@@ -79,8 +79,9 @@
 
 ## 9) Checklist-targeted rulepacks (current behavior)
 - The validator now builds a deterministic rulepack per run using:
-  - selected profile (`FTR`, `SDP_SRP`, `COMPETENCY`)
+  - selected profile (`FTR`, `SDP`, `SRP`, `COMPETENCY`)
   - selected checklist target (from the generated library)
+    - FTR uses fixed options: `Service Offering FTR` or `Software Offering FTR`
   - track-specific controls (`ftr`, `sdp`, `srp`, `competency`)
   - cross-cutting evidence/traceability checks
 - Reports now include:
@@ -118,3 +119,35 @@
 - Safety rule:
   - Suggested edits are deterministic and do not invent claims; they only normalize existing text and add placeholders for missing factual evidence.
   - This does not guarantee “pass”; it highlights missing evidence quality signals so a human can complete factual details.
+
+## 12) Local checklist reference mirror
+- To verify what checklist/calibration links are reachable, run:
+  - `python3 scripts/download_validator_references.py --workers 10 --timeout 12`
+- Output:
+  - `data/validator/references/manifest.json` with per-URL status.
+  - `data/validator/references/files/` with downloaded pages/files (git-ignored).
+- Current state:
+  - Most reachable links resolve to HTML checklist pages.
+  - Some links remain unreachable due network restrictions or gated Partner Central access.
+
+## 13) Tiered credit wallets (validator)
+- Credit purchases are tracked in wallet tiers:
+  - `FTR`
+  - `SDP/SRP`
+  - `Competency`
+  - `General` (legacy transitional wallet)
+- Runtime behavior:
+  - Profile `FTR` consumes from FTR wallet first.
+  - Profiles `SDP` and `SRP` consume from SDP/SRP wallet first.
+  - Profile `Competency` consumes from Competency wallet first.
+  - If no tier wallet exists but legacy credits remain, `General` wallet is used as fallback.
+- Stripe webhook now increments the correct wallet tier by price mapping.
+- `/account` now shows wallet-by-wallet balances in a `Credit Wallets` section.
+
+## 14) Database migration status
+- Migration `0003_tiered_credit_wallets` adds:
+  - `CreditTier` enum
+  - `Price.creditTier`
+  - `CreditBalance` table
+- Transitional backfill:
+  - existing validator entitlement credits are copied into `GENERAL` wallet so prior test credits are preserved.

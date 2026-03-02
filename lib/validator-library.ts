@@ -7,18 +7,6 @@ import type {
   ValidationTargetOption,
 } from "@/lib/zokorp-validator-engine";
 
-type FtrVersion = {
-  source_row?: number;
-  checklist_url?: string;
-};
-
-type FtrRecord = {
-  service?: string;
-  service_category?: string;
-  designation_webpage?: string;
-  versions?: FtrVersion[];
-};
-
 type ServiceRecord = {
   source_row?: number;
   designation?: string;
@@ -60,6 +48,27 @@ const STOP_WORDS = new Set([
 ]);
 
 let cachedOptions: ValidationTargetOption[] | null = null;
+
+const FTR_TARGETS: ValidationTargetOption[] = [
+  {
+    id: "ftr:service-offering",
+    profile: "FTR",
+    track: "ftr",
+    sourceRow: 0,
+    label: "Service Offering FTR",
+    serviceCategory: "service",
+    keywords: ["service", "offering", "foundational", "technical", "review"],
+  },
+  {
+    id: "ftr:software-offering",
+    profile: "FTR",
+    track: "ftr",
+    sourceRow: 0,
+    label: "Software Offering FTR",
+    serviceCategory: "software",
+    keywords: ["software", "offering", "foundational", "technical", "review"],
+  },
+];
 
 function slugify(value: string) {
   return value
@@ -132,8 +141,9 @@ function inferCompetencySubtype(partnerTypePath: string | undefined) {
 function sortOptions(options: ValidationTargetOption[]) {
   const profileOrder: Record<ValidationProfile, number> = {
     FTR: 0,
-    SDP_SRP: 1,
-    COMPETENCY: 2,
+    SDP: 1,
+    SRP: 2,
+    COMPETENCY: 3,
   };
 
   return options.sort((a, b) => {
@@ -151,41 +161,15 @@ function loadOptions(): ValidationTargetOption[] {
     return cachedOptions;
   }
 
-  const ftrIndexPath = path.join(LIBRARY_ROOT, "ftr", "index.json");
   const sdpIndexPath = path.join(LIBRARY_ROOT, "sdp", "index.json");
   const srpIndexPath = path.join(LIBRARY_ROOT, "srp", "index.json");
   const competencyIndexPath = path.join(LIBRARY_ROOT, "competency", "index.json");
 
-  const ftr = safeReadJson<FtrRecord[]>(ftrIndexPath, []);
   const sdp = safeReadJson<ServiceRecord[]>(sdpIndexPath, []);
   const srp = safeReadJson<ServiceRecord[]>(srpIndexPath, []);
   const competency = safeReadJson<CompetencyRecord[]>(competencyIndexPath, []);
 
-  const options: ValidationTargetOption[] = [];
-
-  for (const record of ftr) {
-    const service = record.service?.trim();
-    if (!service) {
-      continue;
-    }
-
-    const versions = (record.versions ?? [])
-      .map((version) => normalizeLink(version.checklist_url))
-      .filter((url): url is string => Boolean(url));
-
-    options.push({
-      id: `ftr:${slugify(service)}`,
-      profile: "FTR",
-      track: "ftr",
-      sourceRow: record.versions?.[0]?.source_row ?? 0,
-      label: service,
-      domain: record.service_category?.trim() || undefined,
-      serviceCategory: record.service_category?.trim() || undefined,
-      checklistUrl: versions[0],
-      referenceChecklistUrls: versions,
-      keywords: buildKeywords([service, record.service_category]),
-    });
-  }
+  const options: ValidationTargetOption[] = [...FTR_TARGETS];
 
   for (const record of sdp) {
     const designation = record.designation?.trim();
@@ -197,7 +181,7 @@ function loadOptions(): ValidationTargetOption[] {
 
     options.push({
       id: `sdp:${slugify(designationId)}`,
-      profile: "SDP_SRP",
+      profile: "SDP",
       track: "sdp",
       sourceRow: record.source_row ?? 0,
       label: `${designation} (SDP)`,
@@ -219,7 +203,7 @@ function loadOptions(): ValidationTargetOption[] {
 
     options.push({
       id: `srp:${slugify(designationId)}`,
-      profile: "SDP_SRP",
+      profile: "SRP",
       track: "srp",
       sourceRow: record.source_row ?? 0,
       label: `${designation} (SRP)`,

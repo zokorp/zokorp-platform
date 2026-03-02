@@ -1,4 +1,4 @@
-export const VALIDATION_PROFILES = ["FTR", "SDP_SRP", "COMPETENCY"] as const;
+export const VALIDATION_PROFILES = ["FTR", "SDP", "SRP", "COMPETENCY"] as const;
 
 export type ValidationProfile = (typeof VALIDATION_PROFILES)[number];
 export type ValidationCheckStatus = "PASS" | "PARTIAL" | "MISSING";
@@ -241,9 +241,93 @@ const PROFILE_DEFINITIONS: Record<ValidationProfile, ProfileDefinition> = {
       },
     ],
   },
-  SDP_SRP: {
-    label: "SDP/SRP",
-    overview: "Service delivery and readiness review for repeatable operations and customer execution.",
+  SDP: {
+    label: "Service Delivery Program (SDP)",
+    overview: "Service delivery review for repeatable operations and customer execution.",
+    rules: [
+      {
+        id: "service-description",
+        title: "Service/process description exists",
+        description: "Delivery process should describe phases, responsibilities, and sequence.",
+        guidance: "Document service flow from intake to completion with clear responsibilities.",
+        keywords: ["service", "process", "delivery", "phase", "responsibility", "workflow"],
+        patterns: [pattern("process-flow", /\b(intake|handoff|delivery phase|implementation step)\b/i)],
+        minKeywordHits: 2,
+        minSignalHits: 2,
+        weight: 1.2,
+        severity: "CRITICAL",
+      },
+      {
+        id: "requirements",
+        title: "Requirements mapping is explicit",
+        description: "Requirements should map to implementation or control evidence.",
+        guidance: "Create a requirements-to-evidence mapping table with references.",
+        keywords: ["requirement", "mapping", "control", "evidence", "traceability", "matrix"],
+        patterns: [pattern("requirement-id", /\b(req|requirement)[\s_-]*\d+\b/i)],
+        minKeywordHits: 2,
+        minSignalHits: 2,
+        weight: 1.3,
+        severity: "CRITICAL",
+      },
+      {
+        id: "sla",
+        title: "Service levels and escalation paths are defined",
+        description: "SLA, response targets, and escalation contacts should be captured.",
+        guidance: "Add SLA metrics and escalation matrix including contacts and timelines.",
+        keywords: ["sla", "response time", "resolution", "escalation", "support", "uptime"],
+        patterns: [
+          pattern("time-target", /\b\d+\s*(hour|hours|minute|minutes|business day|days)\b/i),
+          pattern("escalation-matrix", /\b(escalation matrix|escalation path|severity level)\b/i),
+        ],
+        minKeywordHits: 2,
+        minSignalHits: 2,
+        weight: 1.2,
+        severity: "CRITICAL",
+      },
+      {
+        id: "operations",
+        title: "Operations and monitoring coverage is present",
+        description: "Monitoring and runbook procedures should be evident.",
+        guidance: "Add monitoring scope, alert thresholds, and runbook references.",
+        keywords: ["monitoring", "alert", "runbook", "operations", "incident", "observability"],
+        patterns: [pattern("runbook-ref", /\b(runbook|playbook|on-call|incident response)\b/i)],
+        minKeywordHits: 2,
+        minSignalHits: 2,
+        weight: 1.1,
+        severity: "IMPORTANT",
+      },
+      {
+        id: "change-management",
+        title: "Change management controls are included",
+        description: "Change approvals and release process should be defined.",
+        guidance: "Document release approvals, rollback procedure, and deployment controls.",
+        keywords: ["change", "release", "approval", "rollback", "version", "deployment"],
+        patterns: [
+          pattern("change-ticket", /\b(change request|cr-?\d+|ticket|jira|service now)\b/i),
+          pattern("rollback", /\b(rollback|roll back|backout|revert)\b/i),
+        ],
+        minKeywordHits: 2,
+        minSignalHits: 2,
+        weight: 1,
+        severity: "IMPORTANT",
+      },
+      {
+        id: "customer-outcomes",
+        title: "Customer outcome/evidence statements exist",
+        description: "Business outcomes or customer impact should be measurable.",
+        guidance: "Add measurable outcomes and success metrics tied to customer goals.",
+        keywords: ["customer", "outcome", "value", "kpi", "success metric", "impact"],
+        patterns: [pattern("metric", /\b\d+\s*(%|percent|hours|days|tickets|incidents)\b/i)],
+        minKeywordHits: 2,
+        minSignalHits: 2,
+        weight: 1,
+        severity: "IMPORTANT",
+      },
+    ],
+  },
+  SRP: {
+    label: "Service Ready Program (SRP)",
+    overview: "Software/service readiness review for repeatable operations and customer execution.",
     rules: [
       {
         id: "service-description",

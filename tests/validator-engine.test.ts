@@ -47,7 +47,7 @@ describe("zokorp validator engine", () => {
 
   it("formats a readable report string", () => {
     const report = buildValidationReport({
-      profile: "SDP_SRP",
+      profile: "SDP",
       rawText: "Service process includes support escalation and monitoring runbook.",
       context: {
         sourceType: "pdf",
@@ -57,7 +57,7 @@ describe("zokorp validator engine", () => {
     });
 
     const formatted = formatValidationReport(report);
-    expect(formatted).toContain("ZoKorpValidator Report (SDP/SRP)");
+    expect(formatted).toContain("ZoKorpValidator Report (Service Delivery Program (SDP))");
     expect(formatted).toContain("Checklist results:");
   });
 

@@ -1,13 +1,16 @@
 import Link from "next/link";
-import { AccessModel, EntitlementStatus, PriceKind } from "@prisma/client";
+import { AccessModel, CreditTier, EntitlementStatus, PriceKind, Prisma } from "@prisma/client";
 import { notFound } from "next/navigation";
 
 import { CheckoutButton } from "@/components/checkout-button";
+import { CheckoutFlashBanner } from "@/components/checkout-flash-banner";
 import { ValidatorForm } from "@/components/validator-form";
 import { auth } from "@/lib/auth";
+import { validatorPriceTierFromAmount, validatorProfileCreditsFromTiers, validatorTierLabel } from "@/lib/credit-tiers";
 import { db } from "@/lib/db";
 import { getProductBySlug } from "@/lib/catalog";
 import { getValidatorTargetOptions } from "@/lib/validator-library";
+import type { ValidationProfile } from "@/lib/zokorp-validator-engine";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +21,7 @@ type DisplayPrice = {
   amount: number;
   currency: string;
   creditsGranted: number;
+  creditTier?: CreditTier;
   active?: boolean;
 };
 
@@ -29,6 +33,7 @@ const validatorFallbackPrices: DisplayPrice[] = [
     amount: 5000,
     currency: "usd",
     creditsGranted: 1,
+    creditTier: CreditTier.FTR,
   },
   {
     id: "fallback-sdp-srp",
@@ -37,6 +42,7 @@ const validatorFallbackPrices: DisplayPrice[] = [
     amount: 15000,
     currency: "usd",
     creditsGranted: 1,
+    creditTier: CreditTier.SDP_SRP,
   },
   {
     id: "fallback-competency",
@@ -45,6 +51,7 @@ const validatorFallbackPrices: DisplayPrice[] = [
     amount: 50000,
     currency: "usd",
     creditsGranted: 1,
+    creditTier: CreditTier.COMPETENCY,
   },
 ];
 
@@ -84,6 +91,7 @@ function entitlementMessage(input: {
   accessModel: AccessModel;
   entitlementStatus: EntitlementStatus | null;
   remainingUses: number;
+  isTieredValidator?: boolean;
 }): { tone: Tone; text: string } {
   if (input.authUnavailable) {
     return {
@@ -108,6 +116,13 @@ function entitlementMessage(input: {
 
   if (input.accessModel === AccessModel.ONE_TIME_CREDIT) {
     if (input.entitlementStatus === EntitlementStatus.ACTIVE && input.remainingUses > 0) {
+      if (input.isTieredValidator) {
+        return {
+          tone: "emerald",
+          text: "Credits are active in one or more wallet tiers. Select a validation profile below to see exact usable credits.",
+        };
+      }
+
       return {
         tone: "emerald",
         text: `Access active. You currently have ${input.remainingUses} credit${input.remainingUses === 1 ? "" : "s"} available.`,
@@ -137,6 +152,22 @@ function isRealStripePriceId(priceId: string) {
   return priceId.startsWith("price_");
 }
 
+function isSchemaDriftError(error: unknown) {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
+    return false;
+  }
+
+  return error.code === "P2021" || error.code === "P2022";
+}
+
+function getValidatorPriceTier(price: DisplayPrice): CreditTier {
+  if (price.creditTier) {
+    return price.creditTier;
+  }
+
+  return validatorPriceTierFromAmount(price.amount);
+}
+
 export default async function SoftwareDetailPage({
   params,
   searchParams,
@@ -164,6 +195,12 @@ export default async function SoftwareDetailPage({
   const signedIn = Boolean(currentEmail);
   const isValidator = product.slug === "zokorp-validator";
   const validatorTargets = isValidator ? getValidatorTargetOptions() : [];
+  let validatorProfileCredits: Record<ValidationProfile, number> = {
+    FTR: 0,
+    SDP: 0,
+    SRP: 0,
+    COMPETENCY: 0,
+  };
 
   let entitlement: { status: EntitlementStatus; remainingUses: number } | null = null;
   if (currentEmail) {
@@ -180,6 +217,52 @@ export default async function SoftwareDetailPage({
       });
     } catch {
       entitlement = null;
+    }
+  }
+
+  if (isValidator && currentEmail) {
+    try {
+      const balances = await db.creditBalance.findMany({
+        where: {
+          user: { email: currentEmail },
+          productId: product.id,
+          status: EntitlementStatus.ACTIVE,
+          tier: {
+            in: [CreditTier.FTR, CreditTier.SDP_SRP, CreditTier.COMPETENCY, CreditTier.GENERAL],
+          },
+        },
+        select: {
+          tier: true,
+          remainingUses: true,
+        },
+      });
+
+      const totalsByTier: Partial<Record<CreditTier, number>> = {};
+      for (const balance of balances) {
+        totalsByTier[balance.tier] = (totalsByTier[balance.tier] ?? 0) + balance.remainingUses;
+      }
+
+      const profileCredits = validatorProfileCreditsFromTiers(totalsByTier);
+      const general = totalsByTier[CreditTier.GENERAL] ?? 0;
+
+      validatorProfileCredits = {
+        FTR: profileCredits.FTR + general,
+        SDP: profileCredits.SDP + general,
+        SRP: profileCredits.SRP + general,
+        COMPETENCY: profileCredits.COMPETENCY + general,
+      };
+    } catch (error) {
+      if (!isSchemaDriftError(error)) {
+        throw error;
+      }
+
+      const fallback = entitlement?.remainingUses ?? 0;
+      validatorProfileCredits = {
+        FTR: fallback,
+        SDP: fallback,
+        SRP: fallback,
+        COMPETENCY: fallback,
+      };
     }
   }
 
@@ -200,6 +283,7 @@ export default async function SoftwareDetailPage({
     accessModel: product.accessModel,
     entitlementStatus: entitlement?.status ?? null,
     remainingUses: entitlement?.remainingUses ?? 0,
+    isTieredValidator: isValidator,
   });
 
   const checkoutState =
@@ -216,18 +300,7 @@ export default async function SoftwareDetailPage({
           {message.text}
         </div>
 
-        {checkoutState === "success" ? (
-          <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            Checkout completed. If this was your first purchase, your entitlement may take a few seconds
-            to appear.
-          </div>
-        ) : null}
-
-        {checkoutState === "cancelled" ? (
-          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Checkout was canceled. You can restart checkout whenever you&apos;re ready.
-          </div>
-        ) : null}
+        <CheckoutFlashBanner state={checkoutState} />
 
         {!signedIn && !authUnavailable ? (
           <div className="mt-4">
@@ -253,9 +326,14 @@ export default async function SoftwareDetailPage({
               </p>
               <p className="mt-2 text-sm text-slate-600">
                 {price.kind === PriceKind.CREDIT_PACK
-                  ? `Credits granted: ${price.creditsGranted}`
+                  ? `Runs per purchase: ${price.creditsGranted}`
                   : "Billed through Stripe checkout"}
               </p>
+              {product.slug === "zokorp-validator" && price.kind === PriceKind.CREDIT_PACK ? (
+                <p className="mt-1 text-xs text-slate-500">
+                  Wallet tier: {validatorTierLabel(getValidatorPriceTier(price))}
+                </p>
+              ) : null}
               <div className="mt-4">
                 <CheckoutButton
                   productSlug={product.slug}
@@ -288,6 +366,7 @@ export default async function SoftwareDetailPage({
           requiresAuth={!signedIn}
           authUnavailable={authUnavailable}
           validationTargets={validatorTargets}
+          profileCredits={validatorProfileCredits}
         />
       ) : (
         <section className="surface rounded-2xl p-6">

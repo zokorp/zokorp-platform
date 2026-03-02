@@ -1,6 +1,7 @@
 import { EntitlementStatus, PriceKind, Prisma } from "@prisma/client";
 import Stripe from "stripe";
 
+import { effectiveCreditTierForPrice } from "@/lib/credit-tiers";
 import { db } from "@/lib/db";
 import { getStripeClient } from "@/lib/stripe";
 
@@ -67,7 +68,10 @@ export async function POST(request: Request) {
 
         const [user, price] = await Promise.all([
           db.user.findUnique({ where: { id: userId } }),
-          db.price.findUnique({ where: { id: priceId } }),
+          db.price.findUnique({
+            where: { id: priceId },
+            include: { product: { select: { slug: true } } },
+          }),
         ]);
 
         if (!user || !price) {
@@ -130,6 +134,46 @@ export async function POST(request: Request) {
                 },
               });
             } else {
+              const creditTier = effectiveCreditTierForPrice({
+                creditTier: price.creditTier,
+                amount: price.amount,
+                product: { slug: price.product.slug },
+              });
+
+              await tx.creditBalance.upsert({
+                where: {
+                  userId_productId_tier: {
+                    userId,
+                    productId,
+                    tier: creditTier,
+                  },
+                },
+                create: {
+                  userId,
+                  productId,
+                  tier: creditTier,
+                  status: EntitlementStatus.ACTIVE,
+                  remainingUses: price.creditsGranted,
+                },
+                update: {
+                  status: EntitlementStatus.ACTIVE,
+                  remainingUses: {
+                    increment: price.creditsGranted,
+                  },
+                },
+              });
+
+              const aggregate = await tx.creditBalance.aggregate({
+                where: {
+                  userId,
+                  productId,
+                  status: EntitlementStatus.ACTIVE,
+                },
+                _sum: {
+                  remainingUses: true,
+                },
+              });
+
               await tx.entitlement.upsert({
                 where: {
                   userId_productId: {
@@ -141,13 +185,11 @@ export async function POST(request: Request) {
                   userId,
                   productId,
                   status: EntitlementStatus.ACTIVE,
-                  remainingUses: price.creditsGranted,
+                  remainingUses: aggregate._sum.remainingUses ?? 0,
                 },
                 update: {
                   status: EntitlementStatus.ACTIVE,
-                  remainingUses: {
-                    increment: price.creditsGranted,
-                  },
+                  remainingUses: aggregate._sum.remainingUses ?? 0,
                 },
               });
             }

@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireUser } from "@/lib/auth";
+import { validatorTierForProfile } from "@/lib/credit-tiers";
 import { db } from "@/lib/db";
 import { decrementUsesAtomically, requireEntitlement } from "@/lib/entitlements";
 import { maxUploadBytes, isAllowedFileType } from "@/lib/security";
 import { parseValidatorInput } from "@/lib/validator";
 import { getValidatorTargetOptions, resolveValidatorTargetContext } from "@/lib/validator-library";
 import { VALIDATION_PROFILES } from "@/lib/zokorp-validator-engine";
+import { CreditTier, EntitlementStatus, Prisma } from "@prisma/client";
 
 export const runtime = "nodejs";
 
@@ -20,12 +22,6 @@ const formSchema = z.object({
 export async function POST(request: Request) {
   try {
     const user = await requireUser();
-
-    await requireEntitlement({
-      userId: user.id,
-      productSlug: "zokorp-validator",
-      minUses: 1,
-    });
 
     const formData = await request.formData();
     const file = formData.get("file");
@@ -48,6 +44,16 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+
+    const creditTier = validatorTierForProfile(parsedForm.data.validationProfile);
+
+    await requireEntitlement({
+      userId: user.id,
+      productSlug: "zokorp-validator",
+      minUses: 1,
+      creditTier,
+      allowGeneralCreditFallback: true,
+    });
 
     const maxBytes = maxUploadBytes(Number(process.env.UPLOAD_MAX_MB ?? "10"));
     if (file.size > maxBytes) {
@@ -109,6 +115,8 @@ export async function POST(request: Request) {
       userId: user.id,
       productSlug: "zokorp-validator",
       uses: 1,
+      creditTier,
+      allowGeneralCreditFallback: true,
     });
 
     const entitlement = await db.entitlement.findFirst({
@@ -117,9 +125,37 @@ export async function POST(request: Request) {
         product: { slug: "zokorp-validator" },
       },
       select: {
+        productId: true,
         remainingUses: true,
       },
     });
+
+    let remainingUsesForProfile = entitlement?.remainingUses ?? 0;
+    if (entitlement?.productId) {
+      try {
+        const balances = await db.creditBalance.findMany({
+          where: {
+            userId: user.id,
+            productId: entitlement.productId,
+            status: EntitlementStatus.ACTIVE,
+            tier: {
+              in: [creditTier, CreditTier.GENERAL],
+            },
+          },
+          select: {
+            remainingUses: true,
+          },
+        });
+        remainingUsesForProfile = balances.reduce((total, item) => total + item.remainingUses, 0);
+      } catch (error) {
+        if (
+          !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+          (error.code !== "P2021" && error.code !== "P2022")
+        ) {
+          throw error;
+        }
+      }
+    }
 
     await db.auditLog.create({
       data: {
@@ -147,7 +183,7 @@ export async function POST(request: Request) {
       reviewedWorkbookBase64: result.reviewedWorkbookBase64,
       reviewedWorkbookFileName: result.reviewedWorkbookFileName,
       reviewedWorkbookMimeType: result.reviewedWorkbookMimeType,
-      remainingUses: entitlement?.remainingUses ?? 0,
+      remainingUses: remainingUsesForProfile,
     });
   } catch (error) {
     if (error instanceof Error) {

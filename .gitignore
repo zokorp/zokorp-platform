@@ -44,3 +44,6 @@ next-env.d.ts
 
 # local automation artifacts
 .playwright-cli/
+
+# downloaded validator reference files (can be regenerated from manifest links)
+data/validator/references/files/
