@@ -1,6 +1,7 @@
 # Stripe product map (test mode)
 
 > Initial catalog only. Created in Stripe **test mode**.
+> Re-verification in this session is blocked pending Stripe login.
 
 ## Products/prices (test IDs)
 
@@ -15,6 +16,12 @@
   - product_id: `prod_U4Xq9hET6yAEuG`
   - price_id: `price_1T6OkZ5wcnm215lAu28bpxYD`
   - env var mapping: `STRIPE_PRICE_ID_COMPETENCY_REVIEW`
+
+- **SDP/SRP Validation — Single Purchase**
+  - price: USD 150 one-time
+  - product_id: `TBD (create in Stripe test mode)`
+  - price_id: `TBD`
+  - env var mapping: `STRIPE_PRICE_ID_SDP_SRP_SINGLE`
 
 - **ZoKorp Platform — Monthly**
   - price: USD 1/month (**placeholder pricing; fix before launch**)
@@ -36,5 +43,13 @@
 - Meter name: `platform_usage_units`
 - Purpose: usage-based billing foundation; pricing TBD
 
+## Verification status (2026-03-01)
+- Dashboard check in this session: blocked by Stripe login page.
+- Existing IDs above are preserved from prior setup notes and must be re-confirmed once authenticated.
+- Live mode status: unchanged (test mode only).
+- Guardrail before any live billing/tax/legal/account ownership action:
+  - `Approval required before high-impact change`
+
 ## Keys
 - Keep Stripe secret keys **out of the repo**; store in Vercel env vars once ready.
+- Keep webhook signing secret out of docs and source control.

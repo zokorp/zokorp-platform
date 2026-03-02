@@ -1,14 +1,23 @@
 # Open questions / unresolved items
 
-- Stripe live-mode activation requirements (legal business details, banking/payouts)
-- Tax settings / sales tax policy and where taxes should be collected
-- Refund policy, dispute policy, and customer support process
-- Privacy policy and terms of service
-- Canonical domain choice (apex `zokorp.com` vs `www.zokorp.com`) and redirect strategy
-- Auth UX details: email OTP vs magic link vs password; login rate limiting; password reset
-- Precise gating rules: which products require one-time vs subscription access for launch
-- Blog migration strategy (keep as statically generated content or database-backed CMS)
-- Final branding tokens: colors/fonts decisions to match current Squarespace theme
-- PayPal evaluation (phase 2) — determine if Stripe-only is sufficient for MVP
-- Supabase project details to record in docs: project URL, project ref, anon key
-- Stripe IDs to record in docs: product IDs, price IDs, webhook secret
+## Human login/MFA blockers (required before full account verification)
+- GitHub dashboard login/MFA required to verify repo visibility in UI, issues list, and project board columns.
+- Vercel login/MFA required to verify linked repo/team settings and deployment configuration.
+- Squarespace login/MFA required to verify DNS dashboard state, forwarding rules, and capture DNS screenshots.
+- Supabase login/MFA required to verify auth/storage settings and current project configuration.
+- Stripe login/MFA required to verify test-mode product/price/portal configuration in-dashboard.
+
+## Business/legal/policy decisions
+- Stripe live-mode activation details (legal entity and payout/banking setup).
+- Tax collection policy and tax configuration regions.
+- Refund policy, dispute handling policy, and customer support policy.
+- Privacy Policy and Terms of Service content.
+
+## Product and pricing decisions
+- Final production pricing for monthly/annual plans (current Stripe values are placeholders).
+- Final launch gating matrix: exact products/features unlocked by one-time purchase vs subscription.
+- PayPal/Braintree phase-2 decision (confirm whether Stripe-only is sufficient for MVP launch).
+
+## Content/ops decisions
+- Blog migration execution approach (static migration vs CMS-backed).
+- Final canonical wording for location/contact (current public pages show both Houston and Sugar Land references).
