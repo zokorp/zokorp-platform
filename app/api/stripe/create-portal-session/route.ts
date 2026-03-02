@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getSiteOriginFromRequest } from "@/lib/site-origin";
 import { getStripeClient } from "@/lib/stripe";
 
 export async function POST(request: Request) {
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
 
     const user = await requireUser();
     const stripe = getStripeClient();
-    const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
+    const origin = getSiteOriginFromRequest(request);
     let customerId = user.stripeCustomerId;
 
     if (!customerId) {

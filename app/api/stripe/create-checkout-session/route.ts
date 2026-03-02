@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getSiteOriginFromRequest } from "@/lib/site-origin";
 import { getStripeClient } from "@/lib/stripe";
 
 const schema = z.object({
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
     }
 
     const customerId = stripeCustomerId ?? undefined;
-    const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
+    const origin = getSiteOriginFromRequest(request);
     const isSubscription = price.kind === PriceKind.SUBSCRIPTION;
 
     const session = await stripe.checkout.sessions.create({
