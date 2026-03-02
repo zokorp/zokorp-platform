@@ -1,6 +1,23 @@
 import Link from "next/link";
 
-export default function LoginPage() {
+import { MagicLinkSignInForm } from "@/components/magic-link-signin-form";
+
+function sanitizeCallbackUrl(raw: string | undefined) {
+  if (!raw) {
+    return "/account";
+  }
+
+  return raw.startsWith("/") ? raw : "/account";
+}
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) {
+  const params = await searchParams;
+  const callbackUrl = sanitizeCallbackUrl(params.callbackUrl);
+
   const emailAuthConfigured =
     Boolean(process.env.EMAIL_SERVER_HOST) &&
     Boolean(process.env.EMAIL_SERVER_PORT) &&
@@ -19,14 +36,7 @@ export default function LoginPage() {
         </p>
 
         {emailAuthConfigured ? (
-          <div className="mt-6">
-            <Link
-              href="/api/auth/signin"
-              className="focus-ring inline-flex rounded-md bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
-              Continue to sign-in
-            </Link>
-          </div>
+          <MagicLinkSignInForm callbackUrl={callbackUrl} />
         ) : (
           <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             Login will be enabled after email delivery settings are connected.
