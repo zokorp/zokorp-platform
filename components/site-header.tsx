@@ -10,6 +10,13 @@ const navLinks = [
 ];
 
 export async function SiteHeader() {
+  const emailAuthConfigured =
+    Boolean(process.env.EMAIL_SERVER_HOST) &&
+    Boolean(process.env.EMAIL_SERVER_PORT) &&
+    Boolean(process.env.EMAIL_SERVER_USER) &&
+    Boolean(process.env.EMAIL_SERVER_PASSWORD) &&
+    Boolean(process.env.EMAIL_FROM);
+
   let session = null;
   try {
     session = await auth();
@@ -44,13 +51,17 @@ export async function SiteHeader() {
                 Sign out
               </Link>
             </div>
-          ) : (
+          ) : emailAuthConfigured ? (
             <Link
               href="/api/auth/signin"
               className="rounded-md bg-slate-900 px-3 py-1.5 text-white hover:bg-slate-800"
             >
               Sign in
             </Link>
+          ) : (
+            <span className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-500">
+              Login setup pending
+            </span>
           )}
         </div>
       </div>
