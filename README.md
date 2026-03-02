@@ -9,7 +9,7 @@ Production-oriented Next.js platform for `zokorp.com` SaaS migration.
 - Stripe Checkout + Webhooks + Customer Portal
 
 ## Product scope (current)
-- Marketing pages: `/`, `/services`
+- Marketing pages: `/`, `/services`, `/case-studies`, `/media`
 - Software catalog: `/software`, `/software/[slug]`
 - Account pages: `/account`, `/account/billing`
 - Admin pages: `/admin/products`, `/admin/prices`

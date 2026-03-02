@@ -5,6 +5,8 @@ import { auth } from "@/lib/auth";
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/services", label: "Services" },
+  { href: "/case-studies", label: "Case Studies" },
+  { href: "/media", label: "Media" },
   { href: "/software", label: "Software" },
   { href: "/account", label: "Account" },
 ];

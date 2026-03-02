@@ -142,7 +142,12 @@ export default function HomePage() {
       </section>
 
       <section className="space-y-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Case Study Themes</p>
+        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Case Study Themes</p>
+          <Link href="/case-studies" className="text-sm font-medium text-slate-700 underline-offset-2 hover:underline">
+            View case studies page
+          </Link>
+        </div>
         <div className="grid gap-4 md:grid-cols-3">
           {caseStudyTeasers.map((item, index) => (
             <article key={item.title} className="surface rounded-2xl p-5">
