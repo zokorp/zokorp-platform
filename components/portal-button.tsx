@@ -18,6 +18,14 @@ export function PortalButton() {
       const data = (await response.json()) as { url?: string; error?: string };
 
       if (!response.ok || !data.url) {
+        if (response.status === 401) {
+          setError("Please sign in first.");
+          return;
+        }
+        if (response.status === 400) {
+          setError("No billing profile yet. Make a purchase first, then open the portal.");
+          return;
+        }
         setError(data.error ?? "Unable to open billing portal.");
         return;
       }
@@ -36,7 +44,7 @@ export function PortalButton() {
         type="button"
         onClick={onClick}
         disabled={isLoading}
-        className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+        className="focus-ring rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isLoading ? "Opening..." : "Open Stripe Billing Portal"}
       </button>

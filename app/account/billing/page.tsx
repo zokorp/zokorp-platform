@@ -7,15 +7,16 @@ export default async function BillingPage() {
   const session = await auth();
 
   if (!session?.user?.email) {
-    redirect("/api/auth/signin?callbackUrl=/account/billing");
+    redirect("/login?callbackUrl=/account/billing");
   }
 
   return (
-    <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-6">
-      <h1 className="text-3xl font-semibold">Billing and Subscriptions</h1>
-      <p className="text-sm text-slate-600">
-        Use Stripe&apos;s hosted Customer Portal to manage subscriptions, invoices, receipts, and payment
-        methods.
+    <div className="surface space-y-4 rounded-2xl p-6">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Billing</p>
+      <h1 className="font-display text-4xl font-semibold text-slate-900">Billing and Subscriptions</h1>
+      <p className="max-w-2xl text-sm leading-6 text-slate-600">
+        Manage subscriptions, invoices, receipts, and payment methods using Stripe&apos;s hosted
+        customer portal.
       </p>
       <PortalButton />
     </div>

@@ -1,14 +1,23 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 type CheckoutButtonProps = {
   productSlug: string;
   priceId: string;
   label: string;
+  requiresAuth?: boolean;
+  authUnavailable?: boolean;
 };
 
-export function CheckoutButton({ productSlug, priceId, label }: CheckoutButtonProps) {
+export function CheckoutButton({
+  productSlug,
+  priceId,
+  label,
+  requiresAuth = false,
+  authUnavailable = false,
+}: CheckoutButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,6 +37,10 @@ export function CheckoutButton({ productSlug, priceId, label }: CheckoutButtonPr
       const data = (await response.json()) as { url?: string; error?: string };
 
       if (!response.ok || !data.url) {
+        if (response.status === 401) {
+          setError("Please sign in before starting checkout.");
+          return;
+        }
         setError(data.error ?? "Unable to start checkout.");
         return;
       }
@@ -40,13 +53,40 @@ export function CheckoutButton({ productSlug, priceId, label }: CheckoutButtonPr
     }
   }
 
+  if (authUnavailable) {
+    return (
+      <div className="space-y-2">
+        <button
+          type="button"
+          disabled
+          className="w-full cursor-not-allowed rounded-md border border-slate-300 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-500"
+        >
+          Checkout unavailable until login setup is complete
+        </button>
+      </div>
+    );
+  }
+
+  if (requiresAuth) {
+    return (
+      <div className="space-y-2">
+        <Link
+          href={`/login?callbackUrl=/software/${productSlug}`}
+          className="focus-ring inline-flex w-full items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-100"
+        >
+          Sign in to continue
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
       <button
         type="button"
         onClick={onClick}
         disabled={isLoading}
-        className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+        className="focus-ring w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isLoading ? "Redirecting..." : label}
       </button>

@@ -25,44 +25,57 @@ export async function SiteHeader() {
   }
 
   return (
-    <header className="border-b border-slate-200 bg-white/95 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4">
-        <div className="flex items-center gap-8">
-          <Link href="/" className="text-lg font-semibold tracking-tight text-slate-900">
-            ZoKorp Platform
-          </Link>
-          <nav className="hidden items-center gap-4 text-sm text-slate-700 md:flex">
-            {navLinks.map((link) => (
-              <Link key={link.href} href={link.href} className="hover:text-slate-950">
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
+    <header className="border-b border-slate-300 bg-white/90 backdrop-blur">
+      <div className="border-b border-slate-200 bg-slate-900 px-4 py-1.5 text-center text-xs text-slate-200">
+        Building at app.zokorp.com while the main zokorp.com site stays live on Squarespace.
+      </div>
 
-        <div className="text-sm text-slate-700">
-          {session?.user?.email ? (
-            <div className="flex items-center gap-3">
-              <span className="hidden md:block">{session.user.email}</span>
-              <Link
-                href="/api/auth/signout?callbackUrl=/"
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50"
-              >
-                Sign out
-              </Link>
-            </div>
-          ) : emailAuthConfigured ? (
-            <Link
-              href="/api/auth/signin"
-              className="rounded-md bg-slate-900 px-3 py-1.5 text-white hover:bg-slate-800"
-            >
-              Sign in
+      <div className="mx-auto w-full max-w-6xl px-4 py-4 md:px-6">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between md:gap-8">
+            <Link href="/" className="font-display text-2xl font-semibold tracking-tight text-slate-900">
+              ZoKorp Platform
             </Link>
-          ) : (
-            <span className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-500">
-              Login setup pending
-            </span>
-          )}
+
+            <nav className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="focus-ring rounded-full border border-transparent px-3 py-1.5 font-medium transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-950"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          <div className="text-sm text-slate-700">
+            {session?.user?.email ? (
+              <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-600">
+                  {session.user.email}
+                </span>
+                <Link
+                  href="/api/auth/signout?callbackUrl=/"
+                  className="focus-ring rounded-md border border-slate-300 px-3 py-1.5 font-medium text-slate-700 transition hover:bg-slate-50"
+                >
+                  Sign out
+                </Link>
+              </div>
+            ) : emailAuthConfigured ? (
+              <Link
+                href="/login"
+                className="focus-ring inline-flex rounded-md bg-slate-900 px-3 py-1.5 font-medium text-white transition hover:bg-slate-800"
+              >
+                Sign in
+              </Link>
+            ) : (
+              <span className="rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-amber-900">
+                Login setup pending
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </header>
