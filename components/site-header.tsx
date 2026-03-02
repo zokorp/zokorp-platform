@@ -10,7 +10,12 @@ const navLinks = [
 ];
 
 export async function SiteHeader() {
-  const session = await auth();
+  let session = null;
+  try {
+    session = await auth();
+  } catch {
+    session = null;
+  }
 
   return (
     <header className="border-b border-slate-200 bg-white/95 backdrop-blur">
