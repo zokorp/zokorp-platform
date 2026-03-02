@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { decrementUsesAtomically, requireEntitlement } from "@/lib/entitlements";
 import { maxUploadBytes, isAllowedFileType } from "@/lib/security";
 import { parseValidatorInput } from "@/lib/validator";
+import { VALIDATION_PROFILES } from "@/lib/zokorp-validator-engine";
 
 export const runtime = "nodejs";
+
+const formSchema = z.object({
+  validationProfile: z.enum(VALIDATION_PROFILES),
+  additionalContext: z.string().max(1200).optional(),
+});
 
 export async function POST(request: Request) {
   try {
@@ -20,9 +27,20 @@ export async function POST(request: Request) {
 
     const formData = await request.formData();
     const file = formData.get("file");
+    const parsedForm = formSchema.safeParse({
+      validationProfile: formData.get("validationProfile"),
+      additionalContext: formData.get("additionalContext"),
+    });
 
     if (!(file instanceof File)) {
       return NextResponse.json({ error: "File is required" }, { status: 400 });
+    }
+
+    if (!parsedForm.success) {
+      return NextResponse.json(
+        { error: "Validation profile is required." },
+        { status: 400 },
+      );
     }
 
     const maxBytes = maxUploadBytes(Number(process.env.UPLOAD_MAX_MB ?? "10"));
@@ -56,6 +74,8 @@ export async function POST(request: Request) {
       filename: file.name,
       mimeType: file.type,
       buffer,
+      profile: parsedForm.data.validationProfile,
+      additionalContext: parsedForm.data.additionalContext,
     });
 
     await decrementUsesAtomically({
@@ -82,6 +102,7 @@ export async function POST(request: Request) {
           filename: file.name,
           mimeType: file.type,
           bytes: buffer.length,
+          profile: parsedForm.data.validationProfile,
         },
       },
     });
@@ -89,6 +110,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       output: result.output,
       meta: result.meta,
+      report: result.report,
       remainingUses: entitlement?.remainingUses ?? 0,
     });
   } catch (error) {
