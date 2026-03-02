@@ -4,6 +4,7 @@ import { CheckoutButton } from "@/components/checkout-button";
 import { ValidatorForm } from "@/components/validator-form";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getProductBySlug } from "@/lib/catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -21,15 +22,7 @@ export default async function SoftwareDetailPage({
 }) {
   const { slug } = await params;
 
-  const product = await db.product.findUnique({
-    where: { slug },
-    include: {
-      prices: {
-        where: { active: true },
-        orderBy: { amount: "asc" },
-      },
-    },
-  });
+  const product = await getProductBySlug(slug);
 
   if (!product || !product.active) {
     notFound();
@@ -38,14 +31,19 @@ export default async function SoftwareDetailPage({
   const session = await auth();
   const currentEmail = session?.user?.email;
 
-  const entitlement = currentEmail
-    ? await db.entitlement.findFirst({
+  let entitlement = null;
+  if (currentEmail) {
+    try {
+      entitlement = await db.entitlement.findFirst({
         where: {
           user: { email: currentEmail },
           productId: product.id,
         },
-      })
-    : null;
+      });
+    } catch {
+      entitlement = null;
+    }
+  }
 
   const isValidator = product.slug === "zokorp-validator";
 
