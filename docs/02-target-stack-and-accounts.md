@@ -38,6 +38,22 @@
   - Mode: test
   - Test customer portal config ID: `bpc_1T6On55wcnm215lA95megntn`
 
+## Current verified state (2026-03-02 CST)
+- GitHub repo: `https://github.com/leggoboyo/zokorp-platform.git` (`main` clean and synced)
+- Vercel project: `leggoboyos-projects/zokorp-web`
+- Production URL: `https://zokorp-web.vercel.app`
+- Vercel custom domain object created: `app.zokorp.com` (pending DNS record at provider)
+- Stripe test mode wiring in Vercel:
+  - `STRIPE_SECRET_KEY` configured for all environments
+  - `STRIPE_WEBHOOK_SECRET` configured for all environments
+  - validator price IDs configured for all environments
+- Supabase production DB connected via `DATABASE_URL` in Vercel and used by Prisma
+- End-to-end test status:
+  - magic-link login: pass
+  - Stripe checkout redirect: pass
+  - webhook fulfillment grant: pass
+  - one-run entitlement decrement after tool run: pass
+
 ## Running worklog
 - 2026-03-01 23:34 CST — Phase 0 access check rerun complete.
   - Changed: validated current session auth state for all five dashboards.
@@ -55,12 +71,23 @@
   - Changed: docs normalized across stack/account, env template, Stripe map, DNS plan, handoff, open questions.
   - Blockers: GitHub issues/project board and dashboard-specific project settings cannot be re-verified without login.
   - Rollback impact: documentation-only updates.
+- 2026-03-02 11:48 CST — Vercel custom subdomain attached.
+  - Changed: added `app.zokorp.com` to Vercel project `zokorp-web`.
+  - Blockers: DNS provider must add `A app -> 76.76.21.21` for verification/activation.
+  - Rollback impact: remove Vercel domain assignment and/or delete `app` A record.
+- 2026-03-02 11:57 CST — Stripe test flow fully validated.
+  - Changed: seeded Stripe validator prices into production DB and verified checkout + webhook + entitlement + tool run.
+  - Blockers: none for test-mode billing on `zokorp-web.vercel.app`.
+  - Rollback impact: disable price rows or remove Stripe env vars to halt checkout.
+- 2026-03-02 11:25 CST — Checkout URL hardening deployed.
+  - Changed: added server-side site-origin sanitizer for Stripe success/cancel URLs and corrected malformed Vercel URL env values.
+  - Blockers: none.
+  - Rollback impact: revert commit `d2fedd8` if needed.
 
 ## Blockers requiring human takeover
-- Authenticate to all dashboards (GitHub, Vercel, Squarespace, Supabase, Stripe) to complete account-context verification and platform screenshots.
-- Confirm existing GitHub issues and project board columns in UI (or via `gh`) once authenticated.
-- Confirm current Supabase auth/storage configuration in dashboard once authenticated.
-- Confirm Stripe product/price/portal IDs in dashboard once authenticated.
+- Squarespace DNS edit still requires browser access to account UI:
+  - add `A` record for host `app` with value `76.76.21.21`
+  - keep all apex/www/email/verification records unchanged
 
 ## Verification gates before any DNS cutover
 - A real deployable app exists (not current `404` preview).

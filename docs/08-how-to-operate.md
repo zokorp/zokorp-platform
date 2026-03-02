@@ -47,6 +47,8 @@
 
 ## 7) Subdomain readiness (`app.zokorp.com`)
 - Keep Squarespace site live on apex/www until app is validated.
-- In Vercel project settings, add `app.zokorp.com`.
-- Add only required DNS records in Squarespace DNS.
+- In Vercel project settings, add `app.zokorp.com` (already done for `zokorp-web`).
+- Add only required DNS record in Squarespace DNS:
+  - `A` host `app` -> `76.76.21.21`
 - Verify SSL and routing before announcing availability.
+- Keep `@` and `www` untouched in this phase.
