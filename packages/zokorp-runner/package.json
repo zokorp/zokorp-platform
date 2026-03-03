@@ -1,0 +1,14 @@
+{
+  "name": "@zokorp/runner",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ZoKorp BYO compute runner for MLOps jobs",
+  "type": "module",
+  "bin": {
+    "zokorp-runner": "./src/cli.js"
+  },
+  "scripts": {
+    "start": "node ./src/cli.js worker",
+    "once": "node ./src/cli.js once"
+  }
+}

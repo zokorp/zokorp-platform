@@ -1,0 +1,15 @@
+services:
+  zokorp-runner:
+    image: node:20-alpine
+    working_dir: /app
+    command: ["sh", "-c", "npm install && npm run start"]
+    volumes:
+      - ./:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/zokorp-runner:/tmp/zokorp-runner
+    environment:
+      ZOKORP_CONTROL_PLANE_URL: ${ZOKORP_CONTROL_PLANE_URL}
+      ZOKORP_RUNNER_API_KEY: ${ZOKORP_RUNNER_API_KEY}
+      ZOKORP_RUNNER_NAME: ${ZOKORP_RUNNER_NAME:-docker-compose-runner}
+      ZOKORP_RUNNER_POLL_INTERVAL_MS: ${ZOKORP_RUNNER_POLL_INTERVAL_MS:-8000}
+      ZOKORP_RUNNER_WORK_DIR: /tmp/zokorp-runner

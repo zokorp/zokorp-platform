@@ -1,4 +1,4 @@
-import { EntitlementStatus, PriceKind, Prisma } from "@prisma/client";
+import { EntitlementStatus, MlopsBillingPlan, PriceKind, Prisma } from "@prisma/client";
 import Stripe from "stripe";
 
 import { effectiveCreditTierForPrice } from "@/lib/credit-tiers";
@@ -57,6 +57,45 @@ export async function POST(request: Request) {
       case "checkout.session.completed":
       case "checkout.session.async_payment_succeeded": {
         const session = event.data.object as Stripe.Checkout.Session;
+        const checkoutPurpose = session.metadata?.checkoutPurpose;
+
+        if (checkoutPurpose === "mlops_subscription") {
+          const organizationId = session.metadata?.organizationId;
+          const initiatedByUserId = session.metadata?.initiatedByUserId;
+          const stripeSubscriptionId =
+            typeof session.subscription === "string" ? session.subscription : undefined;
+          const stripeCustomerId = typeof session.customer === "string" ? session.customer : undefined;
+
+          if (organizationId && stripeSubscriptionId) {
+            await db.$transaction(async (tx) => {
+              await tx.organization.update({
+                where: { id: organizationId },
+                data: {
+                  stripeSubscriptionId,
+                  stripeCustomerId,
+                  billingPlan: MlopsBillingPlan.STARTER,
+                  usageMeteringEnabled: true,
+                },
+              });
+
+              await tx.auditLog.create({
+                data: {
+                  userId: initiatedByUserId,
+                  organizationId,
+                  action: "mlops.billing_subscription_activated",
+                  metadataJson: {
+                    stripeCheckoutSessionId: session.id,
+                    stripeSubscriptionId,
+                    stripeCustomerId,
+                  },
+                },
+              });
+            });
+          }
+
+          break;
+        }
+
         const userId = session.metadata?.userId;
         const productId = session.metadata?.productId;
         const priceId = session.metadata?.priceId;
@@ -231,6 +270,21 @@ export async function POST(request: Request) {
           data: {
             status: activeFromSubscriptionStatus(subscription.status),
             validUntil: periodEnd ? new Date(periodEnd * 1000) : null,
+          },
+        });
+
+        const active =
+          subscription.status === "active" ||
+          subscription.status === "trialing" ||
+          subscription.status === "past_due";
+
+        await db.organization.updateMany({
+          where: {
+            stripeSubscriptionId: subscription.id,
+          },
+          data: {
+            usageMeteringEnabled: active,
+            billingPlan: MlopsBillingPlan.STARTER,
           },
         });
 

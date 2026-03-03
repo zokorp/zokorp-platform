@@ -8,6 +8,7 @@ const navLinks = [
   { href: "/case-studies", label: "Case Studies" },
   { href: "/media", label: "Media" },
   { href: "/software", label: "Software" },
+  { href: "/mlops", label: "MLOps" },
   { href: "/account", label: "Account" },
 ];
 
