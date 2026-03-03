@@ -47,3 +47,4 @@ next-env.d.ts
 
 # downloaded validator reference files (can be regenerated from manifest links)
 data/validator/references/files/
+.env*.local

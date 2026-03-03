@@ -1,0 +1,40 @@
+name: Weekly Product Engineering Status
+
+on:
+  schedule:
+    - cron: "25 13 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  status-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Generate weekly status report
+        run: node scripts/generate_status_report.js
+
+      - name: Create status report PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: codex/weekly-status-report
+          title: "docs: weekly product engineering status"
+          commit-message: "docs: weekly product engineering status"
+          body: |
+            Automated weekly status report generated under `docs/status/`.
+          labels: |
+            documentation
+            automated-pr

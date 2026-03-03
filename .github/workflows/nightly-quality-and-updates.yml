@@ -1,0 +1,85 @@
+name: Nightly Quality and Safe Dependency Refresh
+
+on:
+  schedule:
+    - cron: "17 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  quality-checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Dependency audit
+        run: npm audit --omit=dev
+
+  safe-dependency-refresh:
+    runs-on: ubuntu-latest
+    needs: quality-checks
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Update dependencies within declared semver ranges
+        run: npm update
+
+      - name: Re-run quality checks after update
+        run: |
+          npm run lint
+          npm run typecheck
+          npm test
+
+      - name: Create dependency refresh PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: codex/nightly-safe-deps
+          title: "chore(deps): nightly safe dependency refresh"
+          commit-message: "chore(deps): nightly safe dependency refresh"
+          body: |
+            Nightly dependency refresh generated automatically.
+
+            Scope:
+            - `npm update` within existing semver constraints
+            - Lockfile refresh
+            - Lint/typecheck/tests re-run in workflow
+
+            Merge policy:
+            - Do not auto-merge auth or billing-impacting changes without explicit approval.
+          labels: |
+            dependencies
+            automated-pr

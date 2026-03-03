@@ -50,7 +50,8 @@
    - Access is granted only if active entitlement exists.
 
 ## Auth and account flows
-- Use Supabase Auth with email-based auth as baseline.
+- Current implementation uses NextAuth email magic-link auth (SMTP).
+- Future migration to Supabase Auth can be evaluated separately if required.
 - Required flows:
   - sign-up
   - login
@@ -87,6 +88,28 @@
 - `entitlements` (normalized access grants)
 - `uploads` (file metadata for gated tools)
 - `audit_events` (admin/system actions)
+
+## MLOps MVP module (new)
+- Routes:
+  - `/mlops`
+  - `/mlops/projects`
+  - `/mlops/projects/:id`
+  - `/mlops/runs`
+  - `/mlops/models`
+  - `/mlops/deployments`
+  - `/mlops/monitoring`
+  - `/mlops/settings/billing`
+  - `/mlops/settings/organization`
+- Multi-tenant entities:
+  - `Organization`, `OrganizationMember`
+  - `MlopsProject`, `MlopsJob`, `MlopsRun`
+  - `MlopsModel`, `MlopsModelVersion`, `MlopsDeployment`
+  - `MlopsMonitoringEvent`, `MlopsDriftSnapshot`
+  - `MlopsRunnerKey`, `MlopsUsageLedger`, `MlopsArtifact`
+- Execution model:
+  - BYO compute runner package: `packages/zokorp-runner`
+  - Runner polls API for jobs and reports status/logs
+  - Artifacts uploaded via signed URLs to storage
 
 ## File upload requirements
 - Planned Supabase Storage buckets:

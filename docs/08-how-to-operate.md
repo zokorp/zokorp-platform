@@ -164,3 +164,62 @@
   - `SUBMITTED`, `TRIAGED`, `PROPOSAL_SENT`, `SCHEDULED`, `IN_PROGRESS`, `BLOCKED`, `DELIVERED`, `CLOSED`
 - Migration:
   - `0004_service_requests_and_hub` creates `ServiceRequest` table and enums.
+
+## 16) MLOps organization and role model
+- Access MLOps workspace at:
+  - `/mlops`
+- Each user is auto-provisioned into a default organization on first MLOps access.
+- Organization roles:
+  - `OWNER`
+  - `ADMIN`
+  - `MEMBER`
+  - `VIEWER`
+- Roles are managed at:
+  - `/mlops/settings/organization`
+- All MLOps records are stored with `organizationId` scope.
+
+## 17) MLOps runner operations (BYO compute)
+- Create runner keys in:
+  - `/mlops/settings/organization`
+- Runner package:
+  - `packages/zokorp-runner`
+- Runner setup:
+  - `cd packages/zokorp-runner`
+  - `npm install`
+  - set env:
+    - `ZOKORP_CONTROL_PLANE_URL`
+    - `ZOKORP_RUNNER_API_KEY`
+    - `ZOKORP_RUNNER_NAME` (optional)
+    - `ZOKORP_RUNNER_POLL_INTERVAL_MS` (optional)
+  - run:
+    - `npm run start`
+- Runner behavior:
+  - polls queued jobs
+  - executes Docker container image + command
+  - sends logs + terminal status back to control plane
+  - uploads requested artifacts using signed storage URLs
+
+## 18) MLOps billing operations
+- MLOps billing page:
+  - `/mlops/settings/billing`
+- Required Stripe env mapping:
+  - `STRIPE_PRICE_ID_MLOPS_STARTER_MONTHLY`
+  - `STRIPE_PRICE_ID_MLOPS_STARTER_ANNUAL`
+  - optional meter event name: `STRIPE_METER_EVENT_NAME_JOB_UNITS`
+- MLOps billing uses Stripe:
+  - Checkout Sessions for subscription start
+  - Customer Portal for self-service updates and invoices
+  - Meter events for usage overage (if enabled for organization)
+- Webhook path remains:
+  - `/api/stripe/webhook`
+
+## 19) MLOps artifact storage
+- Signed artifact upload endpoint:
+  - `/api/mlops/artifacts/signed-upload`
+- Required storage env:
+  - `SUPABASE_URL` or `NEXT_PUBLIC_SUPABASE_URL`
+  - `SUPABASE_SERVICE_ROLE_KEY`
+  - `MLOPS_ARTIFACT_BUCKET` (default `mlops-artifacts`)
+- Storage safety:
+  - artifact binaries are not proxied through long-running web handlers
+  - metadata is stored in Postgres tables

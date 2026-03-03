@@ -19,8 +19,8 @@
 
 - **SDP/SRP Validation — Single Purchase**
   - price: USD 150 one-time
-  - product_id: `TBD (create in Stripe test mode)`
-  - price_id: `TBD`
+  - product_id: `prod_U4nDjVczYd7rGb`
+  - price_id: `price_1T6Zox5wcnm215lAZhHIpLeo`
   - env var mapping: `STRIPE_PRICE_ID_SDP_SRP_SINGLE`
 
 - **ZoKorp Platform — Monthly**
@@ -35,6 +35,18 @@
   - price_id: `price_1T6Oln5wcnm215lAUXJ9gNQt`
   - env var mapping: `STRIPE_PRICE_ID_PLATFORM_ANNUAL`
 
+- **MLOps Starter — Monthly** (MVP plan)
+  - price: TBD monthly (set in Stripe test mode first)
+  - product_id: `TBD`
+  - price_id: `TBD`
+  - env var mapping: `STRIPE_PRICE_ID_MLOPS_STARTER_MONTHLY`
+
+- **MLOps Starter — Annual** (MVP plan)
+  - price: TBD annual (set in Stripe test mode first)
+  - product_id: `TBD`
+  - price_id: `TBD`
+  - env var mapping: `STRIPE_PRICE_ID_MLOPS_STARTER_ANNUAL`
+
 ## Billing portal
 - Test customer portal configuration created: `bpc_1T6On55wcnm215lA95megntn`
 - No custom branding/policy decisions made yet; just default settings.
@@ -42,6 +54,10 @@
 ## Usage-based placeholder
 - Meter name: `platform_usage_units`
 - Purpose: usage-based billing foundation; pricing TBD
+
+## MLOps usage-based placeholder
+- Meter name: `job_units`
+- Env mapping: `STRIPE_METER_EVENT_NAME_JOB_UNITS`
 
 ## Verification status (2026-03-01)
 - Dashboard check in this session: blocked by Stripe login page.
