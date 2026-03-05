@@ -103,6 +103,13 @@ function entitlementMessage(input: {
     };
   }
 
+  if (!input.signedIn && input.accessModel === AccessModel.FREE && input.requiresSignInForFree) {
+    return {
+      tone: "sky",
+      text: "Sign in with your business email to run this architecture review.",
+    };
+  }
+
   if (!input.signedIn) {
     return {
       tone: "sky",
@@ -209,6 +216,9 @@ export default async function SoftwareDetailPage({
   const signedIn = Boolean(currentEmail);
   const isValidator = product.slug === "zokorp-validator";
   const isArchitectureReviewer = product.slug === "architecture-diagram-reviewer";
+  const productDescription = isArchitectureReviewer
+    ? "Free cloud architecture diagram reviewer for PNG uploads with deterministic findings delivered by email."
+    : product.description;
   const validatorTargets = isValidator ? getValidatorTargetOptions() : [];
   let validatorProfileCredits: Record<ValidationProfile, number> = {
     FTR: 0,
@@ -310,7 +320,7 @@ export default async function SoftwareDetailPage({
       <section className="glass-surface animate-fade-up rounded-2xl p-6 md:p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Software Tool</p>
         <h1 className="font-display mt-2 text-balance text-4xl font-semibold text-slate-900">{product.name}</h1>
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">{product.description}</p>
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">{productDescription}</p>
 
         <div className={`mt-5 rounded-xl border px-4 py-3 text-sm ${toneStyles[message.tone]}`}>
           {message.text}
