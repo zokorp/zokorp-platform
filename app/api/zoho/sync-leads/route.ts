@@ -63,7 +63,15 @@ async function refreshZohoAccessToken() {
     return null;
   }
 
-  const payload = (await response.json()) as { access_token?: string };
+  const rawBody = await response.text();
+  let payload: { access_token?: string } = {};
+
+  try {
+    payload = JSON.parse(rawBody) as { access_token?: string };
+  } catch {
+    return null;
+  }
+
   if (!payload.access_token) {
     return null;
   }
@@ -183,7 +191,8 @@ export async function POST(request: Request) {
         body: requestBody,
       });
 
-      const body = (await response.json()) as {
+      const rawBody = await response.text();
+      let body: {
         data?: Array<{
           status?: string;
           code?: string;
@@ -192,7 +201,16 @@ export async function POST(request: Request) {
             id?: string;
           };
         }>;
-      };
+        rawBody?: string;
+      } = {};
+
+      try {
+        body = JSON.parse(rawBody) as typeof body;
+      } catch {
+        body = {
+          rawBody: rawBody.slice(0, 1200),
+        };
+      }
 
       return { response, body };
     }
@@ -268,6 +286,12 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Zoho sync failed." }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Zoho sync failed.",
+        details: error instanceof Error ? error.message : "unknown_error",
+      },
+      { status: 500 },
+    );
   }
 }
