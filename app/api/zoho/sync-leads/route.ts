@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
+import { isSchemaDriftError } from "@/lib/db-errors";
 
 export const runtime = "nodejs";
 
@@ -102,13 +103,55 @@ export async function POST(request: Request) {
   const zohoBase = process.env.ZOHO_CRM_API_DOMAIN ?? "https://www.zohoapis.com";
 
   try {
-    const pendingLeads = await db.leadLog.findMany({
-      where: {
-        syncedToZohoAt: null,
-      },
-      orderBy: { createdAt: "asc" },
-      take: 100,
-    });
+    const pendingLeads = await (async () => {
+      try {
+        return await db.leadLog.findMany({
+          where: {
+            syncedToZohoAt: null,
+          },
+          orderBy: { createdAt: "asc" },
+          take: 100,
+          select: {
+            id: true,
+            userEmail: true,
+            userName: true,
+            architectureProvider: true,
+            overallScore: true,
+            topIssues: true,
+            authProvider: true,
+            workdriveUploadStatus: true,
+            createdAt: true,
+          },
+        });
+      } catch (error) {
+        if (!isSchemaDriftError(error)) {
+          throw error;
+        }
+
+        const legacyLeads = await db.leadLog.findMany({
+          where: {
+            syncedToZohoAt: null,
+          },
+          orderBy: { createdAt: "asc" },
+          take: 100,
+          select: {
+            id: true,
+            userEmail: true,
+            architectureProvider: true,
+            overallScore: true,
+            topIssues: true,
+            authProvider: true,
+            createdAt: true,
+          },
+        });
+
+        return legacyLeads.map((lead) => ({
+          ...lead,
+          userName: null,
+          workdriveUploadStatus: null,
+        }));
+      }
+    })();
 
     if (pendingLeads.length === 0) {
       return NextResponse.json({ status: "ok", synced: 0, skipped: 0, failed: 0, message: "No new leads." });
@@ -131,7 +174,7 @@ export async function POST(request: Request) {
     });
 
     async function sendUpsertRequest(token: string) {
-      const response = await fetch(`${zohoBase}/crm/v8/Leads/upsert`, {
+      const response = await fetch(`${zohoBase}/crm/v8/Leads`, {
         method: "POST",
         headers: {
           Authorization: `Zoho-oauthtoken ${token}`,
