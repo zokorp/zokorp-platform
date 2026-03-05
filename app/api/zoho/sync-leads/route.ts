@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
 import { isSchemaDriftError } from "@/lib/db-errors";
+import { ensureLeadLogSchemaReady } from "@/lib/lead-log-schema";
 
 export const runtime = "nodejs";
 
@@ -111,6 +112,20 @@ export async function POST(request: Request) {
   const zohoBase = process.env.ZOHO_CRM_API_DOMAIN ?? "https://www.zohoapis.com";
 
   try {
+    const leadSchemaReady = await ensureLeadLogSchemaReady();
+    if (!leadSchemaReady) {
+      return NextResponse.json(
+        {
+          status: "ok",
+          synced: 0,
+          skipped: 0,
+          failed: 0,
+          message: "Lead log schema is unavailable.",
+        },
+        { status: 200 },
+      );
+    }
+
     const pendingLeads = await (async () => {
       try {
         return await db.leadLog.findMany({

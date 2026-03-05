@@ -8,6 +8,7 @@ import { sendArchitectureReviewEmail } from "@/lib/architecture-review/sender";
 import { submitArchitectureReviewPayloadSchema, type SubmitArchitectureReviewPayload } from "@/lib/architecture-review/types";
 import { db } from "@/lib/db";
 import { isSchemaDriftError } from "@/lib/db-errors";
+import { ensureLeadLogSchemaReady } from "@/lib/lead-log-schema";
 import { archiveArchitectureReviewToWorkDrive } from "@/lib/zoho-workdrive";
 import { z } from "zod";
 
@@ -122,30 +123,33 @@ export async function POST(request: Request) {
       workdriveUploadStatus: diagram ? "pending" : "skipped",
     } as const;
 
-    const createdLead = await (async () => {
-      try {
-        return await db.leadLog.create({
-          data: leadData,
-        });
-      } catch (error) {
-        if (!isSchemaDriftError(error)) {
-          throw error;
-        }
+    const leadSchemaReady = await ensureLeadLogSchemaReady();
+    const createdLead = leadSchemaReady
+      ? await (async () => {
+          try {
+            return await db.leadLog.create({
+              data: leadData,
+            });
+          } catch (error) {
+            if (!isSchemaDriftError(error)) {
+              throw error;
+            }
 
-        return db.leadLog.create({
-          data: {
-            userId: leadData.userId,
-            userEmail: leadData.userEmail,
-            architectureProvider: leadData.architectureProvider,
-            authProvider: leadData.authProvider,
-            overallScore: leadData.overallScore,
-            topIssues: leadData.topIssues,
-          },
-        });
-      }
-    })();
+            return db.leadLog.create({
+              data: {
+                userId: leadData.userId,
+                userEmail: leadData.userEmail,
+                architectureProvider: leadData.architectureProvider,
+                authProvider: leadData.authProvider,
+                overallScore: leadData.overallScore,
+                topIssues: leadData.topIssues,
+              },
+            });
+          }
+        })()
+      : null;
 
-    let workdriveStatus = createdLead.workdriveUploadStatus;
+    let workdriveStatus = createdLead?.workdriveUploadStatus ?? (diagram ? "pending" : "skipped");
 
     if (diagram) {
       const archiveResult = await archiveArchitectureReviewToWorkDrive({
@@ -158,18 +162,20 @@ export async function POST(request: Request) {
 
       workdriveStatus = archiveResult.error ? `${archiveResult.status}:${archiveResult.error}` : archiveResult.status;
 
-      try {
-        await db.leadLog.update({
-          where: { id: createdLead.id },
-          data: {
-            workdriveDiagramFileId: archiveResult.diagramFileId,
-            workdriveReportFileId: archiveResult.reportFileId,
-            workdriveUploadStatus: workdriveStatus,
-          },
-        });
-      } catch (error) {
-        if (!isSchemaDriftError(error)) {
-          throw error;
+      if (createdLead) {
+        try {
+          await db.leadLog.update({
+            where: { id: createdLead.id },
+            data: {
+              workdriveDiagramFileId: archiveResult.diagramFileId,
+              workdriveReportFileId: archiveResult.reportFileId,
+              workdriveUploadStatus: workdriveStatus,
+            },
+          });
+        } catch (error) {
+          if (!isSchemaDriftError(error)) {
+            throw error;
+          }
         }
       }
     }
