@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { generateOpaqueToken, hashOpaqueToken } from "@/lib/password-auth";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { isBusinessEmail } from "@/lib/security";
+import { ensureUserAuthSchemaReady } from "@/lib/user-auth-schema";
 
 const requestResetSchema = z.object({
   email: z.string().trim().email(),
@@ -45,6 +46,13 @@ export async function POST(request: Request) {
 
     const email = parsed.data.email.trim().toLowerCase();
     if (!isBusinessEmail(email)) {
+      return NextResponse.json({
+        message: "If that account exists, a reset email has been sent.",
+      });
+    }
+
+    const userAuthSchemaReady = await ensureUserAuthSchemaReady();
+    if (!userAuthSchemaReady) {
       return NextResponse.json({
         message: "If that account exists, a reset email has been sent.",
       });

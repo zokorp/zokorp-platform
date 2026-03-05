@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { hashPassword, hashOpaqueToken, validatePasswordStrength } from "@/lib/password-auth";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
+import { ensureUserAuthSchemaReady } from "@/lib/user-auth-schema";
 
 const resetSchema = z.object({
   token: z.string().trim().min(20).max(200),
@@ -44,6 +45,11 @@ export async function POST(request: Request) {
         { error: passwordCheck.error.issues[0]?.message ?? "Password does not meet requirements." },
         { status: 400 },
       );
+    }
+
+    const userAuthSchemaReady = await ensureUserAuthSchemaReady();
+    if (!userAuthSchemaReady) {
+      return NextResponse.json({ error: "Unable to reset password." }, { status: 503 });
     }
 
     const tokenHash = hashOpaqueToken(parsed.data.token);

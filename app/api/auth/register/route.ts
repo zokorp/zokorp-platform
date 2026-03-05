@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { hashPassword, validatePasswordStrength } from "@/lib/password-auth";
 import { isBusinessEmail, parseAdminEmails } from "@/lib/security";
+import { ensureUserAuthSchemaReady } from "@/lib/user-auth-schema";
 
 const registerSchema = z.object({
   name: z.string().trim().max(120).optional(),
@@ -65,6 +66,14 @@ export async function POST(request: Request) {
     const passwordHash = await hashPassword(parsed.data.password);
     const adminEmails = parseAdminEmails(process.env.ZOKORP_ADMIN_EMAILS);
     const role = adminEmails.has(email) ? Role.ADMIN : Role.USER;
+    const userAuthSchemaReady = await ensureUserAuthSchemaReady();
+
+    if (!userAuthSchemaReady) {
+      return NextResponse.json(
+        { error: "Account setup is temporarily unavailable. Please retry shortly." },
+        { status: 503 },
+      );
+    }
 
     const createdUser = await db.user.create({
       data: {
