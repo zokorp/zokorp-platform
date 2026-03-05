@@ -282,12 +282,6 @@ export async function POST(request: Request) {
     }
 
     console.error(error);
-    return NextResponse.json(
-      {
-        error: "Unable to submit architecture review.",
-        details: error instanceof Error ? error.message : "unknown_error",
-      },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Unable to submit architecture review." }, { status: 500 });
   }
 }
