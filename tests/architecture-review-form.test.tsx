@@ -15,13 +15,23 @@ vi.mock("next/link", () => ({
 vi.mock("tesseract.js", () => ({
   recognize: vi.fn(async () => ({
     data: {
-      text: "api gateway lambda dynamodb cloudwatch",
+      text: "api gateway lambda dynamodb cloudwatch vpc load balancer private subnet database monitoring",
+      confidence: 92,
     },
   })),
 }));
 
 import { ArchitectureDiagramReviewerForm } from "@/components/architecture-diagram-reviewer/ArchitectureDiagramReviewerForm";
 import * as architectureReviewClient from "@/lib/architecture-review/client";
+
+function createPngHeader(width: number, height: number) {
+  const bytes = new Uint8Array(24);
+  bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 0);
+  const view = new DataView(bytes.buffer);
+  view.setUint32(16, width);
+  view.setUint32(20, height);
+  return bytes;
+}
 
 describe("ArchitectureDiagramReviewerForm", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
@@ -80,7 +90,7 @@ describe("ArchitectureDiagramReviewerForm", () => {
 
     render(<ArchitectureDiagramReviewerForm />);
 
-    const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
+    const pngBytes = createPngHeader(1200, 800);
     const pngFile = new File([pngBytes], "diagram.png", { type: "image/png" });
 
     const fileInput = screen.getByLabelText(/diagram png/i);
@@ -145,7 +155,7 @@ describe("ArchitectureDiagramReviewerForm", () => {
 
     render(<ArchitectureDiagramReviewerForm />);
 
-    const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
+    const pngBytes = createPngHeader(1200, 800);
     const pngFile = new File([pngBytes], "diagram.png", { type: "image/png" });
 
     const fileInput = screen.getByLabelText(/diagram png/i);

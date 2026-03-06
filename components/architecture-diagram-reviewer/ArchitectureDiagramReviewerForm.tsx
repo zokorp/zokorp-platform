@@ -256,6 +256,25 @@ function progressLabelFromOcr(message: { status: string; progress: number }) {
   return `OCR ${message.status} ${percent}%`;
 }
 
+async function readImageDimensions(file: File) {
+  const bytes = new Uint8Array(await file.slice(0, 24).arrayBuffer());
+  if (bytes.length < 24) {
+    throw new Error("image-header-too-short");
+  }
+
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const width = view.getUint32(16);
+  const height = view.getUint32(20);
+  if (width <= 0 || height <= 0) {
+    throw new Error("invalid-image-dimensions");
+  }
+
+  return {
+    width,
+    height,
+  };
+}
+
 export function ArchitectureDiagramReviewerForm({
   requiresAuth = false,
   authUnavailable = false,
@@ -325,7 +344,22 @@ export function ArchitectureDiagramReviewerForm({
       return;
     }
 
+    try {
+      setProgress("Validating image dimensions...");
+      const dimensions = await readImageDimensions(selectedFile);
+      if (dimensions.width < 600 || dimensions.height < 600) {
+        setStatus("error");
+        setProgress(null);
+        setError("PNG is too small for reliable analysis. Upload a PNG at least 600x600.");
+        return;
+      }
+    } catch {
+      // Continue when dimension parsing is unavailable in the runtime.
+      setProgress("Image dimension check unavailable; continuing.");
+    }
+
     let ocrText = "";
+    let ocrConfidence: number | null = null;
 
     try {
       setProgress("Running OCR in your browser...");
@@ -338,10 +372,18 @@ export function ArchitectureDiagramReviewerForm({
         },
       });
       ocrText = (result.data.text || "").trim();
+      ocrConfidence = typeof result.data.confidence === "number" ? result.data.confidence : null;
     } catch {
       setStatus("error");
       setProgress(null);
       setError("OCR failed in browser. Retry with a clearer PNG.");
+      return;
+    }
+
+    if (ocrText.length < 40 || (ocrConfidence !== null && ocrConfidence < 45)) {
+      setStatus("error");
+      setProgress(null);
+      setError("PNG text is too unclear to review reliably. Upload a sharper architecture diagram.");
       return;
     }
 
