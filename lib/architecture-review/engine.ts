@@ -126,6 +126,52 @@ const GENERIC_TOKENS = [
   "scheduler",
 ];
 
+const NON_ARCHITECTURE_OCR_TERMS = [
+  "tradeline",
+  "tradelines",
+  "debt",
+  "unsecured debt",
+  "creditor",
+  "utilization",
+  "account number",
+  "statement",
+  "billing",
+  "balance",
+  "loan",
+  "card",
+  "apr",
+  "minimum payment",
+  "payment due",
+  "invoice",
+  "subtotal",
+  "interest charge",
+  "fico",
+  "credit score",
+];
+
+const ARCHITECTURE_OCR_TERMS = [
+  "architecture",
+  "diagram",
+  "service",
+  "api",
+  "gateway",
+  "ingress",
+  "egress",
+  "queue",
+  "topic",
+  "database",
+  "cache",
+  "vpc",
+  "subnet",
+  "firewall",
+  "cdn",
+  "load balancer",
+  "kubernetes",
+  "cluster",
+  "pod",
+  "microservice",
+];
+
 const PILLAR_KEYWORDS: Record<ArchitectureProvider, Record<string, string[]>> = {
   aws: {
     security: ["iam", "least privilege", "kms", "encryption", "waf", "auth", "secret"],
@@ -155,6 +201,29 @@ const PILLAR_KEYWORDS: Record<ArchitectureProvider, Record<string, string[]>> = 
 
 function compressWhitespace(input: string) {
   return input.replace(/\s+/g, " ").trim();
+}
+
+function detectInputTypeSignals(bundle: ArchitectureEvidenceBundle) {
+  const normalizedOcr = bundle.ocrText.toLowerCase();
+  const normalizedParagraph = bundle.paragraph.toLowerCase();
+  const nonArchitectureHits = NON_ARCHITECTURE_OCR_TERMS.filter((term) => includesTerm(normalizedOcr, term)).length;
+  const architectureHits =
+    ARCHITECTURE_OCR_TERMS.filter((term) => includesTerm(normalizedOcr, term)).length +
+    Math.min(6, bundle.serviceTokens.length);
+  const architectureInParagraph = ARCHITECTURE_OCR_TERMS.filter((term) => includesTerm(normalizedParagraph, term)).length;
+  const hasCurrencyValues = /\$ ?\d/.test(bundle.ocrText);
+
+  const likelyNonArchitecture =
+    nonArchitectureHits >= 3 &&
+    architectureHits <= 4 &&
+    (hasCurrencyValues || architectureInParagraph >= 2 || bundle.serviceTokens.length === 0);
+
+  return {
+    likelyNonArchitecture,
+    nonArchitectureHits,
+    architectureHits,
+    hasCurrencyValues,
+  };
 }
 
 export function extractServiceTokens(provider: ArchitectureProvider, text: string) {
@@ -355,6 +424,18 @@ function addPillarFindings(bundle: ArchitectureEvidenceBundle, findings: Archite
 export function buildDeterministicReviewFindings(bundle: ArchitectureEvidenceBundle): ArchitectureFindingDraft[] {
   const findings: ArchitectureFindingDraft[] = [];
   const combinedNarrativeText = `${bundle.paragraph}\n${bundle.ocrText}`;
+  const inputSignals = detectInputTypeSignals(bundle);
+
+  if (inputSignals.likelyNonArchitecture) {
+    findings.push({
+      ruleId: "INPUT-NOT-ARCH-DIAGRAM",
+      category: "clarity",
+      pointsDeducted: 35,
+      message: "Upload a system architecture diagram instead of a report or statement screenshot.",
+      fix: "Provide a PNG that shows services, trust boundaries, and data/request flows with labeled components.",
+      evidence: `OCR matched ${inputSignals.nonArchitectureHits} non-architecture terms and only ${inputSignals.architectureHits} architecture indicators.`,
+    });
+  }
 
   if (!hasDirectionality(bundle.paragraph)) {
     findings.push({
@@ -423,6 +504,15 @@ export function buildDeterministicReviewFindings(bundle: ArchitectureEvidenceBun
 
 export function buildDeterministicNarrative(bundle: ArchitectureEvidenceBundle) {
   const providerLabel = bundle.provider.toUpperCase();
+  const inputSignals = detectInputTypeSignals(bundle);
+
+  if (inputSignals.likelyNonArchitecture) {
+    return `${providerLabel} review detected non-architecture content in the uploaded PNG. Scoring was generated from low-confidence signals; upload a true architecture diagram for accurate findings.`.slice(
+      0,
+      2000,
+    );
+  }
+
   const tokenPreview = bundle.serviceTokens.slice(0, 6).join(", ");
   const paragraph = compressWhitespace(bundle.paragraph);
   const tokenSentence = tokenPreview

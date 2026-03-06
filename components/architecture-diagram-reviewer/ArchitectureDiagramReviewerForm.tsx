@@ -352,21 +352,28 @@ export function ArchitectureDiagramReviewerForm({
     let llmRefinement: LlmRefinement | null = null;
     let mode: "rules-only" | "webllm" = "rules-only";
 
-    llmRefinement = await runWebLlmRefinement({
-      provider,
-      paragraph,
-      ocrText,
-      serviceTokens: evidenceBundle.serviceTokens,
-      deterministicFindings: deterministicOnlyReport.findings.map((finding) => ({
-        ruleId: finding.ruleId,
-        category: finding.category,
-        pointsDeducted: finding.pointsDeducted,
-        message: finding.message,
-        fix: finding.fix,
-        evidence: finding.evidence,
-      })),
-      onProgress: setProgress,
-    });
+    const detectedNonArchitectureInput = deterministicOnlyReport.findings.some(
+      (finding) => finding.ruleId === "INPUT-NOT-ARCH-DIAGRAM",
+    );
+    if (detectedNonArchitectureInput) {
+      setProgress("Detected non-architecture content; skipping local model and using deterministic rules.");
+    } else {
+      llmRefinement = await runWebLlmRefinement({
+        provider,
+        paragraph,
+        ocrText,
+        serviceTokens: evidenceBundle.serviceTokens,
+        deterministicFindings: deterministicOnlyReport.findings.map((finding) => ({
+          ruleId: finding.ruleId,
+          category: finding.category,
+          pointsDeducted: finding.pointsDeducted,
+          message: finding.message,
+          fix: finding.fix,
+          evidence: finding.evidence,
+        })),
+        onProgress: setProgress,
+      });
+    }
 
     if (llmRefinement) {
       mode = "webllm";
