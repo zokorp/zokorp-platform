@@ -4,6 +4,7 @@ type SendEmailInput = {
   to: string;
   subject: string;
   text: string;
+  html?: string;
 };
 
 export type SendEmailResult = {
@@ -36,6 +37,7 @@ async function sendWithResend(input: SendEmailInput): Promise<SendEmailResult> {
         to: [input.to],
         subject: input.subject,
         text: input.text,
+        html: input.html,
       }),
     });
 
@@ -91,6 +93,7 @@ async function sendWithSmtp(input: SendEmailInput): Promise<SendEmailResult> {
       from,
       subject: input.subject,
       text: input.text,
+      html: input.html,
     });
 
     const failed = [...(result.rejected ?? []), ...(result.pending ?? [])].filter(Boolean);

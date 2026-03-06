@@ -102,6 +102,20 @@ export async function POST(request: Request) {
       userEmail: user.email,
       generatedAtISO: new Date().toISOString(),
     });
+
+    const hasNonArchitectureFinding = finalizedReport.findings.some(
+      (finding) => finding.ruleId === "INPUT-NOT-ARCH-DIAGRAM" && finding.pointsDeducted > 0,
+    );
+    if (hasNonArchitectureFinding) {
+      return NextResponse.json(
+        {
+          error:
+            "Uploaded PNG appears to be non-architecture content. No review email was sent. Upload a real architecture diagram.",
+        },
+        { status: 422 },
+      );
+    }
+
     const resolvedUserName = user.name?.trim() || user.email.split("@")[0] || "user";
 
     const latestAccount = await (async () => {
@@ -195,6 +209,7 @@ export async function POST(request: Request) {
       to: user.email,
       subject: emailContent.subject,
       text: emailContent.text,
+      html: emailContent.html,
     });
 
     try {

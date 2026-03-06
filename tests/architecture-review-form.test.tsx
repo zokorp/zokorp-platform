@@ -119,4 +119,61 @@ describe("ArchitectureDiagramReviewerForm", () => {
     expect(screen.queryByText(/pointsDeducted=/i)).toBeNull();
     expect(screen.queryByText(/PILLAR-SECURITY/i)).toBeNull();
   });
+
+  it("stops immediately when non-architecture content is detected", async () => {
+    vi.spyOn(architectureReviewClient, "isStrictPngFile").mockResolvedValue({ ok: true });
+    vi.spyOn(architectureReviewClient, "buildReviewReportFromEvidence").mockReturnValueOnce({
+      reportVersion: "1.0",
+      provider: "aws",
+      overallScore: 20,
+      flowNarrative: "Detected non-architecture content.",
+      findings: [
+        {
+          ruleId: "INPUT-NOT-ARCH-DIAGRAM",
+          category: "clarity",
+          pointsDeducted: 35,
+          message: "Upload a system architecture diagram instead of a report screenshot.",
+          fix: "Provide a PNG with system components and data/request flows.",
+          evidence: "OCR matched non-architecture terms.",
+          fixCostUSD: 75,
+        },
+      ],
+      consultationQuoteUSD: 400,
+      generatedAtISO: "2026-03-06T00:00:00.000Z",
+      userEmail: "test@example.com",
+    } as never);
+
+    render(<ArchitectureDiagramReviewerForm />);
+
+    const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
+    const pngFile = new File([pngBytes], "diagram.png", { type: "image/png" });
+
+    const fileInput = screen.getByLabelText(/diagram png/i);
+    const submitButton = screen.getByRole("button", { name: /run review/i });
+    const form = submitButton.closest("form");
+
+    Object.defineProperty(fileInput, "files", {
+      value: [pngFile],
+      writable: false,
+    });
+    fireEvent.change(fileInput);
+
+    fireEvent.change(screen.getByLabelText(/architecture description/i), {
+      target: {
+        value: "Clients call service endpoints and data is persisted to managed storage.",
+      },
+    });
+
+    if (!form) {
+      throw new Error("Expected form element.");
+    }
+
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(screen.getByText(/does not appear to be an architecture diagram/i)).toBeTruthy();
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });

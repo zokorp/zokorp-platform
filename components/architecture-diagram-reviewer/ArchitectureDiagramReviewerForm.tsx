@@ -356,24 +356,29 @@ export function ArchitectureDiagramReviewerForm({
       (finding) => finding.ruleId === "INPUT-NOT-ARCH-DIAGRAM",
     );
     if (detectedNonArchitectureInput) {
-      setProgress("Detected non-architecture content; skipping local model and using deterministic rules.");
-    } else {
-      llmRefinement = await runWebLlmRefinement({
-        provider,
-        paragraph,
-        ocrText,
-        serviceTokens: evidenceBundle.serviceTokens,
-        deterministicFindings: deterministicOnlyReport.findings.map((finding) => ({
-          ruleId: finding.ruleId,
-          category: finding.category,
-          pointsDeducted: finding.pointsDeducted,
-          message: finding.message,
-          fix: finding.fix,
-          evidence: finding.evidence,
-        })),
-        onProgress: setProgress,
-      });
+      setStatus("error");
+      setProgress(null);
+      setError(
+        "This PNG does not appear to be an architecture diagram. No report was sent. Upload a system architecture diagram and retry.",
+      );
+      return;
     }
+
+    llmRefinement = await runWebLlmRefinement({
+      provider,
+      paragraph,
+      ocrText,
+      serviceTokens: evidenceBundle.serviceTokens,
+      deterministicFindings: deterministicOnlyReport.findings.map((finding) => ({
+        ruleId: finding.ruleId,
+        category: finding.category,
+        pointsDeducted: finding.pointsDeducted,
+        message: finding.message,
+        fix: finding.fix,
+        evidence: finding.evidence,
+      })),
+      onProgress: setProgress,
+    });
 
     if (llmRefinement) {
       mode = "webllm";
@@ -416,7 +421,7 @@ export function ArchitectureDiagramReviewerForm({
       if (!response.ok) {
         setStatus("error");
         setProgress(null);
-        setError("Review submission failed. Please retry.");
+        setError("error" in payload && payload.error ? payload.error : "Review submission failed. Please retry.");
         return;
       }
 
