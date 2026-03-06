@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   buildReviewReportFromEvidence,
@@ -53,6 +53,7 @@ type ReviewProgressUpdate = {
   message: string;
   fraction?: number;
   etaMs?: number | null;
+  timeoutMs?: number | null;
   measurable?: boolean;
 };
 
@@ -61,6 +62,8 @@ type ReviewProgressState = {
   message: string;
   percent: number | null;
   etaMs: number | null;
+  metric: "completion" | "timeout-budget" | "none";
+  timeoutMs: number | null;
 };
 
 const WEBLLM_MODEL_LOAD_TIMEOUT_MS = 3 * 60 * 1000;
@@ -253,6 +256,7 @@ async function runWebLlmRefinement(input: {
           stage: "model-load",
           message: `Loading local model (${modelId})...`,
           measurable: false,
+          timeoutMs: WEBLLM_MODEL_LOAD_TIMEOUT_MS,
         });
         engine = await withTimeout(
           webllm.CreateMLCEngine(modelId, {
@@ -307,6 +311,7 @@ async function runWebLlmRefinement(input: {
       stage: "model-refinement",
       message: "Running local model refinement...",
       measurable: false,
+      timeoutMs: WEBLLM_REFINEMENT_TIMEOUT_MS,
     });
     let completion: Awaited<ReturnType<typeof engine.chat.completions.create>> | null = null;
     try {
@@ -444,13 +449,29 @@ export function ArchitectureDiagramReviewerForm({
 
     setProgress((previous) => {
       const sameStage = previous?.stage === update.stage;
+      const startedAt = stageStartedAtRef.current[update.stage] ?? now;
 
       if (update.measurable === false || typeof update.fraction !== "number") {
+        if (typeof update.timeoutMs === "number" && update.timeoutMs > 0) {
+          const elapsedMs = Math.max(0, now - startedAt);
+          const normalizedFraction = clampFraction(elapsedMs / update.timeoutMs);
+          return {
+            stage: update.stage,
+            message: update.message,
+            percent: Math.round(normalizedFraction * 100),
+            etaMs: Math.max(0, update.timeoutMs - elapsedMs),
+            metric: "timeout-budget",
+            timeoutMs: update.timeoutMs,
+          };
+        }
+
         return {
           stage: update.stage,
           message: update.message,
           percent: null,
           etaMs: null,
+          metric: "none",
+          timeoutMs: null,
         };
       }
 
@@ -460,7 +481,6 @@ export function ArchitectureDiagramReviewerForm({
         sameStage && typeof previous?.percent === "number"
           ? Math.max(previous.percent, proposedPercent)
           : proposedPercent;
-      const startedAt = stageStartedAtRef.current[update.stage] ?? now;
       const etaMs = update.etaMs ?? computeEtaMsFromFraction(startedAt, normalizedFraction);
 
       return {
@@ -468,9 +488,40 @@ export function ArchitectureDiagramReviewerForm({
         message: update.message,
         percent,
         etaMs,
+        metric: "completion",
+        timeoutMs: null,
       };
     });
   }
+
+  useEffect(() => {
+    if (!progress || progress.metric !== "timeout-budget" || progress.timeoutMs === null || status !== "running") {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setProgress((current) => {
+        if (!current || current.metric !== "timeout-budget" || current.timeoutMs === null) {
+          return current;
+        }
+
+        const startedAt = stageStartedAtRef.current[current.stage];
+        if (!startedAt) {
+          return current;
+        }
+
+        const elapsedMs = Math.max(0, Date.now() - startedAt);
+        const normalizedFraction = clampFraction(elapsedMs / current.timeoutMs);
+        return {
+          ...current,
+          percent: Math.round(normalizedFraction * 100),
+          etaMs: Math.max(0, current.timeoutMs - elapsedMs),
+        };
+      });
+    }, 500);
+
+    return () => window.clearInterval(timer);
+  }, [progress, status]);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1023,7 +1074,13 @@ export function ArchitectureDiagramReviewerForm({
                   />
                 </div>
                 <p className="mt-1 text-xs text-sky-800">
-                  {formatEta(progress.etaMs) ? `ETA ${formatEta(progress.etaMs)}` : "ETA calibrating..."}
+                  {progress.metric === "timeout-budget"
+                    ? formatEta(progress.etaMs)
+                      ? `Timeout budget ETA ${formatEta(progress.etaMs)}`
+                      : "Timeout budget ETA calibrating..."
+                    : formatEta(progress.etaMs)
+                      ? `ETA ${formatEta(progress.etaMs)}`
+                      : "ETA calibrating..."}
                 </p>
               </div>
             ) : (
