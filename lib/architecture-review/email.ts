@@ -108,7 +108,7 @@ function buildHtmlEmail(report: ArchitectureReviewReport) {
           .map(
             (finding, index) => `
               <tr>
-                <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;color:#0f172a;font-size:13px;">${index + 1}</td>
+                <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;color:#0f172a;font-size:13px;width:44px;">${index + 1}</td>
                 <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;color:#0f172a;font-size:13px;">
                   <div style="font-weight:700;">-${finding.pointsDeducted} points | ${escapeHtml(finding.ruleId)}</div>
                   <div style="margin-top:4px;">${escapeHtml(finding.message)}</div>
@@ -121,32 +121,53 @@ function buildHtmlEmail(report: ArchitectureReviewReport) {
           .join("")
       : `<tr><td colspan="2" style="padding:10px 12px;color:#0f172a;font-size:13px;">No mandatory findings.</td></tr>`;
 
-  const optionalHtml =
+  const optionalHtmlRows =
     optionalRecommendations.length > 0
       ? optionalRecommendations
           .map(
-            (finding) => `
-              <li style="margin-bottom:8px;">
-                <span style="font-weight:700;">${escapeHtml(finding.ruleId)}:</span>
-                ${escapeHtml(finding.message)}
-              </li>
+            (finding, index) => `
+              <tr>
+                <td style="padding:9px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;color:#334155;font-size:13px;width:28px;">${index + 1}.</td>
+                <td style="padding:9px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;color:#334155;font-size:13px;">
+                  <span style="font-weight:700;color:#0f172a;">${escapeHtml(finding.ruleId)}:</span>
+                  ${escapeHtml(finding.message)}
+                </td>
+              </tr>
             `,
           )
           .join("")
-      : `<li>No optional recommendations.</li>`;
+      : `<tr><td colspan="2" style="padding:9px 12px;color:#334155;font-size:13px;">No optional recommendations.</td></tr>`;
 
-  const packageHtml = packages
+  const packageHtmlRows = packages
     .map(
       (pkg) => `
-        <div style="border:1px solid ${pkg.recommended ? "#1d4ed8" : "#cbd5e1"};border-radius:10px;padding:14px;background:${pkg.recommended ? "#eff6ff" : "#ffffff"};">
-          <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
-            <div style="font-weight:700;color:#0f172a;">${escapeHtml(pkg.name)}</div>
-            <div style="font-weight:800;color:#0f172a;">${toUsd(pkg.priceUSD)}</div>
-          </div>
-          <div style="margin-top:4px;color:#334155;font-size:13px;">Timeline: ${escapeHtml(pkg.timeline)}</div>
-          <div style="margin-top:8px;color:#334155;font-size:13px;">${escapeHtml(pkg.summary)}</div>
-          ${pkg.recommended ? '<div style="margin-top:10px;font-size:12px;font-weight:700;color:#1e40af;">Recommended based on score and risk profile</div>' : ""}
-        </div>
+        <tr>
+          <td style="padding:0 0 10px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${pkg.recommended ? "#1d4ed8" : "#cbd5e1"};background:${pkg.recommended ? "#eff6ff" : "#ffffff"};border-radius:10px;">
+              <tr>
+                <td style="padding:12px 14px;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="vertical-align:top;color:#0f172a;">
+                        <div style="font-size:16px;font-weight:700;line-height:1.35;">${escapeHtml(pkg.name)}</div>
+                        <div style="margin-top:4px;font-size:13px;color:#334155;">Timeline: ${escapeHtml(pkg.timeline)}</div>
+                      </td>
+                      <td align="right" style="vertical-align:top;color:#0f172a;font-size:18px;font-weight:800;padding-left:10px;white-space:nowrap;">
+                        ${toUsd(pkg.priceUSD)}
+                      </td>
+                    </tr>
+                  </table>
+                  <div style="margin-top:8px;color:#334155;font-size:13px;line-height:1.45;">${escapeHtml(pkg.summary)}</div>
+                  ${
+                    pkg.recommended
+                      ? '<div style="margin-top:10px;font-size:12px;font-weight:700;color:#1e40af;">Recommended based on score and risk profile</div>'
+                      : ""
+                  }
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
       `,
     )
     .join("");
@@ -154,54 +175,92 @@ function buildHtmlEmail(report: ArchitectureReviewReport) {
   return `
 <!doctype html>
 <html>
-  <body style="margin:0;padding:24px;background:#f1f5f9;font-family:Inter,Segoe UI,Arial,sans-serif;color:#0f172a;">
-    <div style="max-width:840px;margin:0 auto;background:#ffffff;border:1px solid #dbe3ef;border-radius:14px;overflow:hidden;">
-      <div style="padding:18px 22px;background:linear-gradient(90deg,#0f172a,#1d4ed8);color:#ffffff;">
-        <div style="font-size:12px;letter-spacing:0.1em;text-transform:uppercase;opacity:0.86;">ZoKorp Architecture Review</div>
-        <h1 style="margin:8px 0 0 0;font-size:28px;line-height:1.2;">${providerLabel(report.provider)} Score ${report.overallScore}/100</h1>
-      </div>
-      <div style="padding:20px 22px;">
-        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
-          <div style="border:1px solid #dbe3ef;border-radius:10px;padding:10px 12px;">
-            <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">Overall Score</div>
-            <div style="margin-top:4px;font-size:24px;font-weight:800;">${report.overallScore}/100</div>
-          </div>
-          <div style="border:1px solid #dbe3ef;border-radius:10px;padding:10px 12px;">
-            <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">Core Quote</div>
-            <div style="margin-top:4px;font-size:24px;font-weight:800;">${toUsd(report.consultationQuoteUSD)}</div>
-          </div>
-          <div style="border:1px solid #dbe3ef;border-radius:10px;padding:10px 12px;">
-            <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">Generated</div>
-            <div style="margin-top:4px;font-size:13px;font-weight:700;">${escapeHtml(generatedAt)}</div>
-          </div>
-        </div>
+  <body style="margin:0;padding:0;background:#eef3f9;font-family:Inter,Segoe UI,Arial,sans-serif;color:#0f172a;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef3f9;">
+      <tr>
+        <td align="center" style="padding:24px 12px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:840px;background:#ffffff;border:1px solid #dbe3ef;border-radius:14px;overflow:hidden;">
+            <tr>
+              <td style="padding:18px 22px;background:#0f2f5f;color:#ffffff;">
+                <div style="font-size:12px;letter-spacing:0.1em;text-transform:uppercase;opacity:0.9;">ZoKorp Architecture Review</div>
+                <div style="margin-top:8px;font-size:28px;line-height:1.2;font-weight:700;">
+                  ${providerLabel(report.provider)} Score ${report.overallScore}/100
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px 22px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td width="33.33%" valign="top" style="padding:0 8px 10px 0;">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #dbe3ef;border-radius:10px;">
+                        <tr>
+                          <td style="padding:10px 12px;">
+                            <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">Overall Score</div>
+                            <div style="margin-top:4px;font-size:24px;font-weight:800;color:#0f172a;">${report.overallScore}/100</div>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                    <td width="33.33%" valign="top" style="padding:0 4px 10px 4px;">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #dbe3ef;border-radius:10px;">
+                        <tr>
+                          <td style="padding:10px 12px;">
+                            <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">Core Quote</div>
+                            <div style="margin-top:4px;font-size:24px;font-weight:800;color:#0f172a;">${toUsd(report.consultationQuoteUSD)}</div>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                    <td width="33.33%" valign="top" style="padding:0 0 10px 8px;">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #dbe3ef;border-radius:10px;">
+                        <tr>
+                          <td style="padding:10px 12px;">
+                            <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">Generated</div>
+                            <div style="margin-top:4px;font-size:13px;font-weight:700;color:#0f172a;line-height:1.4;">${escapeHtml(generatedAt)}</div>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
 
-        <div style="margin-top:18px;padding:14px;border:1px solid #dbe3ef;border-radius:10px;background:#f8fafc;">
-          <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">Flow Narrative</div>
-          <p style="margin:8px 0 0 0;line-height:1.5;font-size:14px;color:#0f172a;">${escapeHtml(report.flowNarrative)}</p>
-        </div>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;border:1px solid #dbe3ef;border-radius:10px;background:#f8fafc;">
+                  <tr>
+                    <td style="padding:14px;">
+                      <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">Flow Narrative</div>
+                      <div style="margin-top:8px;line-height:1.5;font-size:14px;color:#0f172a;">${escapeHtml(report.flowNarrative)}</div>
+                    </td>
+                  </tr>
+                </table>
 
-        <h2 style="margin:22px 0 10px 0;font-size:18px;">Actionable Findings</h2>
-        <table style="width:100%;border-collapse:collapse;border:1px solid #dbe3ef;border-radius:10px;overflow:hidden;">
-          <tbody>
-            ${mandatoryHtml}
-          </tbody>
-        </table>
+                <div style="margin-top:22px;font-size:18px;font-weight:700;color:#0f172a;">Actionable Findings</div>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;border-collapse:collapse;border:1px solid #dbe3ef;border-radius:10px;overflow:hidden;">
+                  <tr>
+                    <td style="padding:9px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:700;color:#334155;width:44px;">#</td>
+                    <td style="padding:9px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:700;color:#334155;">Finding</td>
+                  </tr>
+                  ${mandatoryHtml}
+                </table>
 
-        <h2 style="margin:22px 0 10px 0;font-size:18px;">Recommended Engagement Options</h2>
-        <div style="display:grid;gap:10px;">
-          ${packageHtml}
-        </div>
-        <p style="margin:10px 0 0 0;font-size:12px;color:#64748b;">
-          Quote method: $249 review call + deterministic remediation effort by finding category, with score-based cap.
-        </p>
+                <div style="margin-top:22px;font-size:18px;font-weight:700;color:#0f172a;">Recommended Engagement Options</div>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;">
+                  ${packageHtmlRows}
+                </table>
+                <div style="margin-top:6px;font-size:12px;color:#64748b;line-height:1.45;">
+                  Quote method: $249 review call + deterministic remediation effort by finding category, with score-based cap.
+                </div>
 
-        <h2 style="margin:22px 0 10px 0;font-size:18px;">Optional Recommendations</h2>
-        <ul style="margin:0;padding-left:18px;color:#334155;font-size:14px;">
-          ${optionalHtml}
-        </ul>
-      </div>
-    </div>
+                <div style="margin-top:22px;font-size:18px;font-weight:700;color:#0f172a;">Optional Recommendations</div>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;border-collapse:collapse;border:1px solid #dbe3ef;border-radius:10px;overflow:hidden;">
+                  ${optionalHtmlRows}
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>
   `.trim();

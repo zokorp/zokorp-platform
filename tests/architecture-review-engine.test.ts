@@ -76,4 +76,45 @@ describe("architecture deterministic engine", () => {
 
     expect(narrative.toLowerCase()).toContain("non-architecture content");
   });
+
+  it("penalizes low-signal paragraphs and avoids echoing gibberish in narrative", () => {
+    const bundle = {
+      provider: "aws" as const,
+      paragraph: "rfejiogfje",
+      ocrText: "CloudFront routes static requests to S3 and ALB forwards API calls to EC2.",
+      serviceTokens: ["cloudfront", "s3", "alb", "ec2"],
+      metadata: {
+        title: "Edge + API Architecture",
+        owner: "Platform Team",
+        lastUpdated: "2026-03-06",
+        version: "v1.0",
+        legend: "",
+      },
+    };
+
+    const findings = buildDeterministicReviewFindings(bundle);
+    expect(findings.some((finding) => finding.ruleId === "INPUT-PARAGRAPH-QUALITY")).toBe(true);
+
+    const narrative = buildDeterministicNarrative(bundle);
+    expect(narrative).toContain("low-signal");
+    expect(narrative).not.toContain("rfejiogfje");
+  });
+
+  it("accepts OCR directionality signals when paragraph is sparse", () => {
+    const findings = buildDeterministicReviewFindings({
+      provider: "aws",
+      paragraph: "System overview only.",
+      ocrText: "Users -> CloudFront -> ALB -> API service -> RDS",
+      serviceTokens: ["cloudfront", "alb", "api", "rds"],
+      metadata: {
+        title: "Architecture",
+        owner: "Platform",
+        lastUpdated: "2026-03-06",
+        version: "v1.0",
+        legend: "",
+      },
+    });
+
+    expect(findings.some((finding) => finding.ruleId === "MSFT-FLOW-DIRECTION")).toBe(false);
+  });
 });

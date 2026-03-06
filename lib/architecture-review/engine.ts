@@ -203,6 +203,27 @@ function compressWhitespace(input: string) {
   return input.replace(/\s+/g, " ").trim();
 }
 
+function isLowSignalParagraph(text: string) {
+  const words = text
+    .toLowerCase()
+    .split(/\s+/)
+    .map((word) => word.replace(/[^a-z0-9-]/g, ""))
+    .filter(Boolean);
+
+  if (words.length < 8) {
+    return true;
+  }
+
+  const alphaWords = words.filter((word) => /[a-z]/.test(word));
+  if (alphaWords.length < 6) {
+    return true;
+  }
+
+  const vowelHeavyRatio =
+    alphaWords.filter((word) => /[aeiou]/.test(word)).length / Math.max(1, alphaWords.length);
+  return vowelHeavyRatio < 0.45;
+}
+
 function detectInputTypeSignals(bundle: ArchitectureEvidenceBundle) {
   const normalizedOcr = bundle.ocrText.toLowerCase();
   const normalizedParagraph = bundle.paragraph.toLowerCase();
@@ -424,6 +445,7 @@ function addPillarFindings(bundle: ArchitectureEvidenceBundle, findings: Archite
 export function buildDeterministicReviewFindings(bundle: ArchitectureEvidenceBundle): ArchitectureFindingDraft[] {
   const findings: ArchitectureFindingDraft[] = [];
   const combinedNarrativeText = `${bundle.paragraph}\n${bundle.ocrText}`;
+  const normalizedParagraph = compressWhitespace(bundle.paragraph);
   const inputSignals = detectInputTypeSignals(bundle);
 
   if (inputSignals.likelyNonArchitecture) {
@@ -437,7 +459,18 @@ export function buildDeterministicReviewFindings(bundle: ArchitectureEvidenceBun
     });
   }
 
-  if (!hasDirectionality(bundle.paragraph)) {
+  if (isLowSignalParagraph(normalizedParagraph)) {
+    findings.push({
+      ruleId: "INPUT-PARAGRAPH-QUALITY",
+      category: "clarity",
+      pointsDeducted: 8,
+      message: "Provide a clear architecture paragraph with concrete flow steps.",
+      fix: "Rewrite the description with request path, components, data stores, and trust boundaries.",
+      evidence: "Paragraph text quality was low-signal and lacked concrete architecture terms.",
+    });
+  }
+
+  if (!hasDirectionality(combinedNarrativeText)) {
     findings.push({
       ruleId: "MSFT-FLOW-DIRECTION",
       category: "clarity",
@@ -515,9 +548,17 @@ export function buildDeterministicNarrative(bundle: ArchitectureEvidenceBundle) 
 
   const tokenPreview = bundle.serviceTokens.slice(0, 6).join(", ");
   const paragraph = compressWhitespace(bundle.paragraph);
+  const lowSignalParagraph = isLowSignalParagraph(paragraph);
   const tokenSentence = tokenPreview
     ? `Detected components include ${tokenPreview}${bundle.serviceTokens.length > 6 ? ", and others" : ""}.`
     : "Component labels in OCR were limited, so narrative confidence is lower.";
+
+  if (lowSignalParagraph) {
+    return `${providerLabel} architecture review used OCR-derived component cues because the written description was low-signal. ${tokenSentence} Add a clearer one-paragraph flow description for higher-confidence narrative output.`.slice(
+      0,
+      2000,
+    );
+  }
 
   return `${providerLabel} architecture review input indicates the following flow: ${paragraph} ${tokenSentence}`.slice(0, 2000);
 }
