@@ -10,6 +10,10 @@ import {
   isStrictDiagramFile,
   parseLlmRefinement,
 } from "@/lib/architecture-review/client";
+import {
+  generateArchitectureDiagramFromNarrative,
+  makeGeneratedDiagramSvgFile,
+} from "@/lib/architecture-review/diagram-generator";
 import type {
   ArchitectureDiagramFormat,
   ArchitectureEngagementPreference,
@@ -64,6 +68,22 @@ type ReviewProgressState = {
   etaMs: number | null;
   metric: "completion" | "timeout-budget" | "none";
   timeoutMs: number | null;
+};
+
+type SpeechRecognitionLike = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: unknown) => void) | null;
+  onerror: ((event: unknown) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+type SpeechWindow = Window & {
+  SpeechRecognition?: new () => SpeechRecognitionLike;
+  webkitSpeechRecognition?: new () => SpeechRecognitionLike;
 };
 
 const WEBLLM_MODEL_LOAD_TIMEOUT_MS = 3 * 60 * 1000;
@@ -404,6 +424,17 @@ export function ArchitectureDiagramReviewerForm({
 }: ArchitectureDiagramReviewerFormProps) {
   const [provider, setProvider] = useState<ArchitectureProvider>("aws");
   const [paragraph, setParagraph] = useState("");
+  const [generationNarrative, setGenerationNarrative] = useState("");
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [generatedDiagramPreviewUrl, setGeneratedDiagramPreviewUrl] = useState<string | null>(null);
+  const [generatedDiagramSummary, setGeneratedDiagramSummary] = useState<{
+    title: string;
+    nodes: number;
+    edges: number;
+    filename: string;
+  } | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
   const [title, setTitle] = useState("");
   const [owner, setOwner] = useState("");
   const [lastUpdated, setLastUpdated] = useState("");
@@ -422,6 +453,8 @@ export function ArchitectureDiagramReviewerForm({
   const [fallbackMailtoUrl, setFallbackMailtoUrl] = useState<string | null>(null);
   const [fallbackEmlToken, setFallbackEmlToken] = useState<string | null>(null);
   const stageStartedAtRef = useRef<Partial<Record<ReviewProgressUpdate["stage"], number>>>({});
+  const generatedDiagramUrlRef = useRef<string | null>(null);
+  const speechRecognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   const paragraphTooShort = paragraph.trim().length < 1;
   const paragraphTooLong = paragraph.trim().length > 2000;
@@ -522,6 +555,167 @@ export function ArchitectureDiagramReviewerForm({
 
     return () => window.clearInterval(timer);
   }, [progress, status]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const ctor = (window as SpeechWindow).SpeechRecognition ?? (window as SpeechWindow).webkitSpeechRecognition;
+    setSpeechSupported(Boolean(ctor));
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (generatedDiagramUrlRef.current) {
+        URL.revokeObjectURL(generatedDiagramUrlRef.current);
+      }
+
+      if (speechRecognitionRef.current) {
+        try {
+          speechRecognitionRef.current.stop();
+        } catch {
+          // no-op cleanup
+        }
+      }
+    };
+  }, []);
+
+  function clearGeneratedDiagramPreview() {
+    const generatedFilename = generatedDiagramSummary?.filename;
+    if (generatedDiagramUrlRef.current) {
+      URL.revokeObjectURL(generatedDiagramUrlRef.current);
+      generatedDiagramUrlRef.current = null;
+    }
+
+    setGeneratedDiagramPreviewUrl(null);
+    setGeneratedDiagramSummary(null);
+    if (generatedFilename && selectedFile?.name === generatedFilename) {
+      setSelectedFile(null);
+    }
+  }
+
+  function appendNarrativeFromSpeech(rawTranscript: string) {
+    const transcript = rawTranscript.replace(/\s+/g, " ").trim();
+    if (!transcript) {
+      return;
+    }
+
+    setGenerationNarrative((current) => `${current.trim()} ${transcript}`.trim());
+  }
+
+  function stopDictation() {
+    if (!speechRecognitionRef.current) {
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      speechRecognitionRef.current.stop();
+    } catch {
+      // no-op: browser can throw when already stopped
+    }
+    setIsListening(false);
+  }
+
+  function startDictation() {
+    if (typeof window === "undefined") {
+      setGenerationError("Speech input is unavailable in this browser.");
+      return;
+    }
+
+    const ctor = (window as SpeechWindow).SpeechRecognition ?? (window as SpeechWindow).webkitSpeechRecognition;
+    if (!ctor) {
+      setGenerationError("Speech input is unavailable in this browser.");
+      return;
+    }
+
+    setGenerationError(null);
+
+    if (!speechRecognitionRef.current) {
+      const recognition = new ctor();
+      recognition.lang = "en-US";
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.onresult = (event: unknown) => {
+        const payload = event as {
+          results?: ArrayLike<{ isFinal?: boolean; 0?: { transcript?: string } }>;
+          resultIndex?: number;
+        };
+        if (!payload.results) {
+          return;
+        }
+
+        const startIndex = Math.max(0, payload.resultIndex ?? 0);
+        for (let index = startIndex; index < payload.results.length; index += 1) {
+          const result = payload.results[index];
+          const transcript = result?.[0]?.transcript ?? "";
+          if (result?.isFinal) {
+            appendNarrativeFromSpeech(transcript);
+          }
+        }
+      };
+      recognition.onerror = (event: unknown) => {
+        const payload = event as { error?: string };
+        if (payload.error && payload.error !== "no-speech") {
+          setGenerationError(`Speech input failed (${payload.error}).`);
+        }
+      };
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      speechRecognitionRef.current = recognition;
+    }
+
+    try {
+      speechRecognitionRef.current.start();
+      setIsListening(true);
+    } catch {
+      setGenerationError("Speech input could not start. Retry after granting microphone access.");
+      setIsListening(false);
+    }
+  }
+
+  function handleGenerateDiagram() {
+    const narrative = generationNarrative.trim() || paragraph.trim();
+    if (narrative.length < 12) {
+      setGenerationError("Add at least one sentence before generating a diagram.");
+      return;
+    }
+
+    try {
+      const generated = generateArchitectureDiagramFromNarrative({
+        provider,
+        narrative,
+      });
+      const generatedFile = makeGeneratedDiagramSvgFile({
+        provider,
+        svg: generated.svg,
+      });
+      clearGeneratedDiagramPreview();
+      const previewUrl = URL.createObjectURL(new Blob([generated.svg], { type: "image/svg+xml" }));
+      generatedDiagramUrlRef.current = previewUrl;
+      setGeneratedDiagramPreviewUrl(previewUrl);
+      setGeneratedDiagramSummary({
+        title: generated.title,
+        nodes: generated.nodes.length,
+        edges: generated.edges.length,
+        filename: generatedFile.name,
+      });
+      setSelectedFile(generatedFile);
+      setGenerationError(null);
+
+      if (!paragraph.trim()) {
+        setParagraph(narrative);
+      }
+      if (!title.trim()) {
+        setTitle(generated.title);
+      }
+    } catch {
+      setGenerationError("Unable to generate diagram from that narrative. Try a clearer architecture paragraph.");
+    }
+  }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -862,6 +1056,109 @@ export function ArchitectureDiagramReviewerForm({
 
       <div className="space-y-4 p-5 md:p-6">
         <form onSubmit={onSubmit} className="space-y-4">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 md:p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+              Generate Sample Diagram (Optional)
+            </p>
+            <p className="mt-2 text-sm text-slate-600">
+              Type or dictate a short architecture narrative, then generate a provider-specific SVG that auto-attaches
+              to the review form.
+            </p>
+
+            <label className="mt-3 block space-y-2">
+              <span className={fieldLabelClassName}>Generator Narrative</span>
+              <textarea
+                value={generationNarrative}
+                onChange={(event) => setGenerationNarrative(event.target.value)}
+                maxLength={2000}
+                placeholder="Example: Users hit an API gateway, requests route to app services, data persists to a managed database, and monitoring captures logs/alerts."
+                className={`${fieldClassName} min-h-28`}
+              />
+            </label>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handleGenerateDiagram}
+                className="focus-ring rounded-md border border-slate-300 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800"
+              >
+                Generate Diagram SVG
+              </button>
+              <button
+                type="button"
+                onClick={() => setGenerationNarrative(paragraph)}
+                className="focus-ring rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+              >
+                Copy Description Here
+              </button>
+              {speechSupported ? (
+                isListening ? (
+                  <button
+                    type="button"
+                    onClick={stopDictation}
+                    className="focus-ring rounded-md border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-100"
+                  >
+                    Stop Dictation
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={startDictation}
+                    className="focus-ring rounded-md border border-sky-300 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
+                  >
+                    Start Dictation (Mobile)
+                  </button>
+                )
+              ) : null}
+            </div>
+
+            {generatedDiagramSummary ? (
+              <div className="mt-3 space-y-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                <p className="text-sm font-semibold text-emerald-900">
+                  Generated diagram attached: {generatedDiagramSummary.filename}
+                </p>
+                <p className="text-xs text-emerald-800">
+                  {generatedDiagramSummary.title} · {generatedDiagramSummary.nodes} nodes ·{" "}
+                  {generatedDiagramSummary.edges} edges
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {generatedDiagramPreviewUrl ? (
+                    <a
+                      href={generatedDiagramPreviewUrl}
+                      download={generatedDiagramSummary.filename}
+                      className="focus-ring inline-flex rounded-md border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-900 transition hover:bg-emerald-100"
+                    >
+                      Download Generated SVG
+                    </a>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={clearGeneratedDiagramPreview}
+                    className="focus-ring rounded-md border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-900 transition hover:bg-emerald-100"
+                  >
+                    Clear Generated Diagram
+                  </button>
+                </div>
+                {generatedDiagramPreviewUrl ? (
+                  <div className="overflow-hidden rounded-md border border-emerald-200 bg-white">
+                    <object
+                      data={generatedDiagramPreviewUrl}
+                      type="image/svg+xml"
+                      aria-label="Generated architecture diagram preview"
+                      className="h-[280px] w-full"
+                    />
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
+            {generationError ? (
+              <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                {generationError}
+              </div>
+            ) : null}
+          </div>
+
           <div className="rounded-xl border border-slate-200 bg-slate-50/85 p-4 md:p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Core Input</p>
             <div className="mt-3 grid gap-4 md:grid-cols-2">
@@ -887,10 +1184,19 @@ export function ArchitectureDiagramReviewerForm({
                   type="file"
                   accept="image/png,image/svg+xml,.png,.svg"
                   required
-                  onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+                  onChange={(event) => {
+                    const nextFile = event.target.files?.[0] ?? null;
+                    if (nextFile) {
+                      clearGeneratedDiagramPreview();
+                    }
+                    setSelectedFile(nextFile);
+                  }}
                   className={fieldClassName}
                 />
                 <p className="text-xs text-slate-500">Only `image/png` and `image/svg+xml` files are accepted.</p>
+                {selectedFile ? (
+                  <p className="text-xs font-medium text-slate-700">Current file: {selectedFile.name}</p>
+                ) : null}
               </label>
             </div>
 
