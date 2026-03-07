@@ -455,7 +455,30 @@ export default async function SoftwareDetailPage({
           profileCredits={validatorProfileCredits}
         />
       ) : isArchitectureReviewer ? (
-        <ArchitectureDiagramReviewerForm requiresAuth={!signedIn} authUnavailable={authUnavailable} />
+        <div className="space-y-5">
+          <ArchitectureDiagramReviewerForm requiresAuth={!signedIn} authUnavailable={authUnavailable} />
+          <section className="surface rounded-2xl p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Organic Discovery</p>
+            <h2 className="font-display mt-2 text-2xl font-semibold text-slate-900">Architecture benchmark library</h2>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+              Compare anonymized provider patterns, recurring deductions, and remediation snippets before submitting your own diagram.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                href="/software/architecture-diagram-reviewer/benchmarks"
+                className="focus-ring inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                Open benchmark library
+              </Link>
+              <Link
+                href="/software/architecture-diagram-reviewer/benchmarks/monthly"
+                className="focus-ring inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              >
+                View monthly benchmark digest
+              </Link>
+            </div>
+          </section>
+        </div>
       ) : isLandingZoneChecker ? (
         <LandingZoneReadinessCheckerForm initialEmail={currentEmail ?? ""} initialName={session?.user?.name ?? ""} />
       ) : (

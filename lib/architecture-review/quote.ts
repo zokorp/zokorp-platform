@@ -1,8 +1,10 @@
 import type {
+  ArchitectureAnalysisConfidence,
   ArchitectureCategory,
   ArchitectureEngagementPreference,
   ArchitectureFinding,
   ArchitectureFindingDraft,
+  ArchitectureQuoteTier,
   ArchitectureWorkloadCriticality,
 } from "@/lib/architecture-review/types";
 
@@ -116,6 +118,60 @@ function estimateConfidence(findings: ArchitectureFinding[], context: Architectu
   }
 
   return clamp(confidence, 0.7, 1.05);
+}
+
+export function calculateConfidenceScore(findings: ArchitectureFinding[], context: ArchitectureQuoteContext | undefined) {
+  return estimateConfidence(findings, context);
+}
+
+export function calculateAnalysisConfidence(
+  findings: ArchitectureFinding[],
+  context: ArchitectureQuoteContext | undefined,
+): ArchitectureAnalysisConfidence {
+  const confidence = calculateConfidenceScore(findings, context);
+
+  if (confidence >= 0.95) {
+    return "high";
+  }
+
+  if (confidence >= 0.82) {
+    return "medium";
+  }
+
+  return "low";
+}
+
+export function determineQuoteTier(
+  input: {
+    overallScore: number;
+    desiredEngagement?: ArchitectureEngagementPreference;
+    analysisConfidence?: ArchitectureAnalysisConfidence;
+  },
+): ArchitectureQuoteTier {
+  if (input.desiredEngagement === "review-call-only") {
+    return "advisory-review";
+  }
+
+  if (
+    input.desiredEngagement === "ongoing-quarterly-reviews" ||
+    input.desiredEngagement === "architect-on-call"
+  ) {
+    return "implementation-partner";
+  }
+
+  if (input.analysisConfidence === "low") {
+    return "advisory-review";
+  }
+
+  if (input.overallScore >= 85) {
+    return "advisory-review";
+  }
+
+  if (input.overallScore >= 70) {
+    return "remediation-sprint";
+  }
+
+  return "implementation-partner";
 }
 
 function remediationRateUsdPerHour() {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildArchitectureReviewReport } from "@/lib/architecture-review/report";
-import { architectureReviewReportSchema } from "@/lib/architecture-review/types";
+import { architectureReviewReportSchema, submitArchitectureReviewMetadataSchema } from "@/lib/architecture-review/types";
 
 describe("architecture review schema", () => {
   it("accepts a valid finalized report", () => {
@@ -25,6 +25,8 @@ describe("architecture review schema", () => {
     const parsed = architectureReviewReportSchema.safeParse(report);
     expect(parsed.success).toBe(true);
     expect(report.reportVersion).toBe("1.0");
+    expect(report.analysisConfidence).toBe("high");
+    expect(report.quoteTier).toBe("advisory-review");
     expect(report.findings[0].fixCostUSD).toBeGreaterThan(0);
   });
 
@@ -33,6 +35,8 @@ describe("architecture review schema", () => {
       reportVersion: "1.0",
       provider: "gcp",
       overallScore: 80,
+      analysisConfidence: "medium",
+      quoteTier: "remediation-sprint",
       flowNarrative: "A concise narrative.",
       findings: [
         {
@@ -51,5 +55,34 @@ describe("architecture review schema", () => {
     });
 
     expect(parsed.success).toBe(false);
+  });
+
+  it("accepts submission metadata with attribution and client timing", () => {
+    const parsed = submitArchitectureReviewMetadataSchema.safeParse({
+      provider: "aws",
+      paragraphInput:
+        "Users call an edge endpoint, traffic routes to app services, and data persists to managed storage.",
+      diagramFormat: "png",
+      title: "Production architecture",
+      owner: "Platform Team",
+      lastUpdated: "2026-03-07",
+      version: "v1.0",
+      submissionContext: {
+        utmSource: "google",
+        utmMedium: "cpc",
+        utmCampaign: "aws-benchmark",
+        landingPage: "/software/architecture-diagram-reviewer",
+        referrer: "https://example.com",
+        deviceClass: "desktop",
+      },
+      clientTiming: {
+        startedAtISO: "2026-03-07T12:00:00.000Z",
+        submittedAtISO: "2026-03-07T12:00:05.000Z",
+        precheckMs: 1100,
+        totalClientMs: 4900,
+      },
+    });
+
+    expect(parsed.success).toBe(true);
   });
 });

@@ -64,13 +64,41 @@ describe("ArchitectureDiagramReviewerForm", () => {
       mimeType: "image/png",
     });
 
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        status: "fallback",
-        mailtoUrl: "mailto:test@example.com?subject=Architecture%20Review",
-        emlDownloadToken: "signed.token",
-      }),
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const requestUrl = String(input);
+
+      if (requestUrl.includes("/api/submit-architecture-review")) {
+        return {
+          ok: true,
+          status: 202,
+          json: async () => ({
+            status: "queued",
+            jobId: "job-001",
+            deliveryMode: null,
+            phase: "upload-validate",
+            progressPct: 0,
+            etaSeconds: 1,
+          }),
+        } as Response;
+      }
+
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          jobId: "job-001",
+          status: "fallback",
+          phase: "completed",
+          progressPct: 100,
+          etaSeconds: 0,
+          deliveryMode: "fallback",
+          fallback: {
+            mailtoUrl: "mailto:test@example.com?subject=Architecture%20Review",
+            emlDownloadToken: "signed.token",
+            reason: "EMAIL_FAILED",
+          },
+        }),
+      } as Response;
     });
 
     render(<ArchitectureDiagramReviewerForm />);
@@ -102,7 +130,7 @@ describe("ArchitectureDiagramReviewerForm", () => {
     fireEvent.submit(form);
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(fetchMock).toHaveBeenCalled();
     });
 
     await waitFor(() => {

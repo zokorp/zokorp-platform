@@ -172,6 +172,19 @@ const ARCHITECTURE_OCR_TERMS = [
   "microservice",
 ];
 
+const OFFICIAL_REFERENCE_TERMS = [
+  "microsoft azure",
+  "amazon web services",
+  "aws reference architecture",
+  "azure architecture center",
+  "cloud architecture center",
+  "learn.microsoft.com",
+  "aws architecture icons",
+  "google cloud architecture framework",
+  "reference architecture",
+  "example architecture",
+];
+
 const PILLAR_KEYWORDS: Record<ArchitectureProvider, Record<string, string[]>> = {
   aws: {
     security: ["iam", "least privilege", "kms", "encryption", "waf", "auth", "secret"],
@@ -293,11 +306,50 @@ function detectInputTypeSignals(bundle: ArchitectureEvidenceBundle) {
     architectureHits <= 4 &&
     (hasCurrencyValues || architectureInParagraph >= 2 || bundle.serviceTokens.length === 0);
 
+  const highConfidenceNonArchitecture =
+    nonArchitectureHits >= 5 &&
+    architectureHits <= 3 &&
+    (hasCurrencyValues || normalizedOcr.includes("account number"));
+
+  const uncertainNonArchitecture =
+    !highConfidenceNonArchitecture &&
+    nonArchitectureHits >= 2 &&
+    architectureHits <= 5 &&
+    (hasCurrencyValues || architectureInParagraph >= 1);
+
   return {
     likelyNonArchitecture,
+    highConfidenceNonArchitecture,
+    uncertainNonArchitecture,
     nonArchitectureHits,
     architectureHits,
     hasCurrencyValues,
+  };
+}
+
+export function detectNonArchitectureEvidence(bundle: ArchitectureEvidenceBundle) {
+  const signals = detectInputTypeSignals(bundle);
+
+  if (signals.highConfidenceNonArchitecture) {
+    return {
+      likely: true,
+      confidence: "high" as const,
+      reason: `OCR matched ${signals.nonArchitectureHits} non-architecture terms and only ${signals.architectureHits} architecture indicators.`,
+    };
+  }
+
+  if (signals.uncertainNonArchitecture || signals.likelyNonArchitecture) {
+    return {
+      likely: true,
+      confidence: "medium" as const,
+      reason: `OCR matched mixed signals (${signals.nonArchitectureHits} non-architecture vs ${signals.architectureHits} architecture indicators).`,
+    };
+  }
+
+  return {
+    likely: false,
+    confidence: "low" as const,
+    reason: `OCR matched ${signals.architectureHits} architecture indicators.`,
   };
 }
 
@@ -352,6 +404,16 @@ function hasDirectionality(text: string) {
   return directionTerms.some((term) => normalized.includes(term));
 }
 
+function isDetailedParagraph(text: string) {
+  const normalized = text.trim();
+  if (normalized.length >= 280) {
+    return true;
+  }
+
+  const directionalMatches = normalized.match(/\b(sends|reads|writes|routes|publishes|subscribes|stores|calls)\b/gi) ?? [];
+  return directionalMatches.length >= 3;
+}
+
 function collectArrowSemantics(text: string) {
   const semantics: Array<{ id: string; terms: string[] }> = [
     { id: "async", terms: ["async", "asynchronous"] },
@@ -390,6 +452,12 @@ function monthsSinceIsoDate(value: string) {
   }
 
   return diffMs / (1000 * 60 * 60 * 24 * 30.4375);
+}
+
+function detectOfficialReferencePattern(bundle: ArchitectureEvidenceBundle) {
+  const normalized = `${bundle.ocrText}\n${bundle.paragraph}`.toLowerCase();
+  const markerHits = OFFICIAL_REFERENCE_TERMS.filter((term) => includesTerm(normalized, term)).length;
+  return markerHits >= 1 && bundle.serviceTokens.length >= 6;
 }
 
 function addMetadataFindings(bundle: ArchitectureEvidenceBundle, findings: ArchitectureFindingDraft[]) {
@@ -530,6 +598,86 @@ function addPillarFindings(bundle: ArchitectureEvidenceBundle, findings: Archite
   }
 }
 
+function capFindingPoints(findings: ArchitectureFindingDraft[], ruleId: string, maxPoints: number) {
+  const target = findings.find((finding) => finding.ruleId === ruleId);
+  if (!target) {
+    return;
+  }
+
+  target.pointsDeducted = Math.min(target.pointsDeducted, maxPoints);
+}
+
+function capFindingGroupTotal(findings: ArchitectureFindingDraft[], ruleIds: string[], maxTotal: number) {
+  const targets = findings.filter((finding) => ruleIds.includes(finding.ruleId) && finding.pointsDeducted > 0);
+  const total = targets.reduce((sum, finding) => sum + finding.pointsDeducted, 0);
+  if (total <= maxTotal) {
+    return;
+  }
+
+  let overflow = total - maxTotal;
+  for (const finding of targets.sort((a, b) => b.pointsDeducted - a.pointsDeducted)) {
+    if (overflow <= 0) {
+      break;
+    }
+
+    const reducible = Math.max(0, finding.pointsDeducted - 1);
+    if (reducible <= 0) {
+      continue;
+    }
+
+    const reduction = Math.min(reducible, overflow);
+    finding.pointsDeducted -= reduction;
+    overflow -= reduction;
+  }
+}
+
+function applyScoringCalibrations(bundle: ArchitectureEvidenceBundle, findings: ArchitectureFindingDraft[]) {
+  const ocrSignalStrong = bundle.serviceTokens.length >= 8 || bundle.ocrText.length >= 280;
+  const paragraphDetailed = isDetailedParagraph(bundle.paragraph);
+  const officialReferencePattern = detectOfficialReferencePattern(bundle);
+
+  // Avoid over-penalizing short user text when diagram OCR is strong.
+  if (ocrSignalStrong) {
+    capFindingPoints(findings, "INPUT-PARAGRAPH-QUALITY", 3);
+  }
+
+  // Avoid over-penalizing sparse OCR when user provides a detailed architecture narrative.
+  if (paragraphDetailed) {
+    capFindingPoints(findings, "MSFT-COMPONENT-LABEL-COVERAGE", 4);
+    capFindingPoints(findings, "MSFT-FLOW-DIRECTION", 3);
+  }
+
+  // Prevent double-penalizing same clarity gap.
+  capFindingGroupTotal(
+    findings,
+    ["MSFT-FLOW-DIRECTION", "CLAR-REL-LABELS-MISSING", "CLAR-BOUNDARY-EXPLICIT"],
+    10,
+  );
+  capFindingGroupTotal(
+    findings,
+    ["REL-RTO-RPO-MISSING", "REL-BACKUP-RESTORE", "PILLAR-RELIABILITY", "PILLAR-RELIABILITY-DEPTH"],
+    14,
+  );
+
+  // Reference diagrams often omit ownership metadata by design; soften these penalties.
+  if (officialReferencePattern) {
+    for (const ruleId of ["MSFT-META-TITLE", "MSFT-META-OWNER", "MSFT-META-LAST-UPDATED", "MSFT-META-VERSION"]) {
+      capFindingPoints(findings, ruleId, 1);
+    }
+    capFindingPoints(findings, "MSFT-COMPONENT-LABEL-COVERAGE", 4);
+    capFindingPoints(findings, "CLAR-BOUNDARY-EXPLICIT", 2);
+
+    findings.push({
+      ruleId: "CLAR-OFFICIAL-REFERENCE-PATTERN",
+      category: "clarity",
+      pointsDeducted: 0,
+      message: "Reference diagram pattern detected; score calibration was softened.",
+      fix: "Add local environment labels and ownership metadata before using this in production reviews.",
+      evidence: "Official reference markers detected in OCR/narrative content.",
+    });
+  }
+}
+
 export function buildDeterministicReviewFindings(bundle: ArchitectureEvidenceBundle): ArchitectureFindingDraft[] {
   const findings: ArchitectureFindingDraft[] = [];
   const combinedNarrativeText = `${bundle.paragraph}\n${bundle.ocrText}`;
@@ -539,7 +687,7 @@ export function buildDeterministicReviewFindings(bundle: ArchitectureEvidenceBun
   const providerSignalCounts = detectProviderSignalCounts(combinedNarrativeText);
   const tokenCount = bundle.serviceTokens.length;
 
-  if (inputSignals.likelyNonArchitecture) {
+  if (inputSignals.highConfidenceNonArchitecture) {
     findings.push({
       ruleId: "INPUT-NOT-ARCH-DIAGRAM",
       category: "clarity",
@@ -547,6 +695,15 @@ export function buildDeterministicReviewFindings(bundle: ArchitectureEvidenceBun
       message: "Upload a system architecture diagram instead of a report or statement screenshot.",
       fix: "Provide a PNG or SVG that shows services, trust boundaries, and data/request flows with labeled components.",
       evidence: `OCR matched ${inputSignals.nonArchitectureHits} non-architecture terms and only ${inputSignals.architectureHits} architecture indicators.`,
+    });
+  } else if (inputSignals.uncertainNonArchitecture) {
+    findings.push({
+      ruleId: "INPUT-NON-ARCH-SUSPECT",
+      category: "clarity",
+      pointsDeducted: 10,
+      message: "Diagram content may be non-architectural; score confidence is reduced.",
+      fix: "Upload a cleaner architecture diagram with component labels and flow arrows.",
+      evidence: `OCR mixed ${inputSignals.nonArchitectureHits} non-architecture terms with ${inputSignals.architectureHits} architecture indicators.`,
     });
   }
 
@@ -763,6 +920,7 @@ export function buildDeterministicReviewFindings(bundle: ArchitectureEvidenceBun
   }
 
   addPillarFindings(bundle, findings);
+  applyScoringCalibrations(bundle, findings);
 
   return findings;
 }
@@ -771,8 +929,15 @@ export function buildDeterministicNarrative(bundle: ArchitectureEvidenceBundle) 
   const providerLabel = bundle.provider.toUpperCase();
   const inputSignals = detectInputTypeSignals(bundle);
 
-  if (inputSignals.likelyNonArchitecture) {
+  if (inputSignals.highConfidenceNonArchitecture) {
     return `${providerLabel} review detected non-architecture content in the uploaded diagram. Scoring was generated from low-confidence signals; upload a true architecture diagram for accurate findings.`.slice(
+      0,
+      2000,
+    );
+  }
+
+  if (inputSignals.uncertainNonArchitecture) {
+    return `${providerLabel} review detected mixed content signals in the uploaded diagram. Findings were generated with reduced confidence; a cleaner architecture image should improve accuracy.`.slice(
       0,
       2000,
     );

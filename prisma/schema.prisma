@@ -73,6 +73,7 @@ model User {
   creditBalances CreditBalance[]
   auditLogs      AuditLog[]
   leadLogs       LeadLog[]
+  architectureReviewJobs ArchitectureReviewJob[]
   landingZoneReadinessSubmissions LandingZoneReadinessSubmission[]
   checkoutFulfillments CheckoutFulfillment[]
   usageEvents    UsageEvent[]
@@ -218,22 +219,109 @@ model LeadLog {
   architectureProvider String
   authProvider         String?
   overallScore         Int
+  analysisConfidence   String?
+  quoteTier            String?
+  emailDeliveryMode    String?
+  leadStage            String   @default("New Review")
+  leadScore            Int?
+  ctaClicks            Int      @default(0)
+  lastCtaClickedAt     DateTime?
   topIssues            String
   inputParagraph       String?
   reportJson           Json?
+  utmSource            String?
+  utmMedium            String?
+  utmCampaign          String?
+  landingPage          String?
+  referrer             String?
+  deviceClass          String?
+  clientTimingJson     Json?
   workdriveDiagramFileId String?
   workdriveReportFileId  String?
   workdriveUploadStatus  String?
+  emailSentAt          DateTime?
+  followUpStatusJson   Json?
+  zohoSyncNeedsUpdate  Boolean  @default(true)
   syncedToZohoAt       DateTime?
   zohoRecordId         String?
   zohoSyncError        String?
   createdAt            DateTime @default(now())
 
   user                 User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  architectureReviewJobs ArchitectureReviewJob[]
+  architectureReviewEmailOutboxes ArchitectureReviewEmailOutbox[]
 
   @@index([createdAt])
   @@index([userEmail])
   @@index([syncedToZohoAt])
+}
+
+model ArchitectureReviewJob {
+  id                   String   @id @default(cuid())
+  userId               String?
+  userEmail            String
+  status               String   @default("queued")
+  currentPhase         String?
+  progressPct          Int      @default(0)
+  etaSeconds           Int?
+  attemptCount         Int      @default(0)
+  errorMessage         String?
+  diagramFileName      String
+  diagramMimeType      String
+  diagramBytes         Bytes
+  metadataJson         Json
+  submissionContextJson Json?
+  clientTimingJson     Json?
+  phaseTimingsJson     Json?
+  reportJson           Json?
+  overallScore         Int?
+  analysisConfidence   String?
+  quoteTier            String?
+  deliveryMode         String?
+  fallbackReason       String?
+  fallbackMailtoUrl    String?
+  fallbackEmlToken     String?
+  leadLogId            String?
+  startedAt            DateTime?
+  completedAt          DateTime?
+  lastHeartbeatAt      DateTime?
+  nextRetryAt          DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user                 User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  leadLog              LeadLog? @relation(fields: [leadLogId], references: [id], onDelete: SetNull)
+  emailOutboxes        ArchitectureReviewEmailOutbox[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([userEmail])
+  @@index([userId])
+  @@index([leadLogId])
+}
+
+model ArchitectureReviewEmailOutbox {
+  id           String   @id @default(cuid())
+  jobId         String
+  leadLogId     String?
+  toEmail       String
+  subject       String
+  textBody      String   @db.Text
+  htmlBody      String?  @db.Text
+  status        String   @default("pending")
+  attemptCount  Int      @default(0)
+  provider      String?
+  errorMessage  String?
+  sentAt        DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  job           ArchitectureReviewJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  leadLog       LeadLog? @relation(fields: [leadLogId], references: [id], onDelete: SetNull)
+
+  @@index([jobId])
+  @@index([leadLogId])
+  @@index([status])
 }
 
 model LandingZoneReadinessSubmission {

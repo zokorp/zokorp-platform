@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { isSchemaDriftError } from "@/lib/db-errors";
 import { FetchTimeoutError, fetchWithTimeout, readResponseBodySnippet } from "@/lib/http";
 import { ensureLeadLogSchemaReady } from "@/lib/lead-log-schema";
+import { zohoLeadStatusForStage } from "@/lib/architecture-review/lead";
 
 export const runtime = "nodejs";
 
@@ -152,7 +153,10 @@ export async function POST(request: Request) {
       try {
         return await db.leadLog.findMany({
           where: {
-            syncedToZohoAt: null,
+            OR: [
+              { syncedToZohoAt: null },
+              { zohoSyncNeedsUpdate: true },
+            ],
           },
           orderBy: { createdAt: "asc" },
           take: 100,
@@ -162,6 +166,17 @@ export async function POST(request: Request) {
             userName: true,
             architectureProvider: true,
             overallScore: true,
+            analysisConfidence: true,
+            quoteTier: true,
+            emailDeliveryMode: true,
+            leadStage: true,
+            leadScore: true,
+            utmSource: true,
+            utmMedium: true,
+            utmCampaign: true,
+            landingPage: true,
+            referrer: true,
+            ctaClicks: true,
             topIssues: true,
             authProvider: true,
             workdriveUploadStatus: true,
@@ -194,6 +209,17 @@ export async function POST(request: Request) {
           ...lead,
           userName: null,
           workdriveUploadStatus: null,
+          analysisConfidence: null,
+          quoteTier: null,
+          emailDeliveryMode: null,
+          leadStage: "New Review",
+          leadScore: null,
+          utmSource: null,
+          utmMedium: null,
+          utmCampaign: null,
+          landingPage: null,
+          referrer: null,
+          ctaClicks: 0,
         }));
       }
     })();
@@ -208,9 +234,13 @@ export async function POST(request: Request) {
       Email: lead.userEmail,
       Lead_Source: "ZoKorp Architecture Reviewer",
       Description:
-        `Provider: ${lead.architectureProvider}; Score: ${lead.overallScore}; Created: ${lead.createdAt.toISOString()}; ` +
-        `TopIssues: ${lead.topIssues}; AuthProvider: ${lead.authProvider ?? "unknown"}; ` +
+        `ZoKorpLeadKey: ${lead.id}; Provider: ${lead.architectureProvider}; Score: ${lead.overallScore}; Created: ${lead.createdAt.toISOString()}; ` +
+        `Confidence: ${lead.analysisConfidence ?? "n/a"}; QuoteTier: ${lead.quoteTier ?? "n/a"}; ` +
+        `DeliveryMode: ${lead.emailDeliveryMode ?? "n/a"}; LeadStage: ${lead.leadStage ?? "New Review"}; LeadScore: ${lead.leadScore ?? "n/a"}; ` +
+        `CTAclicks: ${lead.ctaClicks ?? 0}; TopIssues: ${lead.topIssues}; AuthProvider: ${lead.authProvider ?? "unknown"}; ` +
+        `UTM: ${lead.utmSource ?? "na"}/${lead.utmMedium ?? "na"}/${lead.utmCampaign ?? "na"}; LandingPage: ${lead.landingPage ?? "na"}; Referrer: ${lead.referrer ?? "na"}; ` +
         `WorkDrive: ${lead.workdriveUploadStatus ?? "n/a"}`,
+      Lead_Status: zohoLeadStatusForStage((lead.leadStage as "New Review" | "Email Sent" | "CTA Clicked" | "Call Booked" | null) ?? null),
     }));
 
     const requestBody = JSON.stringify({
@@ -359,6 +389,7 @@ export async function POST(request: Request) {
             syncedToZohoAt: now,
             zohoRecordId: result.details?.id ?? null,
             zohoSyncError: duplicate ? result.message ?? result.code ?? "DUPLICATE" : null,
+            zohoSyncNeedsUpdate: false,
           },
         });
       } else {
@@ -367,6 +398,7 @@ export async function POST(request: Request) {
           where: { id: lead.id },
           data: {
             zohoSyncError: result.message ?? result.code ?? "ZOHO_SYNC_FAILED",
+            zohoSyncNeedsUpdate: true,
           },
         });
       }
