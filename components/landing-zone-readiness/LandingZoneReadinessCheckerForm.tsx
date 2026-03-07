@@ -1,9 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import {
+  Children,
+  isValidElement,
+  useState,
+  type InputHTMLAttributes,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import { z } from "zod";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { RadioCard } from "@/components/ui/radio-card";
+import { StepIndicator } from "@/components/ui/step-indicator";
+import { Textarea } from "@/components/ui/textarea";
 import { CONSULTATION_CTA_PATH } from "@/lib/landing-zone-readiness/config";
 import { isAllowedLandingZoneBusinessEmail } from "@/lib/landing-zone-readiness/input";
 import {
@@ -450,20 +464,27 @@ function ChoiceCard({
   description: string;
   children: ReactNode;
 }) {
+  const input = Children.only(children);
+
+  if (!isValidElement<HTMLInputElement>(input)) {
+    return null;
+  }
+
+  const radioInput = input as unknown as ReactElement<InputHTMLAttributes<HTMLInputElement>>;
+  const { checked: childChecked, className, disabled, id, name, onChange, value } = radioInput.props;
+
   return (
-    <label
-      className={`block rounded-xl border p-3 transition ${
-        checked ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-900"
-      }`}
-    >
-      <div className="flex items-start gap-3">
-        {children}
-        <div>
-          <p className="text-sm font-semibold">{label}</p>
-          <p className={`mt-1 text-xs leading-5 ${checked ? "text-slate-200" : "text-slate-600"}`}>{description}</p>
-        </div>
-      </div>
-    </label>
+    <RadioCard
+      className={className}
+      checked={checked ?? childChecked}
+      disabled={disabled}
+      id={id}
+      label={label}
+      description={description}
+      name={name}
+      onChange={onChange}
+      value={value}
+    />
   );
 }
 
@@ -620,30 +641,39 @@ export function LandingZoneReadinessCheckerForm({
 
   if (result) {
     return (
-      <section className="surface lift-card rounded-2xl p-6 md:p-7">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Landing Zone Readiness Checker</p>
-        <h2 className="font-display mt-2 text-3xl font-semibold text-slate-900">
-          {result.status === "sent" ? "Your results have been emailed" : "Submission received"}
-        </h2>
-        <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
-          Check your email for the full report, top fixes, and scoped consulting quote. This page intentionally stays short and does not show the detailed findings.
-        </p>
-        <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-          {result.overallScore}/100 · {result.maturityBand} · {result.quoteTier}
-        </div>
-        {result.status === "fallback" && result.reason ? (
-          <p className="mt-3 text-sm text-amber-700">{result.reason}</p>
-        ) : null}
-        <div className="mt-5 flex flex-wrap gap-3">
+      <Card className="rounded-[calc(var(--radius-xl)+0.25rem)] p-6 md:p-7" lift>
+        <CardHeader>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Landing Zone Readiness Checker</p>
+          <h2 className="font-display text-3xl font-semibold text-slate-900">
+            {result.status === "sent" ? "Your results have been emailed" : "Submission received"}
+          </h2>
+          <p className="max-w-2xl text-sm leading-7 text-slate-600">
+            Check your email for the full report, top fixes, and scoped consulting quote. This page intentionally stays short and does not show the detailed findings.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert tone="success">
+            <AlertTitle>Readiness summary</AlertTitle>
+            <AlertDescription>{result.overallScore}/100 · {result.maturityBand} · {result.quoteTier}</AlertDescription>
+          </Alert>
+          {result.status === "fallback" && result.reason ? (
+            <Alert tone="warning">
+              <AlertTitle>Email delivery fallback</AlertTitle>
+              <AlertDescription>{result.reason}</AlertDescription>
+            </Alert>
+          ) : null}
+        </CardContent>
+        <CardFooter>
           <Link
             href={CONSULTATION_CTA_PATH}
             onClick={() => trackAnalyticsEvent("landing_zone_consultation_cta_clicked")}
-            className="focus-ring inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+            className={buttonVariants()}
           >
             Book consultation
           </Link>
-          <button
+          <Button
             type="button"
+            variant="secondary"
             onClick={() => {
               setForm({
                 ...INITIAL_STATE,
@@ -654,12 +684,11 @@ export function LandingZoneReadinessCheckerForm({
               setResult(null);
               setError(null);
             }}
-            className="focus-ring rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
           >
             Run another check
-          </button>
-        </div>
-      </section>
+          </Button>
+        </CardFooter>
+      </Card>
     );
   }
 
@@ -679,12 +708,12 @@ export function LandingZoneReadinessCheckerForm({
             <p className="mt-1 text-sm font-semibold text-slate-900">About 4 to 7 minutes</p>
           </div>
         </div>
-        <div className="mt-5 flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-600">
-          <span className="rounded-full border border-slate-300 bg-white px-3 py-1">Free</span>
-          <span className="rounded-full border border-slate-300 bg-white px-3 py-1">Business email only</span>
-          <span className="rounded-full border border-slate-300 bg-white px-3 py-1">Results by email</span>
-          <span className="rounded-full border border-slate-300 bg-white px-3 py-1">Deterministic quote</span>
-          <span className="rounded-full border border-slate-300 bg-white px-3 py-1">No AI scoring</span>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Badge variant="success">Free</Badge>
+          <Badge variant="secondary">Business email only</Badge>
+          <Badge variant="secondary">Results by email</Badge>
+          <Badge variant="secondary">Deterministic quote</Badge>
+          <Badge variant="secondary">No AI scoring</Badge>
         </div>
         <div className="mt-5 grid gap-3 md:grid-cols-3">
           {productHighlights.map((highlight) => (
@@ -705,22 +734,7 @@ export function LandingZoneReadinessCheckerForm({
             <h3 className="font-display mt-1 text-2xl font-semibold text-slate-900">{currentStepMeta.title}</h3>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{currentStepMeta.description}</p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {STEPS.map((step, index) => (
-              <span
-                key={step.id}
-                className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${
-                  index === currentStep
-                    ? "border-slate-900 bg-slate-900 text-white"
-                    : index < currentStep
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                      : "border-slate-300 bg-slate-100 text-slate-600"
-                }`}
-              >
-                {step.title}
-              </span>
-            ))}
-          </div>
+          <StepIndicator currentStep={currentStep} items={STEPS} />
         </div>
 
         {currentStep === 0 ? (
@@ -1168,51 +1182,50 @@ export function LandingZoneReadinessCheckerForm({
 
             <label className="block space-y-1">
               <span className={fieldLabelClassName}>What is the biggest cloud challenge your company is dealing with right now?</span>
-              <textarea
+              <Textarea
                 value={form.biggestChallenge}
                 onChange={(event) => setStringField("biggestChallenge", event.target.value)}
                 placeholder="Optional, but useful for tailoring the email and follow-up."
-                className="focus-ring min-h-28 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-[0_1px_0_rgba(255,255,255,0.65)_inset]"
+                className="min-h-28"
               />
             </label>
           </div>
         ) : null}
 
         {error ? (
-          <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">
-            <p className="font-semibold text-rose-800">One thing to fix before continuing</p>
-            <p className="mt-1">{error}</p>
-          </div>
+          <Alert tone="danger" className="mt-5">
+            <AlertTitle>One thing to fix before continuing</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         ) : null}
 
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <div className="text-xs text-slate-500">The full report is emailed. It is not shown on this page.</div>
           <div className="flex flex-wrap gap-3">
             {currentStep > 0 ? (
-              <button
+              <Button
                 type="button"
                 onClick={previousStep}
-                className="focus-ring rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                variant="secondary"
               >
                 Back
-              </button>
+              </Button>
             ) : null}
             {currentStep < STEPS.length - 1 ? (
-              <button
+              <Button
                 type="button"
                 onClick={nextStep}
-                className="focus-ring rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
               >
                 Next step
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="focus-ring rounded-md bg-gradient-to-r from-slate-900 to-[#174f7f] px-4 py-2 text-sm font-semibold text-white transition hover:from-slate-800 hover:to-[#1d628f] disabled:cursor-not-allowed disabled:opacity-60"
+                loading={isSubmitting}
               >
                 {isSubmitting ? "Emailing results..." : "Email my results"}
-              </button>
+              </Button>
             )}
           </div>
         </div>
