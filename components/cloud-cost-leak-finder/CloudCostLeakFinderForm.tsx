@@ -1,9 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import {
+  Children,
+  isValidElement,
+  useEffect,
+  useState,
+  type InputHTMLAttributes,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import { z } from "zod";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { RadioCard } from "@/components/ui/radio-card";
+import { StepIndicator } from "@/components/ui/step-indicator";
+import { Textarea } from "@/components/ui/textarea";
 import {
   getCloudCostLeakFinderQuestion,
   selectCloudCostLeakFinderFollowUpQuestions,
@@ -108,20 +123,27 @@ function ChoiceCard({
   description: string;
   children: ReactNode;
 }) {
+  const input = Children.only(children);
+
+  if (!isValidElement<HTMLInputElement>(input)) {
+    return null;
+  }
+
+  const radioInput = input as unknown as ReactElement<InputHTMLAttributes<HTMLInputElement>>;
+  const { checked: childChecked, className, disabled, id, name, onChange, value } = radioInput.props;
+
   return (
-    <label
-      className={`block rounded-xl border p-3 transition ${
-        checked ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-900"
-      }`}
-    >
-      <div className="flex items-start gap-3">
-        {children}
-        <div>
-          <p className="text-sm font-semibold">{label}</p>
-          <p className={`mt-1 text-xs leading-5 ${checked ? "text-slate-200" : "text-slate-600"}`}>{description}</p>
-        </div>
-      </div>
-    </label>
+    <RadioCard
+      className={className}
+      checked={checked ?? childChecked}
+      disabled={disabled}
+      id={id}
+      label={label}
+      description={description}
+      name={name}
+      onChange={onChange}
+      value={value}
+    />
   );
 }
 
@@ -394,28 +416,39 @@ export function CloudCostLeakFinderForm({
 
   if (result) {
     return (
-      <section className="surface lift-card rounded-2xl p-6 md:p-7">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Cloud Cost Leak Finder</p>
-        <h2 className="font-display mt-2 text-3xl font-semibold text-slate-900">
-          {result.status === "sent" ? "Your cost review has been emailed." : "Submission received"}
-        </h2>
-        <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">{result.verdictHeadline}</p>
-        {result.savingsRangeLine ? (
-          <p className="mt-2 text-sm font-semibold text-slate-900">{result.savingsRangeLine}</p>
-        ) : null}
-        {result.status === "fallback" && result.reason ? (
-          <p className="mt-3 text-sm text-amber-700">{result.reason}</p>
-        ) : null}
-        <div className="mt-5 flex flex-wrap gap-3">
+      <Card className="rounded-[calc(var(--radius-xl)+0.25rem)] p-6 md:p-7" lift>
+        <CardHeader>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Cloud Cost Leak Finder</p>
+          <h2 className="font-display text-3xl font-semibold text-slate-900">
+            {result.status === "sent" ? "Your cost review has been emailed." : "Submission received"}
+          </h2>
+          <p className="max-w-2xl text-sm leading-7 text-slate-600">{result.verdictHeadline}</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {result.savingsRangeLine ? (
+            <Alert tone="success">
+              <AlertTitle>Estimated savings range</AlertTitle>
+              <AlertDescription>{result.savingsRangeLine}</AlertDescription>
+            </Alert>
+          ) : null}
+          {result.status === "fallback" && result.reason ? (
+            <Alert tone="warning">
+              <AlertTitle>Email delivery fallback</AlertTitle>
+              <AlertDescription>{result.reason}</AlertDescription>
+            </Alert>
+          ) : null}
+        </CardContent>
+        <CardFooter>
           <Link
             href={CONSULTATION_CTA_PATH}
             onClick={() => trackAnalyticsEvent("cloud_cost_leak_finder_consultation_cta_clicked")}
-            className="focus-ring inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+            className={buttonVariants()}
           >
             Book consultation
           </Link>
-          <button
+          <Button
             type="button"
+            variant="secondary"
             onClick={() => {
               setForm({
                 ...INITIAL_STATE,
@@ -428,12 +461,11 @@ export function CloudCostLeakFinderForm({
               setHasTrackedAdaptiveStart(false);
               setHasTrackedBillingSummaryPaste(false);
             }}
-            className="focus-ring rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
           >
             Run another review
-          </button>
-        </div>
-      </section>
+          </Button>
+        </CardFooter>
+      </Card>
     );
   }
 
@@ -454,12 +486,12 @@ export function CloudCostLeakFinderForm({
             <p className="mt-1 text-sm font-semibold text-slate-900">About 3 to 5 minutes</p>
           </div>
         </div>
-        <div className="mt-5 flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-600">
-          <span className="rounded-full border border-slate-300 bg-white px-3 py-1">Free</span>
-          <span className="rounded-full border border-slate-300 bg-white px-3 py-1">Business email only</span>
-          <span className="rounded-full border border-slate-300 bg-white px-3 py-1">Results by email</span>
-          <span className="rounded-full border border-slate-300 bg-white px-3 py-1">Deterministic memo</span>
-          <span className="rounded-full border border-slate-300 bg-white px-3 py-1">No AI scoring</span>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Badge variant="success">Free</Badge>
+          <Badge variant="secondary">Business email only</Badge>
+          <Badge variant="secondary">Results by email</Badge>
+          <Badge variant="secondary">Deterministic memo</Badge>
+          <Badge variant="secondary">No AI scoring</Badge>
         </div>
         <div className="mt-5 grid gap-3 md:grid-cols-3">
           {productHighlights.map((highlight) => (
@@ -486,22 +518,10 @@ export function CloudCostLeakFinderForm({
                   : "A short adaptive set of questions based on the narrative and billing clues you already gave."}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {STEP_TITLES.map((title, index) => (
-              <span
-                key={title}
-                className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${
-                  index === currentStep
-                    ? "border-slate-900 bg-slate-900 text-white"
-                    : index < currentStep
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                      : "border-slate-300 bg-slate-100 text-slate-600"
-                }`}
-              >
-                {title}
-              </span>
-            ))}
-          </div>
+          <StepIndicator
+            currentStep={currentStep}
+            items={STEP_TITLES.map((title) => ({ id: title.toLowerCase().replace(/\s+/g, "-"), title }))}
+          />
         </div>
 
         {currentStep === 0 ? (
@@ -591,10 +611,10 @@ export function CloudCostLeakFinderForm({
               <span className={fieldLabelClassName}>
                 Describe your cloud environment, what you think is driving cost, what workloads you run, and what is frustrating you most.
               </span>
-              <textarea
+              <Textarea
                 value={form.narrativeInput}
                 onChange={(event) => setStringField("narrativeInput", event.target.value)}
-                className={`${fieldClassName} min-h-44`}
+                className="min-h-44"
                 placeholder="Tell us what is in the environment, what keeps getting expensive, and what you want clarified first."
               />
             </label>
@@ -610,10 +630,10 @@ export function CloudCostLeakFinderForm({
               <span className={fieldLabelClassName}>
                 Optional: paste your top services, rough monthly spend, or a cost summary from AWS / Azure / GCP.
               </span>
-              <textarea
+              <Textarea
                 value={form.billingSummaryInput}
                 onChange={(event) => setStringField("billingSummaryInput", event.target.value)}
-                className={`${fieldClassName} min-h-36`}
+                className="min-h-36"
                 placeholder={"EC2 $4,200\nRDS $2,100\nNAT Gateway $650\nS3 $400"}
               />
               <p className="text-xs leading-5 text-slate-500">
@@ -666,38 +686,38 @@ export function CloudCostLeakFinderForm({
         ) : null}
 
         {error ? (
-          <div role="alert" className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            {error}
-          </div>
+          <Alert tone="warning" className="mt-5">
+            <AlertTitle>One thing to fix before continuing</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         ) : null}
 
         <div className="mt-6 flex flex-wrap gap-3">
           {currentStep > 0 ? (
-            <button
+            <Button
               type="button"
               onClick={previousStep}
-              className="focus-ring rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              variant="secondary"
             >
               Back
-            </button>
+            </Button>
           ) : null}
 
           {currentStep < STEP_TITLES.length - 1 ? (
-            <button
+            <Button
               type="button"
               onClick={nextStep}
-              className="focus-ring rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
               Next step
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
               type="submit"
               disabled={isSubmitting}
-              className="focus-ring rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+              loading={isSubmitting}
             >
               {isSubmitting ? "Emailing review..." : "Email my cost review"}
-            </button>
+            </Button>
           )}
         </div>
       </section>
