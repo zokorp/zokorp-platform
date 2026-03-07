@@ -3,6 +3,10 @@
 import { useState } from "react";
 
 import { EmailVerificationResendForm } from "@/components/email-verification-resend-form";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 type PasswordRegisterFormProps = {
   callbackUrl: string;
@@ -61,11 +65,9 @@ export function PasswordRegisterForm({ callbackUrl }: PasswordRegisterFormProps)
   if (registeredEmail) {
     return (
       <div className="mt-6 space-y-4">
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-          {successMessage}
-        </div>
+        <Alert tone="success">{successMessage}</Alert>
 
-        <div className="rounded-xl border border-slate-200 bg-white px-4 py-4">
+        <Card className="rounded-2xl p-4">
           {verificationEmailSent ? (
             <p className="text-sm text-slate-700">
               Verification email sent to <span className="font-semibold text-slate-900">{registeredEmail}</span>.
@@ -80,70 +82,63 @@ export function PasswordRegisterForm({ callbackUrl }: PasswordRegisterFormProps)
             Use that link first. After verification, sign in and continue to{" "}
             <span className="font-medium text-slate-900">{callbackUrl}</span>.
           </p>
-        </div>
+        </Card>
 
-        <div className="rounded-xl border border-slate-200 bg-white px-4 py-4">
+        <Card className="rounded-2xl p-4">
           <p className="mb-3 text-sm font-medium text-slate-900">Need a fresh verification email?</p>
           <EmailVerificationResendForm defaultEmail={registeredEmail} submitLabel="Resend verification email" />
-        </div>
+        </Card>
       </div>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-6 space-y-3">
-      <label htmlFor="name" className="block text-sm font-medium text-slate-700">
-        Name
+    <form onSubmit={onSubmit} className="mt-6 space-y-4">
+      <label htmlFor="name" className="block space-y-2">
+        <span className="text-sm font-medium text-slate-700">Name</span>
+        <Input
+          id="name"
+          type="text"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          autoComplete="name"
+          maxLength={120}
+          placeholder="Your name"
+        />
       </label>
-      <input
-        id="name"
-        type="text"
-        value={name}
-        onChange={(event) => setName(event.target.value)}
-        autoComplete="name"
-        maxLength={120}
-        placeholder="Your name"
-        className="focus-ring block w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
-      />
 
-      <label htmlFor="email" className="block text-sm font-medium text-slate-700">
-        Business email
+      <label htmlFor="email" className="block space-y-2">
+        <span className="text-sm font-medium text-slate-700">Business email</span>
+        <Input
+          id="email"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          required
+          autoComplete="email"
+          placeholder="you@company.com"
+        />
       </label>
-      <input
-        id="email"
-        type="email"
-        value={email}
-        onChange={(event) => setEmail(event.target.value)}
-        required
-        autoComplete="email"
-        placeholder="you@company.com"
-        className="focus-ring block w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
-      />
 
-      <label htmlFor="password" className="block text-sm font-medium text-slate-700">
-        Password
+      <label htmlFor="password" className="block space-y-2">
+        <span className="text-sm font-medium text-slate-700">Password</span>
+        <Input
+          id="password"
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          required
+          minLength={12}
+          autoComplete="new-password"
+          placeholder="At least 12 chars, upper/lower/number/symbol"
+        />
       </label>
-      <input
-        id="password"
-        type="password"
-        value={password}
-        onChange={(event) => setPassword(event.target.value)}
-        required
-        minLength={12}
-        autoComplete="new-password"
-        placeholder="At least 12 chars, upper/lower/number/symbol"
-        className="focus-ring block w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
-      />
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="focus-ring inline-flex rounded-md bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-      >
+      <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Creating account..." : "Create account"}
-      </button>
+      </Button>
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <Alert tone="danger">{error}</Alert> : null}
     </form>
   );
 }

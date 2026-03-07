@@ -1,3 +1,4 @@
+import { Card } from "@/components/ui/card";
 import { buildPageMetadata } from "@/lib/site";
 
 export const metadata = buildPageMetadata({
@@ -41,15 +42,15 @@ const sections = [
 export default function PrivacyPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-8">
-      <section className="glass-surface animate-fade-up rounded-2xl p-6 md:p-8">
+      <Card tone="glass" className="animate-fade-up rounded-2xl p-6 md:p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Privacy</p>
         <h1 className="font-display mt-2 text-balance text-4xl font-semibold text-slate-900">Privacy overview</h1>
         <p className="mt-4 text-sm leading-7 text-slate-600 md:text-base">
           This page summarizes how ZoKorp Platform handles account, billing, and uploaded-workflow data.
         </p>
-      </section>
+      </Card>
 
-      <section className="surface rounded-2xl p-6 md:p-8">
+      <Card className="rounded-2xl p-6 md:p-8">
         <div className="space-y-8">
           {sections.map((section) => (
             <section key={section.title} className="space-y-3">
@@ -62,7 +63,7 @@ export default function PrivacyPage() {
             </section>
           ))}
         </div>
-      </section>
+      </Card>
     </div>
   );
 }

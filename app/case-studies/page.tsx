@@ -1,5 +1,8 @@
 import Link from "next/link";
 
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { buildPageMetadata } from "@/lib/site";
 
 export const metadata = buildPageMetadata({
@@ -70,9 +73,9 @@ export default function CaseStudiesPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{study.label}</p>
                 <h2 className="font-display mt-1 text-3xl font-semibold text-slate-900">{study.title}</h2>
               </div>
-              <span className="rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.1em] text-teal-700">
+              <Badge variant="brand">
                 Software + services
-              </span>
+              </Badge>
             </div>
             <p className="mt-4 text-sm leading-7 text-slate-700 md:text-base">
               <span className="font-semibold text-slate-900">Situation:</span> {study.summary}
@@ -91,26 +94,20 @@ export default function CaseStudiesPage() {
         ))}
       </section>
 
-      <section className="glass-surface rounded-2xl p-6">
+      <Card tone="glass" className="rounded-2xl p-6">
         <h2 className="font-display text-2xl font-semibold text-slate-900">Need the platform version of this work?</h2>
         <p className="mt-3 text-sm leading-6 text-slate-600">
           Start with the software catalog or request a scoped service conversation for larger delivery needs.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
-          <Link
-            href="/software"
-            className="focus-ring inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-          >
+          <Link href="/software" className={buttonVariants()}>
             Browse software
           </Link>
-          <Link
-            href="/services"
-            className="focus-ring inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-100"
-          >
+          <Link href="/services" className={buttonVariants({ variant: "secondary" })}>
             Browse services
           </Link>
         </div>
-      </section>
+      </Card>
     </div>
   );
 }

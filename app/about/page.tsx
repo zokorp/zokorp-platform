@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { buildPageMetadata } from "@/lib/site";
 
 export const metadata = buildPageMetadata({
@@ -67,17 +69,17 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="glass-surface rounded-2xl p-6">
+      <Card tone="glass" className="rounded-2xl p-6">
         <h2 className="font-display text-2xl font-semibold text-slate-900">Where to go next</h2>
         <div className="mt-5 flex flex-wrap gap-2">
-          <Link href="/pricing" className="focus-ring inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">
+          <Link href="/pricing" className={buttonVariants()}>
             View pricing
           </Link>
-          <Link href="/case-studies" className="focus-ring inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-100">
+          <Link href="/case-studies" className={buttonVariants({ variant: "secondary" })}>
             View case studies
           </Link>
         </div>
-      </section>
+      </Card>
     </div>
   );
 }

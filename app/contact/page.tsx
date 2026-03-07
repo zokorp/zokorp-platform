@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { buttonVariants } from "@/components/ui/button";
 import { buildPageMetadata } from "@/lib/site";
 
 export const metadata = buildPageMetadata({
@@ -52,10 +53,10 @@ export default function ContactPage() {
           That reduces back-and-forth and makes follow-up faster.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
-          <Link href="/services#service-request" className="focus-ring inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">
+          <Link href="/services#service-request" className={buttonVariants()}>
             Request services
           </Link>
-          <Link href="/software" className="focus-ring inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-100">
+          <Link href="/software" className={buttonVariants({ variant: "secondary" })}>
             Browse software
           </Link>
         </div>

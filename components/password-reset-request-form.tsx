@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
 export function PasswordResetRequestForm() {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,31 +40,26 @@ export function PasswordResetRequestForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-6 space-y-3">
-      <label htmlFor="reset-email" className="block text-sm font-medium text-slate-700">
-        Business email
+    <form onSubmit={onSubmit} className="mt-6 space-y-4">
+      <label htmlFor="reset-email" className="block space-y-2">
+        <span className="text-sm font-medium text-slate-700">Business email</span>
+        <Input
+          id="reset-email"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          required
+          autoComplete="email"
+          placeholder="you@company.com"
+        />
       </label>
-      <input
-        id="reset-email"
-        type="email"
-        value={email}
-        onChange={(event) => setEmail(event.target.value)}
-        required
-        autoComplete="email"
-        placeholder="you@company.com"
-        className="focus-ring block w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
-      />
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="focus-ring inline-flex rounded-md bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-      >
+      <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Sending..." : "Send reset link"}
-      </button>
+      </Button>
 
-      {message ? <p className="text-sm text-emerald-700">{message}</p> : null}
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {message ? <Alert tone="success">{message}</Alert> : null}
+      {error ? <Alert tone="danger">{error}</Alert> : null}
     </form>
   );
 }

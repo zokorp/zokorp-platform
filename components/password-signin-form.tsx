@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
 type PasswordSignInFormProps = {
   callbackUrl: string;
 };
@@ -45,43 +49,37 @@ export function PasswordSignInForm({ callbackUrl }: PasswordSignInFormProps) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-6 space-y-3">
-      <label htmlFor="email" className="block text-sm font-medium text-slate-700">
-        Business email
+    <form onSubmit={onSubmit} className="mt-6 space-y-4">
+      <label htmlFor="email" className="block space-y-2">
+        <span className="text-sm font-medium text-slate-700">Business email</span>
+        <Input
+          id="email"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          required
+          autoComplete="email"
+          placeholder="you@company.com"
+        />
       </label>
-      <input
-        id="email"
-        type="email"
-        value={email}
-        onChange={(event) => setEmail(event.target.value)}
-        required
-        autoComplete="email"
-        placeholder="you@company.com"
-        className="focus-ring block w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
-      />
 
-      <label htmlFor="password" className="block text-sm font-medium text-slate-700">
-        Password
+      <label htmlFor="password" className="block space-y-2">
+        <span className="text-sm font-medium text-slate-700">Password</span>
+        <Input
+          id="password"
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          required
+          autoComplete="current-password"
+        />
       </label>
-      <input
-        id="password"
-        type="password"
-        value={password}
-        onChange={(event) => setPassword(event.target.value)}
-        required
-        autoComplete="current-password"
-        className="focus-ring block w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
-      />
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="focus-ring inline-flex rounded-md bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-      >
+      <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Signing in..." : "Sign in"}
-      </button>
+      </Button>
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <Alert tone="danger">{error}</Alert> : null}
     </form>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { buttonVariants } from "@/components/ui/button";
 import { type BenchmarkProvider, getBenchmarkProvider } from "@/lib/architecture-benchmarks";
 import { buildPageMetadata } from "@/lib/site";
 
@@ -63,10 +64,7 @@ export default async function ProviderBenchmarkPage({
             <p className="mt-3 text-sm font-semibold text-slate-900">
               Score range: {pattern.scoreRange[0]} to {pattern.scoreRange[1]}
             </p>
-            <Link
-              href={`/software/architecture-diagram-reviewer/benchmarks/${providerLibrary.provider}/${pattern.slug}`}
-              className="focus-ring mt-4 inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
+            <Link href={`/software/architecture-diagram-reviewer/benchmarks/${providerLibrary.provider}/${pattern.slug}`} className={`${buttonVariants()} mt-4`}>
               Open pattern breakdown
             </Link>
           </article>
@@ -74,10 +72,7 @@ export default async function ProviderBenchmarkPage({
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
-        <Link
-          href="/software/architecture-diagram-reviewer"
-          className="focus-ring inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-        >
+        <Link href="/software/architecture-diagram-reviewer" className={buttonVariants({ variant: "secondary" })}>
           Run free architecture review
         </Link>
       </section>

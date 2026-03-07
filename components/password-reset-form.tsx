@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
 type PasswordResetFormProps = {
   token: string;
 };
@@ -52,45 +56,39 @@ export function PasswordResetForm({ token }: PasswordResetFormProps) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-6 space-y-3">
-      <label htmlFor="new-password" className="block text-sm font-medium text-slate-700">
-        New password
+    <form onSubmit={onSubmit} className="mt-6 space-y-4">
+      <label htmlFor="new-password" className="block space-y-2">
+        <span className="text-sm font-medium text-slate-700">New password</span>
+        <Input
+          id="new-password"
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          required
+          minLength={12}
+          autoComplete="new-password"
+        />
       </label>
-      <input
-        id="new-password"
-        type="password"
-        value={password}
-        onChange={(event) => setPassword(event.target.value)}
-        required
-        minLength={12}
-        autoComplete="new-password"
-        className="focus-ring block w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
-      />
 
-      <label htmlFor="confirm-password" className="block text-sm font-medium text-slate-700">
-        Confirm password
+      <label htmlFor="confirm-password" className="block space-y-2">
+        <span className="text-sm font-medium text-slate-700">Confirm password</span>
+        <Input
+          id="confirm-password"
+          type="password"
+          value={confirmPassword}
+          onChange={(event) => setConfirmPassword(event.target.value)}
+          required
+          minLength={12}
+          autoComplete="new-password"
+        />
       </label>
-      <input
-        id="confirm-password"
-        type="password"
-        value={confirmPassword}
-        onChange={(event) => setConfirmPassword(event.target.value)}
-        required
-        minLength={12}
-        autoComplete="new-password"
-        className="focus-ring block w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
-      />
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="focus-ring inline-flex rounded-md bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-      >
+      <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Updating..." : "Update password"}
-      </button>
+      </Button>
 
-      {message ? <p className="text-sm text-emerald-700">{message}</p> : null}
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {message ? <Alert tone="success">{message}</Alert> : null}
+      {error ? <Alert tone="danger">{error}</Alert> : null}
     </form>
   );
 }

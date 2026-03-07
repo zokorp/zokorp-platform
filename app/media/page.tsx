@@ -1,6 +1,8 @@
 import Link from "next/link";
 
+import { buttonVariants } from "@/components/ui/button";
 import { getMediaArticles } from "@/data/media-articles";
+import { cn } from "@/lib/utils";
 import { buildPageMetadata } from "@/lib/site";
 
 export const metadata = buildPageMetadata({
@@ -35,10 +37,7 @@ export default function MediaPage() {
               <span>{article.readTime}</span>
               <span>{new Date(article.publishedAt).toLocaleDateString("en-US")}</span>
             </div>
-            <Link
-              href={`/media/${article.slug}`}
-              className="focus-ring mt-5 inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
+            <Link href={`/media/${article.slug}`} className={`${buttonVariants()} mt-5`}>
               Read article
             </Link>
           </article>
@@ -52,15 +51,12 @@ export default function MediaPage() {
           for larger readiness work.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
-          <Link
-            href="/software"
-            className="focus-ring inline-flex rounded-md bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
-          >
+          <Link href="/software" className={buttonVariants({ variant: "secondary" })}>
             Browse software
           </Link>
           <Link
             href="/services"
-            className="focus-ring inline-flex rounded-md border border-slate-400 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+            className={cn(buttonVariants({ variant: "ghost" }), "border border-white/30 text-white hover:bg-white/10")}
           >
             Browse services
           </Link>

@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { ARCHITECTURE_BENCHMARK_LIBRARY, getBenchmarkFaqItems } from "@/lib/architecture-benchmarks";
 import { buildPageMetadata, getSiteUrl } from "@/lib/site";
 
@@ -64,9 +66,9 @@ export default function ArchitectureBenchmarkLibraryPage() {
           before your next review.
         </p>
         <div className="mt-5 flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-100">
-          <span className="rounded-full border border-white/30 bg-white/10 px-3 py-1">Anonymized aggregates</span>
-          <span className="rounded-full border border-white/30 bg-white/10 px-3 py-1">Deterministic scoring</span>
-          <span className="rounded-full border border-white/30 bg-white/10 px-3 py-1">Email-only detailed results</span>
+          <Badge className="border-white/30 bg-white/10 text-white">Anonymized aggregates</Badge>
+          <Badge className="border-white/30 bg-white/10 text-white">Deterministic scoring</Badge>
+          <Badge className="border-white/30 bg-white/10 text-white">Email-only detailed results</Badge>
         </div>
       </section>
 
@@ -88,10 +90,7 @@ export default function ArchitectureBenchmarkLibraryPage() {
                 </li>
               ))}
             </ul>
-            <Link
-              href={`/software/architecture-diagram-reviewer/benchmarks/${provider.provider}`}
-              className="focus-ring mt-5 inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
+            <Link href={`/software/architecture-diagram-reviewer/benchmarks/${provider.provider}`} className={`${buttonVariants()} mt-5`}>
               Open {provider.providerLabel} benchmarks
             </Link>
           </article>
@@ -104,10 +103,7 @@ export default function ArchitectureBenchmarkLibraryPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Monthly Summary</p>
             <h2 className="font-display mt-2 text-2xl font-semibold text-slate-900">Score movement and recurring gaps</h2>
           </div>
-          <Link
-            href="/software/architecture-diagram-reviewer/benchmarks/monthly"
-            className="focus-ring inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-          >
+          <Link href="/software/architecture-diagram-reviewer/benchmarks/monthly" className={buttonVariants({ variant: "secondary" })}>
             View monthly benchmark digest
           </Link>
         </div>
@@ -132,10 +128,7 @@ export default function ArchitectureBenchmarkLibraryPage() {
           Benchmark pages are directional aggregates. For deterministic findings and quote options, run your own
           architecture review.
         </p>
-        <Link
-          href="/software/architecture-diagram-reviewer"
-          className="focus-ring mt-5 inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-        >
+        <Link href="/software/architecture-diagram-reviewer" className={`${buttonVariants()} mt-5`}>
           Open Architecture Diagram Reviewer
         </Link>
       </section>

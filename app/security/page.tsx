@@ -1,3 +1,4 @@
+import { Card } from "@/components/ui/card";
 import { buildPageMetadata } from "@/lib/site";
 
 export const metadata = buildPageMetadata({
@@ -36,14 +37,14 @@ const controls = [
 export default function SecurityPage() {
   return (
     <div className="space-y-8">
-      <section className="glass-surface animate-fade-up rounded-2xl p-6 md:p-8">
+      <Card tone="glass" className="animate-fade-up rounded-2xl p-6 md:p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Security</p>
         <h1 className="font-display mt-2 text-balance text-4xl font-semibold text-slate-900">Current platform security posture</h1>
         <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 md:text-base">
           ZoKorp focuses on practical controls that protect account access, billing actions, and uploaded inputs.
           This page describes the platform as it is implemented today, not a certification claim.
         </p>
-      </section>
+      </Card>
 
       <section className="grid gap-4 md:grid-cols-2">
         {controls.map((control) => (
@@ -54,14 +55,14 @@ export default function SecurityPage() {
         ))}
       </section>
 
-      <section className="surface soft-grid rounded-2xl p-6 md:p-8">
+      <Card className="soft-grid rounded-2xl p-6 md:p-8">
         <h2 className="font-display text-3xl font-semibold text-slate-900">Security contact</h2>
         <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
           Report suspected account abuse, access issues, or security concerns to
           <span className="font-medium text-slate-900"> zkhawaja@zokorp.com</span>. Include the affected account email,
           the product involved, and the behavior you observed.
         </p>
-      </section>
+      </Card>
     </div>
   );
 }

@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { Alert } from "@/components/ui/alert";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
 type CheckoutButtonProps = {
   productSlug: string;
   priceId: string;
@@ -58,13 +62,9 @@ export function CheckoutButton({
   if (authUnavailable) {
     return (
       <div className="space-y-2">
-        <button
-          type="button"
-          disabled
-          className="w-full cursor-not-allowed rounded-md border border-slate-300 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-500"
-        >
+        <Button type="button" disabled fullWidth variant="secondary">
           Checkout unavailable until login setup is complete
-        </button>
+        </Button>
       </div>
     );
   }
@@ -72,13 +72,9 @@ export function CheckoutButton({
   if (billingUnavailable) {
     return (
       <div className="space-y-2">
-        <button
-          type="button"
-          disabled
-          className="w-full cursor-not-allowed rounded-md border border-slate-300 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-500"
-        >
+        <Button type="button" disabled fullWidth variant="secondary">
           Checkout unavailable while billing setup is being finalized
-        </button>
+        </Button>
       </div>
     );
   }
@@ -88,7 +84,7 @@ export function CheckoutButton({
       <div className="space-y-2">
         <Link
           href={`/login?callbackUrl=/software/${productSlug}`}
-          className="focus-ring inline-flex w-full items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-100"
+          className={cn(buttonVariants({ variant: "secondary", size: "md", fullWidth: true }))}
         >
           Sign in to continue
         </Link>
@@ -98,15 +94,10 @@ export function CheckoutButton({
 
   return (
     <div className="space-y-2">
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={isLoading}
-        className="focus-ring w-full rounded-md bg-gradient-to-r from-slate-900 to-[#153f67] px-4 py-2 text-sm font-semibold text-white transition hover:from-slate-800 hover:to-[#174f7f] disabled:cursor-not-allowed disabled:opacity-60"
-      >
+      <Button type="button" onClick={onClick} disabled={isLoading} fullWidth>
         {isLoading ? "Redirecting..." : label}
-      </button>
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      </Button>
+      {error ? <Alert tone="danger">{error}</Alert> : null}
     </div>
   );
 }

@@ -1,6 +1,9 @@
 import Link from "next/link";
 
 import { PasswordResetForm } from "@/components/password-reset-form";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
 
 export default async function ResetPasswordPage({
   searchParams,
@@ -12,24 +15,24 @@ export default async function ResetPasswordPage({
 
   return (
     <div className="mx-auto max-w-xl space-y-5">
-      <section className="glass-surface animate-fade-up rounded-2xl p-8">
+      <Card tone="glass" className="animate-fade-up rounded-2xl p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Password Reset</p>
         <h1 className="font-display mt-2 text-4xl font-semibold text-slate-900">Set a new password</h1>
 
         {token ? (
           <PasswordResetForm token={token} />
         ) : (
-          <p className="mt-3 text-sm text-rose-700">Missing or invalid reset token. Request a new reset link.</p>
+          <Alert tone="danger" className="mt-3">Missing or invalid reset token. Request a new reset link.</Alert>
         )}
-      </section>
+      </Card>
 
-      <section className="surface-muted lift-card rounded-2xl p-6">
+      <Card tone="muted" lift className="rounded-2xl p-6">
         <p className="text-sm text-slate-700">
-          <Link href="/login/forgot-password" className="underline">
+          <Link href="/login/forgot-password" className={buttonVariants({ variant: "link", size: "sm" })}>
             Request another reset link
           </Link>
         </p>
-      </section>
+      </Card>
     </div>
   );
 }

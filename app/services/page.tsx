@@ -1,8 +1,10 @@
 import Link from "next/link";
 
 import { ServiceRequestPanel } from "@/components/service-request-panel";
+import { buttonVariants } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { isPasswordAuthEnabled } from "@/lib/auth-config";
+import { cn } from "@/lib/utils";
 import { buildPageMetadata } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
@@ -104,15 +106,12 @@ export default async function ServicesPage() {
           progress with evidence they can trust.
         </p>
         <div className="mt-6 flex flex-wrap gap-2">
-          <Link
-            href="#service-request"
-            className="focus-ring inline-flex rounded-md bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
-          >
+          <Link href="#service-request" className={buttonVariants({ variant: "secondary" })}>
             Request service
           </Link>
           <Link
             href="/account"
-            className="focus-ring inline-flex rounded-md border border-slate-400 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+            className={cn(buttonVariants({ variant: "ghost" }), "border border-white/30 text-white hover:bg-white/10")}
           >
             Track in account
           </Link>
@@ -158,10 +157,7 @@ export default async function ServicesPage() {
             ZoKorp software tools support the same delivery patterns used in consulting engagements,
             starting with validation workflows and account-based usage tracking.
           </p>
-          <Link
-            href="/software"
-            className="focus-ring mt-5 inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-          >
+          <Link href="/software" className={`${buttonVariants()} mt-5`}>
             Explore software catalog
           </Link>
         </article>

@@ -3,6 +3,13 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+
 type ServiceRequestType = "CONSULTATION" | "DELIVERY" | "SUPPORT";
 
 const requestTypeOptions: Array<{ value: ServiceRequestType; label: string }> = [
@@ -102,9 +109,9 @@ export function ServiceRequestPanel({ signedIn }: ServiceRequestPanelProps) {
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Service Hub</p>
           <h2 className="font-display mt-1 text-3xl font-semibold text-slate-900">Request consultation or delivery</h2>
         </div>
-        <span className="rounded-full border border-slate-300 bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.1em] text-slate-700">
+        <Badge variant="secondary">
           Tracked in account
-        </span>
+        </Badge>
       </div>
 
       <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
@@ -112,23 +119,22 @@ export function ServiceRequestPanel({ signedIn }: ServiceRequestPanelProps) {
       </p>
 
       {!signedIn ? (
-        <div className="mt-5 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+        <Alert tone="info" className="mt-5">
           <p>Sign in to submit a request and track milestones from your account.</p>
           <Link
             href="/login?callbackUrl=/services"
-            className="focus-ring mt-3 inline-flex rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800"
+            className={`${buttonVariants({ size: "sm" })} mt-3`}
           >
             Sign in
           </Link>
-        </div>
+        </Alert>
       ) : null}
 
-      <form onSubmit={onSubmit} className="mt-5 grid gap-3 md:grid-cols-2">
+      <form onSubmit={onSubmit} className="mt-5 grid gap-4 md:grid-cols-2">
         <label className="space-y-1">
           <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Request type</span>
-          <select
+          <Select
             name="type"
-            className="focus-ring w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
             defaultValue="CONSULTATION"
             required
           >
@@ -137,70 +143,62 @@ export function ServiceRequestPanel({ signedIn }: ServiceRequestPanelProps) {
                 {option.label}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
 
         <label className="space-y-1">
           <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Preferred start date</span>
-          <input
+          <Input
             type="date"
             name="preferredStart"
-            className="focus-ring w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
           />
         </label>
 
         <label className="space-y-1 md:col-span-2">
           <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Request title</span>
-          <input
+          <Input
             name="title"
             required
             minLength={8}
             maxLength={120}
             placeholder="Example: FTR readiness consultation for AI advisory offering"
-            className="focus-ring w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
           />
         </label>
 
         <label className="space-y-1 md:col-span-2">
           <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">What do you need?</span>
-          <textarea
+          <Textarea
             name="summary"
             required
             minLength={30}
             maxLength={2400}
             placeholder="Describe scope, goals, timelines, and any constraints."
-            className="focus-ring min-h-28 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
           />
         </label>
 
         <label className="space-y-1">
           <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Budget range</span>
-          <select
+          <Select
             name="budgetRange"
             defaultValue="Undecided"
-            className="focus-ring w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
           >
             {budgetOptions.map((option) => (
               <option key={option} value={option}>
                 {option}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
 
         <div className="flex items-end">
-          <button
-            type="submit"
-            disabled={isSubmitting || !signedIn}
-            className="focus-ring rounded-md bg-gradient-to-r from-slate-900 to-[#174f7f] px-4 py-2 text-sm font-semibold text-white transition hover:from-slate-800 hover:to-[#1d628f] disabled:cursor-not-allowed disabled:opacity-60"
-          >
+          <Button type="submit" disabled={isSubmitting || !signedIn}>
             {submitLabel}
-          </button>
+          </Button>
         </div>
       </form>
 
       {trackingCode ? (
-        <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+        <Alert tone="success" className="mt-4">
           Request submitted. Tracking code: <span className="font-mono font-semibold">{trackingCode}</span>. You can
           track updates in your account.
           <div className="mt-2">
@@ -211,10 +209,10 @@ export function ServiceRequestPanel({ signedIn }: ServiceRequestPanelProps) {
               Open account timeline
             </Link>
           </div>
-        </div>
+        </Alert>
       ) : null}
 
-      {error ? <p className="mt-3 text-sm text-rose-700">{error}</p> : null}
+      {error ? <Alert tone="danger" className="mt-3">{error}</Alert> : null}
     </section>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { buttonVariants } from "@/components/ui/button";
 import { getMediaArticleBySlug, getMediaArticles } from "@/data/media-articles";
 import { buildPageMetadata } from "@/lib/site";
 
@@ -89,16 +90,10 @@ export default async function MediaArticlePage({
           Move from guidance to execution with ZoKorp software or a scoped delivery engagement.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
-          <Link
-            href="/software"
-            className="focus-ring inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-          >
+          <Link href="/software" className={buttonVariants()}>
             Browse software
           </Link>
-          <Link
-            href="/services"
-            className="focus-ring inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-100"
-          >
+          <Link href="/services" className={buttonVariants({ variant: "secondary" })}>
             Browse services
           </Link>
         </div>

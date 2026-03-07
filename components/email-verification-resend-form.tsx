@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
 type EmailVerificationResendFormProps = {
   defaultEmail?: string;
   submitLabel?: string;
@@ -47,30 +51,25 @@ export function EmailVerificationResendForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-3">
-      <label htmlFor="verification-email" className="block text-sm font-medium text-slate-700">
-        Business email
+      <label htmlFor="verification-email" className="block space-y-2">
+        <span className="text-sm font-medium text-slate-700">Business email</span>
+        <Input
+          id="verification-email"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          required
+          autoComplete="email"
+          placeholder="you@company.com"
+        />
       </label>
-      <input
-        id="verification-email"
-        type="email"
-        value={email}
-        onChange={(event) => setEmail(event.target.value)}
-        required
-        autoComplete="email"
-        placeholder="you@company.com"
-        className="focus-ring block w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900"
-      />
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="focus-ring inline-flex rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
-      >
+      <Button type="submit" disabled={isSubmitting} variant="secondary">
         {isSubmitting ? "Sending..." : submitLabel}
-      </button>
+      </Button>
 
-      {statusMessage ? <p className="text-sm text-emerald-700">{statusMessage}</p> : null}
-      {error ? <p className="text-sm text-rose-700">{error}</p> : null}
+      {statusMessage ? <Alert tone="success">{statusMessage}</Alert> : null}
+      {error ? <Alert tone="danger">{error}</Alert> : null}
     </form>
   );
 }

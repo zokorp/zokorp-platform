@@ -2,6 +2,9 @@ import Link from "next/link";
 
 import { EmailVerificationResendForm } from "@/components/email-verification-resend-form";
 import { PasswordSignInForm } from "@/components/password-signin-form";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
 import { isPasswordAuthEnabled } from "@/lib/auth-config";
 
 function sanitizeCallbackUrl(raw: string | undefined) {
@@ -37,44 +40,36 @@ export default async function LoginPage({
 
   return (
     <div className="mx-auto max-w-xl space-y-5">
-      <section className="glass-surface animate-fade-up rounded-2xl p-8">
+      <Card tone="glass" className="animate-fade-up rounded-2xl p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Account Access</p>
         <h1 className="font-display mt-2 text-4xl font-semibold text-slate-900">Sign in</h1>
         <p className="mt-3 text-sm leading-7 text-slate-600 md:text-base">
           Sign in with your business email and password.
         </p>
 
-        {errorMessage ? (
-          <div className="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
-            {errorMessage}
-          </div>
-        ) : null}
+        {errorMessage ? <Alert tone="danger" className="mt-6">{errorMessage}</Alert> : null}
 
-        {verificationSuccess ? (
-          <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-            Email verified. You can sign in now.
-          </div>
-        ) : null}
+        {verificationSuccess ? <Alert tone="success" className="mt-6">Email verified. You can sign in now.</Alert> : null}
 
         {passwordAuthEnabled ? (
           <PasswordSignInForm callbackUrl={callbackUrl} />
         ) : (
-          <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <Alert tone="warning" className="mt-6">
             Password auth is disabled. Set `AUTH_PASSWORD_ENABLED=true`.
-          </div>
+          </Alert>
         )}
 
         <div className="mt-4 flex flex-wrap gap-3 text-sm">
-          <Link href={`/register?callbackUrl=${encodeURIComponent(callbackUrl)}`} className="text-slate-700 underline">
+          <Link href={`/register?callbackUrl=${encodeURIComponent(callbackUrl)}`} className={buttonVariants({ variant: "link", size: "sm" })}>
             Create account
           </Link>
-          <Link href="/login/forgot-password" className="text-slate-700 underline">
+          <Link href="/login/forgot-password" className={buttonVariants({ variant: "link", size: "sm" })}>
             Forgot password?
           </Link>
         </div>
-      </section>
+      </Card>
 
-      <section className="surface-muted lift-card rounded-2xl p-6">
+      <Card tone="muted" lift className="rounded-2xl p-6">
         <h2 className="font-display text-2xl font-semibold text-slate-900">Requirements</h2>
         <ul className="mt-3 space-y-2 text-sm text-slate-700">
           <li>Business email domains only</li>
@@ -87,11 +82,11 @@ export default async function LoginPage({
           <EmailVerificationResendForm submitLabel="Resend verification email" />
         </div>
         <p className="mt-4 text-sm">
-          <Link href="/" className="text-slate-700 underline underline-offset-2 hover:text-slate-900">
+          <Link href="/" className={buttonVariants({ variant: "link", size: "sm" })}>
             Back to home
           </Link>
         </p>
-      </section>
+      </Card>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { buttonVariants } from "@/components/ui/button";
 import { type BenchmarkPattern, type BenchmarkProvider, getBenchmarkPattern, getBenchmarkProvider } from "@/lib/architecture-benchmarks";
 import { buildPageMetadata } from "@/lib/site";
 
@@ -77,10 +78,7 @@ export default async function PatternBenchmarkPage({
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Playbook snippet</p>
           <h2 className="font-display mt-2 text-2xl font-semibold text-slate-900">High-impact fix direction</h2>
           <p className="mt-3 text-sm leading-6 text-slate-600">{patternBenchmark.remediationSnippet}</p>
-          <Link
-            href="/software/architecture-diagram-reviewer"
-            className="focus-ring mt-5 inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-          >
+          <Link href="/software/architecture-diagram-reviewer" className={`${buttonVariants()} mt-5`}>
             Run free review on your architecture
           </Link>
         </article>
@@ -88,16 +86,10 @@ export default async function PatternBenchmarkPage({
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
         <div className="flex flex-wrap gap-3">
-          <Link
-            href={`/software/architecture-diagram-reviewer/benchmarks/${provider}`}
-            className="focus-ring inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-          >
+          <Link href={`/software/architecture-diagram-reviewer/benchmarks/${provider}`} className={buttonVariants({ variant: "secondary" })}>
             Back to {providerLibrary.providerLabel} benchmark list
           </Link>
-          <Link
-            href="/software/architecture-diagram-reviewer/benchmarks"
-            className="focus-ring inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-          >
+          <Link href="/software/architecture-diagram-reviewer/benchmarks" className={buttonVariants({ variant: "secondary" })}>
             Open benchmark library
           </Link>
         </div>

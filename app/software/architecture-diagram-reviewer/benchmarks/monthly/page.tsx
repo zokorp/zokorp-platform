@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { buttonVariants } from "@/components/ui/button";
 import { buildPageMetadata } from "@/lib/site";
 
 export const metadata = buildPageMetadata({
@@ -49,16 +50,10 @@ export default function MonthlyBenchmarkPage() {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
         <div className="flex flex-wrap gap-3">
-          <Link
-            href="/software/architecture-diagram-reviewer/benchmarks"
-            className="focus-ring inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-          >
+          <Link href="/software/architecture-diagram-reviewer/benchmarks" className={buttonVariants({ variant: "secondary" })}>
             Back to benchmark library
           </Link>
-          <Link
-            href="/software/architecture-diagram-reviewer"
-            className="focus-ring inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-          >
+          <Link href="/software/architecture-diagram-reviewer" className={buttonVariants()}>
             Run free architecture review
           </Link>
         </div>

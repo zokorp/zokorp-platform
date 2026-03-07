@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { buildPageMetadata } from "@/lib/site";
 
 export const metadata = buildPageMetadata({
@@ -47,7 +49,7 @@ export default function SupportPage() {
         ))}
       </section>
 
-      <section className="glass-surface rounded-2xl p-6">
+      <Card tone="glass" className="rounded-2xl p-6">
         <h2 className="font-display text-2xl font-semibold text-slate-900">How to contact support</h2>
         <p className="mt-3 text-sm leading-6 text-slate-600">
           Email <span className="font-medium text-slate-900">zkhawaja@zokorp.com</span> with the product name,
@@ -55,14 +57,14 @@ export default function SupportPage() {
           purchase context. For security issues, mark the subject line as urgent.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
-          <Link href="/security" className="focus-ring inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-100">
+          <Link href="/security" className={buttonVariants({ variant: "secondary" })}>
             Security overview
           </Link>
-          <Link href="/contact" className="focus-ring inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">
+          <Link href="/contact" className={buttonVariants()}>
             Contact page
           </Link>
         </div>
-      </section>
+      </Card>
     </div>
   );
 }
