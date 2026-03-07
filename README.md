@@ -16,6 +16,7 @@ Production-oriented Next.js platform for `zokorp.com` SaaS migration.
 - Service request workflow: `/services#service-request` (submission) + account timeline tracking
 - First tool: `ZoKorpValidator` (`zokorp-validator`) for PDF/XLSX input and text output
 - Free assessment tools:
+  - `AI Decider` (`ai-decider`)
   - `Architecture Diagram Reviewer` (`architecture-diagram-reviewer`)
   - `Landing Zone Readiness Checker` (`landing-zone-readiness-checker`)
   - `Cloud Cost Leak Finder` (`cloud-cost-leak-finder`)
@@ -105,3 +106,11 @@ For multi-thread branch/worktree operations, see [`docs/09-codex-parallel-workfl
 - Email delivery: reuses the existing Resend-first / SMTP-fallback delivery path
 - CRM: reuses the existing Zoho CRM credentials and attempts an upsert by email when configured
 - Pricing: quote defaults are code-configured in [`lib/cloud-cost-leak-finder/config.ts`](lib/cloud-cost-leak-finder/config.ts) as a solo-consultant base package plus deterministic add-ons tied to the findings and scope
+
+## AI Decider
+- Route: `/software/ai-decider`
+- Purpose: collect a business-email lead, analyze a narrative problem statement deterministically, ask adaptive follow-up questions, and email a short advisory memo with findings and a quote range
+- Storage: `AiDeciderSubmission` records the narrative, extracted signals, adaptive answers, score snapshot, recommendation, findings, blockers, quote, and CRM/email delivery status
+- Recommendation engine: deterministic keyword extraction plus fixed scoring, recommendation, and pricing rules in [`lib/ai-decider`](lib/ai-decider)
+- Email domains: blocked personal-email domains are configured in [`lib/ai-decider/config.ts`](lib/ai-decider/config.ts)
+- Email delivery and CRM: reuses the existing Resend-first / SMTP-fallback email path and Zoho CRM upsert when credentials are configured
