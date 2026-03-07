@@ -75,6 +75,7 @@ model User {
   leadLogs       LeadLog[]
   architectureReviewJobs ArchitectureReviewJob[]
   landingZoneReadinessSubmissions LandingZoneReadinessSubmission[]
+  cloudCostLeakFinderSubmissions CloudCostLeakFinderSubmission[]
   checkoutFulfillments CheckoutFulfillment[]
   usageEvents    UsageEvent[]
   serviceRequests ServiceRequest[]
@@ -350,6 +351,46 @@ model LandingZoneReadinessSubmission {
   updatedAt            DateTime @updatedAt
 
   user                 User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([email])
+  @@index([crmSyncStatus])
+}
+
+model CloudCostLeakFinderSubmission {
+  id                           String   @id @default(cuid())
+  userId                       String?
+  email                        String
+  fullName                     String
+  companyName                  String
+  roleTitle                    String
+  website                      String?
+  primaryCloud                 String
+  secondaryCloud               String?
+  narrativeInput               String
+  billingSummaryInput          String?
+  extractedSignalsJson         Json
+  adaptiveAnswersJson          Json
+  wasteRiskScore               Int
+  finopsMaturityScore          Int
+  savingsConfidenceScore       Int
+  implementationComplexityScore Int
+  roiPlausibilityScore         Int
+  confidenceScore              Int
+  likelyWasteCategoriesJson    Json
+  savingsEstimateJson          Json
+  findingsJson                 Json
+  actionsJson                  Json
+  quoteJson                    Json
+  crmSyncStatus                String?
+  emailDeliveryStatus          String?
+  zohoRecordId                 String?
+  zohoSyncError                String?
+  source                       String   @default("cloud-cost-leak-finder")
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+
+  user                         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
   @@index([email])

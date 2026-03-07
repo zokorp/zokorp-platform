@@ -66,6 +66,25 @@ async function main() {
     },
   });
 
+  const cloudCostLeakFinder = await prisma.product.upsert({
+    where: { slug: "cloud-cost-leak-finder" },
+    update: {
+      name: "Cloud Cost Leak Finder",
+      description:
+        "Free deterministic cloud cost diagnostic for SMB teams with an emailed advisory memo, likely savings range, and consulting quote.",
+      accessModel: AccessModel.FREE,
+      active: true,
+    },
+    create: {
+      slug: "cloud-cost-leak-finder",
+      name: "Cloud Cost Leak Finder",
+      description:
+        "Free deterministic cloud cost diagnostic for SMB teams with an emailed advisory memo, likely savings range, and consulting quote.",
+      accessModel: AccessModel.FREE,
+      active: true,
+    },
+  });
+
   const mlopsPlatform = await prisma.product.upsert({
     where: { slug: "mlops-foundation-platform" },
     update: {
@@ -158,7 +177,7 @@ async function main() {
   }
 
   console.log(
-    `Seeded products: ${validator.slug}, ${freeReviewer.slug}, ${landingZoneChecker.slug}, ${mlopsPlatform.slug}`,
+    `Seeded products: ${validator.slug}, ${freeReviewer.slug}, ${landingZoneChecker.slug}, ${cloudCostLeakFinder.slug}, ${mlopsPlatform.slug}`,
   );
 }
 

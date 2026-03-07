@@ -18,6 +18,7 @@ Production-oriented Next.js platform for `zokorp.com` SaaS migration.
 - Free assessment tools:
   - `Architecture Diagram Reviewer` (`architecture-diagram-reviewer`)
   - `Landing Zone Readiness Checker` (`landing-zone-readiness-checker`)
+  - `Cloud Cost Leak Finder` (`cloud-cost-leak-finder`)
 
 ## Quick start
 1. Install dependencies:
@@ -96,3 +97,11 @@ For multi-thread branch/worktree operations, see [`docs/09-codex-parallel-workfl
 - Email delivery: reuses the existing Resend-first / SMTP-fallback delivery path
 - CRM: reuses the existing Zoho CRM credentials and attempts an upsert by email when configured
 - Pricing: quote defaults are code-configured in [`lib/landing-zone-readiness/config.ts`](lib/landing-zone-readiness/config.ts) so the owner can approve and tune ranges without changing the scoring engine
+
+## Cloud Cost Leak Finder
+- Route: `/software/cloud-cost-leak-finder`
+- Purpose: collect business-email leads, parse narrative plus rough billing summaries, ask adaptive follow-up questions, and email a deterministic cloud cost advisory memo
+- Storage: `CloudCostLeakFinderSubmission` records the raw inputs, extracted signals, score snapshot, savings estimate, findings, quote, and CRM/email delivery status
+- Email delivery: reuses the existing Resend-first / SMTP-fallback delivery path
+- CRM: reuses the existing Zoho CRM credentials and attempts an upsert by email when configured
+- Pricing: quote defaults are code-configured in [`lib/cloud-cost-leak-finder/config.ts`](lib/cloud-cost-leak-finder/config.ts) as a solo-consultant base package plus deterministic add-ons tied to the findings and scope
