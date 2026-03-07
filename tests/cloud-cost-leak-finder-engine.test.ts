@@ -68,6 +68,26 @@ describe("cloud cost leak finder engine", () => {
     expect(signals.spendSignals.familyBreakdown.map((entry) => entry.family)).toContain("database");
   });
 
+  it("assigns billing amounts to the matching service on mixed lines", () => {
+    const signals = extractCloudCostSignals(
+      makeAnswers({
+        billingSummaryInput: "EC2 $4,200, RDS $2,100, NAT Gateway $650",
+      }),
+    );
+
+    expect(signals.spendSignals.totalParsedMonthlySpend).toBe(6_950);
+    expect(signals.spendSignals.parsedServices).toEqual([
+      expect.objectContaining({ service: "Amazon EC2", amount: 4_200 }),
+      expect.objectContaining({ service: "Amazon RDS", amount: 2_100 }),
+      expect.objectContaining({ service: "AWS NAT Gateway", amount: 650 }),
+    ]);
+    expect(signals.spendSignals.familyBreakdown).toEqual([
+      expect.objectContaining({ family: "compute", amount: 4_200 }),
+      expect.objectContaining({ family: "database", amount: 2_100 }),
+      expect.objectContaining({ family: "networking", amount: 650 }),
+    ]);
+  });
+
   it("selects adaptive follow-up questions from detected signals", () => {
     const questions = selectCloudCostLeakFinderFollowUpQuestions(extractCloudCostSignals(makeAnswers()));
 
@@ -120,5 +140,19 @@ describe("cloud cost leak finder engine", () => {
       "OVERPROVISIONED_COMPUTE",
       "DATABASE_OVERSPEND",
     ]);
+  });
+
+  it("does not pad likely waste categories with zero-evidence fallbacks", () => {
+    const report = buildCloudCostLeakFinderReport(
+      makeAnswers({
+        secondaryCloud: undefined,
+        narrativeInput:
+          "We run a SaaS application on AWS and leadership wants a cloud cost review before we change anything in production. We need a clearer starting point.",
+        billingSummaryInput: "",
+        adaptiveAnswers: {},
+      }),
+    );
+
+    expect(report.likelyWasteCategories).toEqual(["NEEDS_REAL_BILLING_DATA"]);
   });
 });

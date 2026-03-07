@@ -6,6 +6,7 @@ import {
   PROVIDER_TOKENS,
   SERVICE_ALIASES,
   type MaturitySignals,
+  type ServiceAliasDefinition,
   WORKLOAD_TOKENS,
 } from "@/lib/cloud-cost-leak-finder/dictionaries";
 import { evaluateNarrativeQuality, normalizeFreeText } from "@/lib/cloud-cost-leak-finder/input";
@@ -110,7 +111,7 @@ function scaleAmount(rawValue: string, suffix?: string) {
 }
 
 function parseAmountCandidates(line: string) {
-  const amounts: number[] = [];
+  const amounts = new Map<string, { amount: number; start: number; end: number }>();
   const patterns = [
     /(?:\$|usd\s*)(\d[\d,]*(?:\.\d+)?)\s*([kKmM])?/gi,
     /(\d[\d,]*(?:\.\d+)?)\s*([kKmM])?\s*(?:usd|\/mo|per month|monthly)/gi,
@@ -121,30 +122,155 @@ function parseAmountCandidates(line: string) {
     while (match) {
       const value = scaleAmount(match[1], match[2]);
       if (value !== null) {
-        amounts.push(value);
+        const rawStart = match.index ?? 0;
+        const valueOffset = match[0].indexOf(match[1]);
+        const start = rawStart + Math.max(valueOffset, 0);
+        const end = start + match[1].length + (match[2]?.length ?? 0);
+        amounts.set(`${start}:${end}:${value}`, {
+          amount: value,
+          start,
+          end,
+        });
       }
 
       match = pattern.exec(line);
     }
   }
 
-  return amounts;
+  return [...amounts.values()].sort((left, right) => left.start - right.start);
 }
 
-function parseFallbackBareAmount(line: string) {
-  const bareMatches = [...line.matchAll(/(?:^|[,\t: -])(\d[\d,]*(?:\.\d+)?)\s*([kKmM])?(?:$|[,\t ]|\/)/g)];
-  if (bareMatches.length === 0 || bareMatches.length > 2) {
+function parseFallbackAmountCandidates(line: string) {
+  const amounts = new Map<string, { amount: number; start: number; end: number }>();
+  const pattern = /(^|[,\t: -])(\d[\d,]*(?:\.\d+)?)\s*([kKmM])?(?=$|[,\t ]|\/)/g;
+  let match = pattern.exec(line);
+
+  while (match) {
+    const value = scaleAmount(match[2], match[3]);
+    if (value !== null && value >= 10) {
+      const rawStart = match.index ?? 0;
+      const valueOffset = match[0].indexOf(match[2]);
+      const start = rawStart + Math.max(valueOffset, 0);
+      const end = start + match[2].length + (match[3]?.length ?? 0);
+      amounts.set(`${start}:${end}:${value}`, {
+        amount: value,
+        start,
+        end,
+      });
+    }
+
+    match = pattern.exec(line);
+  }
+
+  return [...amounts.values()].sort((left, right) => left.start - right.start);
+}
+
+function findPhraseMatches(text: string, phrase: string) {
+  const escaped = escapeRegExp(phrase).replace(/\\ /g, "\\s+");
+  const pattern = new RegExp(`(?:^|[^a-z0-9])(${escaped})(?=[^a-z0-9]|$)`, "gi");
+  const matches: Array<{ start: number; end: number }> = [];
+  let match = pattern.exec(text);
+
+  while (match) {
+    const rawStart = match.index ?? 0;
+    const valueOffset = match[0].indexOf(match[1]);
+    const start = rawStart + Math.max(valueOffset, 0);
+    matches.push({
+      start,
+      end: start + match[1].length,
+    });
+    match = pattern.exec(text);
+  }
+
+  return matches;
+}
+
+function findServiceMatches(
+  text: string,
+  aliases: ServiceAliasDefinition[],
+): Array<ParsedBillingService & { start: number; end: number }> {
+  const matches: Array<ParsedBillingService & { start: number; end: number }> = [];
+
+  for (const alias of aliases) {
+    for (const occurrence of findPhraseMatches(text, alias.alias)) {
+      matches.push({
+        service: alias.service,
+        family: alias.family,
+        provider: alias.provider,
+        amount: null,
+        sourceLine: "",
+        start: occurrence.start,
+        end: occurrence.end,
+      });
+    }
+  }
+
+  return matches
+    .sort((left, right) => left.start - right.start)
+    .filter(
+      (match, index, collection) =>
+        index === 0 ||
+        match.service !== collection[index - 1].service ||
+        match.start !== collection[index - 1].start ||
+        match.end !== collection[index - 1].end,
+    );
+}
+
+function closestAmount(
+  candidates: Array<{ amount: number; start: number; end: number }>,
+  anchor: number,
+  direction: "before" | "after",
+) {
+  if (candidates.length === 0) {
     return null;
   }
 
-  const scaled = bareMatches
-    .map((match) => scaleAmount(match[1], match[2]))
-    .filter((value): value is number => value !== null && value >= 10);
-  if (scaled.length === 0) {
-    return null;
+  const ranked = [...candidates].sort((left, right) => {
+    const leftDistance = direction === "after" ? left.start - anchor : anchor - left.end;
+    const rightDistance = direction === "after" ? right.start - anchor : anchor - right.end;
+    if (leftDistance !== rightDistance) {
+      return leftDistance - rightDistance;
+    }
+
+    return direction === "after" ? left.start - right.start : right.start - left.start;
+  });
+
+  return ranked[0]?.amount ?? null;
+}
+
+function assignAmountToServiceMatch(
+  serviceMatch: ParsedBillingService & { start: number; end: number },
+  index: number,
+  serviceMatches: Array<ParsedBillingService & { start: number; end: number }>,
+  amountMatches: Array<{ amount: number; start: number; end: number }>,
+) {
+  const previousBoundary = index === 0 ? 0 : serviceMatches[index - 1].end;
+  const nextBoundary = index === serviceMatches.length - 1 ? Number.POSITIVE_INFINITY : serviceMatches[index + 1].start;
+  const afterMatches = amountMatches.filter((candidate) => candidate.start >= serviceMatch.end && candidate.start < nextBoundary);
+  if (afterMatches.length > 0) {
+    return closestAmount(afterMatches, serviceMatch.end, "after");
   }
 
-  return Math.max(...scaled);
+  const beforeMatches = amountMatches.filter(
+    (candidate) => candidate.end <= serviceMatch.start && candidate.start >= previousBoundary,
+  );
+  if (beforeMatches.length > 0) {
+    return closestAmount(beforeMatches, serviceMatch.start, "before");
+  }
+
+  if (serviceMatches.length === 1) {
+    const anyAfter = amountMatches.filter((candidate) => candidate.start >= serviceMatch.end);
+    if (anyAfter.length > 0) {
+      return closestAmount(anyAfter, serviceMatch.end, "after");
+    }
+
+    const anyBefore = amountMatches.filter((candidate) => candidate.end <= serviceMatch.start);
+    if (anyBefore.length > 0) {
+      return closestAmount(anyBefore, serviceMatch.start, "before");
+    }
+  }
+
+  return null;
 }
 
 function parseBillingServices(summary: string) {
@@ -156,38 +282,26 @@ function parseBillingServices(summary: string) {
 
   for (const line of normalized) {
     const lower = line.toLowerCase();
+    const matchedAliases = findServiceMatches(lower, SERVICE_ALIASES);
+    const serviceMatches =
+      matchedAliases.length > 0 ? matchedAliases : findServiceMatches(lower, GENERIC_BILLING_ALIASES);
+
+    if (serviceMatches.length === 0) {
+      continue;
+    }
+
     const amountCandidates = parseAmountCandidates(lower);
-    const matchedAliases = SERVICE_ALIASES.filter((alias) => hasPhrase(lower, alias.alias));
-    const matchedGenerics = GENERIC_BILLING_ALIASES.filter((alias) => hasPhrase(lower, alias.alias));
+    const amountMatches = amountCandidates.length > 0 ? amountCandidates : parseFallbackAmountCandidates(lower);
 
-    const fallbackAmount =
-      amountCandidates.length === 0 && (matchedAliases.length > 0 || matchedGenerics.length > 0)
-        ? parseFallbackBareAmount(lower)
-        : null;
-    const amount =
-      amountCandidates.length > 0 ? Math.max(...amountCandidates) : fallbackAmount;
-
-    for (const alias of matchedAliases) {
-      const key = `${alias.service}:${line}`;
+    for (const [index, alias] of serviceMatches.entries()) {
+      const key = `${alias.service}:${line}:${alias.start}`;
       services.set(key, {
         service: alias.service,
         family: alias.family,
         provider: alias.provider,
-        amount,
+        amount: assignAmountToServiceMatch(alias, index, serviceMatches, amountMatches),
         sourceLine: line.slice(0, 280),
       });
-    }
-
-    if (matchedAliases.length === 0) {
-      for (const alias of matchedGenerics) {
-        const key = `${alias.service}:${line}`;
-        services.set(key, {
-          service: alias.service,
-          family: alias.family,
-          amount,
-          sourceLine: line.slice(0, 280),
-        });
-      }
     }
   }
 

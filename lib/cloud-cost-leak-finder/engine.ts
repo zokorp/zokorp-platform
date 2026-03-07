@@ -242,13 +242,17 @@ function buildLikelyWasteCategories(input: {
     addWeight(weights, "NEEDS_REAL_BILLING_DATA", confidenceScore < 45 ? 22 : 12);
   }
 
+  if (!ALL_CATEGORIES.some((category) => weights[category] > 0)) {
+    addWeight(weights, "NEEDS_REAL_BILLING_DATA", 12);
+  }
+
   const ranked = sortWeightedCategories(weights)
     .filter((category) => weights[category] >= 16)
     .slice(0, 6);
 
   if (ranked.length < 3) {
     for (const category of sortWeightedCategories(weights)) {
-      if (!ranked.includes(category)) {
+      if (!ranked.includes(category) && weights[category] > 0) {
         ranked.push(category);
       }
 

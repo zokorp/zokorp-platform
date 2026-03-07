@@ -271,7 +271,7 @@ export const cloudCostLeakFinderReportSchema = z.object({
   reportVersion: z.literal(CLOUD_COST_LEAK_FINDER_VERSION),
   generatedAtISO: z.string().datetime({ offset: true }),
   scores: cloudCostLeakFinderScoreSetSchema,
-  likelyWasteCategories: z.array(wasteCategorySchema).min(3).max(6),
+  likelyWasteCategories: z.array(wasteCategorySchema).min(1).max(6),
   savingsEstimate: cloudCostLeakFinderSavingsEstimateSchema,
   topFindings: z.array(cloudCostLeakFinderFindingSchema).max(12),
   topActions: z.array(z.string().trim().min(1).max(180)).max(5),
