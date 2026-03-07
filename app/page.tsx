@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { buildPageMetadata, getSiteUrl, siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = buildPageMetadata({
@@ -52,6 +56,12 @@ const trustLinks = [
   { href: "/support", label: "Support" },
 ];
 
+const operatingSignals = [
+  "Verified business accounts",
+  "Stripe-hosted billing",
+  "Server-validated uploads",
+];
+
 export default function HomePage() {
   const structuredData = [
     {
@@ -77,117 +87,174 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="space-y-10 md:space-y-12">
+    <div className="space-y-12 md:space-y-14">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
 
-      <section className="hero-surface animate-fade-up px-6 py-12 text-white md:px-10 md:py-14">
+      <section className="hero-surface animate-fade-up overflow-hidden px-6 py-12 text-white md:px-10 md:py-14">
         <div className="pointer-events-none absolute -right-8 top-4 h-36 w-36 rounded-full border border-white/15 bg-white/10 blur-md animate-float-soft" />
         <div className="pointer-events-none absolute -bottom-16 left-8 h-44 w-44 rounded-full bg-amber-300/25 blur-3xl" />
 
-        <p className="text-sm uppercase tracking-[0.2em] text-slate-100/90">ZoKorp Platform</p>
-        <h1 className="font-display mt-4 max-w-4xl text-balance text-4xl font-semibold leading-tight md:text-6xl">
-          Practical AI delivery software, AWS guidance, and billing in one customer platform.
-        </h1>
-        <p className="mt-5 max-w-3xl text-base leading-7 text-slate-100/95 md:text-lg">
-          Start with a free review tool, buy self-serve validation software, or request a scoped engagement
-          without leaving the same account and billing surface.
-        </p>
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] lg:items-end">
+          <div>
+            <Badge variant="brand" className="border-white/15 bg-white/12 text-white shadow-none">
+              ZoKorp Platform
+            </Badge>
+            <h1 className="font-display mt-5 max-w-4xl text-balance text-4xl font-semibold leading-tight md:text-6xl">
+              Practical AI delivery software, AWS guidance, and billing in one customer platform.
+            </h1>
+            <p className="mt-5 max-w-3xl text-base leading-7 text-slate-100/95 md:text-lg">
+              Start with a free review tool, buy self-serve validation software, or request a scoped engagement
+              without leaving the same account and billing surface.
+            </p>
 
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link
-            href="/software"
-            className="focus-ring rounded-md bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/software" className={cn(buttonVariants({ size: "lg" }), "bg-white text-slate-950 hover:bg-slate-100")}>
+                Browse Software
+              </Link>
+              <Link
+                href="/pricing"
+                className={cn(
+                  buttonVariants({ variant: "ghost", size: "lg" }),
+                  "border border-white/35 text-white hover:bg-white/10",
+                )}
+              >
+                View Pricing
+              </Link>
+              <Link
+                href="/services#service-request"
+                className={cn(
+                  buttonVariants({ variant: "ghost", size: "lg" }),
+                  "pulse-accent border border-teal-200/80 bg-teal-500/20 text-teal-50 hover:bg-teal-500/30",
+                )}
+              >
+                Request Services
+              </Link>
+            </div>
+          </div>
+
+          <Card
+            tone="glass"
+            className="rounded-[calc(var(--radius-xl)+0.25rem)] border border-white/15 bg-white/10 p-6 text-white shadow-[0_28px_70px_rgba(15,23,42,0.28)] backdrop-blur"
           >
-            Browse Software
-          </Link>
-          <Link
-            href="/pricing"
-            className="focus-ring rounded-md border border-white/45 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10"
-          >
-            View Pricing
-          </Link>
-          <Link
-            href="/services#service-request"
-            className="focus-ring pulse-accent rounded-md border border-teal-200/80 bg-teal-500/20 px-5 py-2.5 text-sm font-semibold text-teal-100 transition hover:bg-teal-500/30"
-          >
-            Request Services
-          </Link>
+            <CardHeader className="gap-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-100/75">Operating Signal</p>
+              <h2 className="font-display text-3xl font-semibold">Move from discovery to delivery without switching surfaces</h2>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {operatingSignals.map((signal) => (
+                <div key={signal} className="rounded-2xl border border-white/12 bg-white/8 px-4 py-3 text-sm text-slate-100/92">
+                  {signal}
+                </div>
+              ))}
+            </CardContent>
+            <CardFooter className="pt-1 text-sm text-slate-100/78">
+              Keep tool access, purchases, and service follow-up under one customer account.
+            </CardFooter>
+          </Card>
         </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">
         {valueProps.map((item, index) => (
-          <article
+          <Card
             key={item.title}
-            className="surface lift-card animate-fade-up rounded-2xl p-5"
+            lift
+            className="animate-fade-up rounded-3xl p-6"
             style={{ animationDelay: `${Math.min(index, 3) * 90}ms` }}
           >
-            <h2 className="font-display text-2xl font-semibold text-slate-900">{item.title}</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-700">{item.detail}</p>
-          </article>
+            <CardHeader>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Why teams choose it</p>
+              <h2 className="font-display text-2xl font-semibold text-slate-900">{item.title}</h2>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm leading-6 text-slate-700">{item.detail}</p>
+            </CardContent>
+          </Card>
         ))}
       </section>
 
-      <section className="surface soft-grid rounded-2xl p-6 md:p-7">
-        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+      <section className="surface soft-grid rounded-[calc(var(--radius-xl)+0.25rem)] p-6 md:p-7">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Start Here</p>
-            <h2 className="font-display mt-1 text-3xl font-semibold text-slate-900">Choose the right entry point</h2>
+            <h2 className="font-display mt-1 text-3xl font-semibold text-slate-900">
+              Choose the right entry point
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+              Start with the software or service path that matches how much structure your team needs right now.
+            </p>
           </div>
-          <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-slate-600">
-            <span className="metric-chip">Verified business accounts</span>
-            <span className="metric-chip">Stripe-hosted billing</span>
-            <span className="metric-chip">Server-validated uploads</span>
+          <div className="flex flex-wrap gap-2">
+            {operatingSignals.map((signal) => (
+              <Badge key={signal} variant="secondary" className="bg-white/90 text-slate-700">
+                {signal}
+              </Badge>
+            ))}
           </div>
         </div>
 
         <div className="mt-5 grid gap-4 md:grid-cols-3">
           {startPoints.map((item) => (
-            <article key={item.title} className="lift-card rounded-xl border border-slate-200 bg-white p-5">
-              <h3 className="font-display text-2xl font-semibold text-slate-900">{item.title}</h3>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{item.summary}</p>
-              <Link
-                href={item.href}
-                className="focus-ring mt-5 inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-              >
-                {item.cta}
-              </Link>
-            </article>
+            <Card key={item.title} lift className="rounded-3xl border border-slate-200 bg-white p-6">
+              <CardHeader>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Entry point</p>
+                <h3 className="font-display text-2xl font-semibold text-slate-900">{item.title}</h3>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm leading-6 text-slate-600">{item.summary}</p>
+              </CardContent>
+              <CardFooter>
+                <Link href={item.href} className={buttonVariants()}>
+                  {item.cta}
+                </Link>
+              </CardFooter>
+            </Card>
           ))}
         </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-[1.2fr_1fr]">
-        <article className="surface lift-card rounded-2xl p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Why it converts better</p>
-          <h2 className="font-display mt-2 text-3xl font-semibold text-slate-900">The platform removes purchase and follow-up friction</h2>
-          <p className="mt-4 text-sm leading-7 text-slate-600 md:text-base">
-            Customers do not need one site for discovery, another workflow for delivery requests, and a separate
-            billing portal that feels disconnected. ZoKorp keeps those steps under one account framework.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Link href="/about" className="focus-ring inline-flex rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-100">
+        <Card lift className="rounded-[calc(var(--radius-xl)+0.25rem)] p-6 md:p-7">
+          <CardHeader>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Why it converts better</p>
+            <h2 className="font-display text-3xl font-semibold text-slate-900">
+              The platform removes purchase and follow-up friction
+            </h2>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm leading-7 text-slate-600 md:text-base">
+              Customers do not need one site for discovery, another workflow for delivery requests, and a separate
+              billing portal that feels disconnected. ZoKorp keeps those steps under one account framework.
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Link href="/about" className={buttonVariants({ variant: "secondary" })}>
               About the platform
             </Link>
-            <Link href="/case-studies" className="focus-ring inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">
+            <Link href="/case-studies" className={buttonVariants()}>
               View case studies
             </Link>
-          </div>
-        </article>
+          </CardFooter>
+        </Card>
 
-        <article className="glass-surface lift-card rounded-2xl p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Trust Center</p>
-          <h2 className="font-display mt-2 text-2xl font-semibold text-slate-900">Read the operating basics first</h2>
-          <ul className="mt-4 space-y-2 text-sm text-slate-700">
+        <Card tone="glass" lift className="rounded-[calc(var(--radius-xl)+0.25rem)] p-6 md:p-7">
+          <CardHeader>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Trust Center</p>
+            <h2 className="font-display text-2xl font-semibold text-slate-900">Read the operating basics first</h2>
+          </CardHeader>
+          <CardContent className="space-y-3">
             {trustLinks.map((link) => (
-              <li key={link.href}>
-                <Link href={link.href} className="underline underline-offset-2 hover:text-slate-900">
-                  {link.label}
-                </Link>
-              </li>
+              <Link
+                key={link.href}
+                href={link.href}
+                className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
+              >
+                <span>{link.label}</span>
+                <span aria-hidden="true">→</span>
+              </Link>
             ))}
-          </ul>
-        </article>
+          </CardContent>
+        </Card>
       </section>
     </div>
   );
