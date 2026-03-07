@@ -87,6 +87,7 @@ Production-oriented Next.js platform for `zokorp.com` SaaS migration.
 
 ## Operations
 See [`docs/08-how-to-operate.md`](docs/08-how-to-operate.md).
+For multi-thread branch/worktree operations, see [`docs/09-codex-parallel-workflow.md`](docs/09-codex-parallel-workflow.md).
 
 ## Landing Zone Readiness Checker
 - Route: `/software/landing-zone-readiness-checker`
