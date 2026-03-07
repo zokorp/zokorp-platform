@@ -52,6 +52,16 @@ const fallbackCatalog = [
     prices: [],
   },
   {
+    id: "fallback-landing-zone-readiness-checker",
+    slug: "landing-zone-readiness-checker",
+    name: "Landing Zone Readiness Checker",
+    description:
+      "Free deterministic landing-zone assessment for SMB teams with emailed scoring, findings, and consultation quote.",
+    active: true,
+    accessModel: "FREE" as const,
+    prices: [],
+  },
+  {
     id: "fallback-mlops-platform",
     slug: "mlops-foundation-platform",
     name: "ZoKorp MLOps Foundation Platform",

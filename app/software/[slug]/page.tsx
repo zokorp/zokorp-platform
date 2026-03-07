@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { CheckoutButton } from "@/components/checkout-button";
 import { CheckoutFlashBanner } from "@/components/checkout-flash-banner";
 import { ArchitectureDiagramReviewerForm } from "@/components/architecture-diagram-reviewer/ArchitectureDiagramReviewerForm";
+import { LandingZoneReadinessCheckerForm } from "@/components/landing-zone-readiness/LandingZoneReadinessCheckerForm";
 import { ValidatorForm } from "@/components/validator-form";
 import { auth } from "@/lib/auth";
 import { isPasswordAuthEnabled } from "@/lib/auth-config";
@@ -97,11 +98,21 @@ function entitlementMessage(input: {
   remainingUses: number;
   isTieredValidator?: boolean;
   requiresSignInForFree?: boolean;
+  emailOnlyFreeTool?: boolean;
 }): { tone: Tone; text: string } {
   if (input.authUnavailable) {
     return {
       tone: "amber",
       text: "Login setup is still in progress. Purchases and tool runs will unlock after authentication email delivery is connected.",
+    };
+  }
+
+  if (input.emailOnlyFreeTool) {
+    return {
+      tone: input.signedIn ? "emerald" : "sky",
+      text: input.signedIn
+        ? "This checker is free. Results are emailed to your business address unless you change it below."
+        : "This checker is free. Enter a business email and the full report will be emailed to you.",
     };
   }
 
@@ -249,8 +260,11 @@ export default async function SoftwareDetailPage({
   const signedIn = Boolean(currentEmail);
   const isValidator = product.slug === "zokorp-validator";
   const isArchitectureReviewer = product.slug === "architecture-diagram-reviewer";
+  const isLandingZoneChecker = product.slug === "landing-zone-readiness-checker";
   const productDescription = isArchitectureReviewer
     ? "Free cloud architecture diagram reviewer for PNG/SVG uploads with deterministic findings delivered by email."
+    : isLandingZoneChecker
+      ? "Free deterministic landing-zone assessment for SMB teams. Answer structured questions and receive your score, top gaps, and consultation quote by email."
     : product.description;
   const validatorTargets = isValidator ? getValidatorTargetOptions() : [];
   let validatorProfileCredits: Record<ValidationProfile, number> = {
@@ -343,7 +357,13 @@ export default async function SoftwareDetailPage({
     remainingUses: entitlement?.remainingUses ?? 0,
     isTieredValidator: isValidator,
     requiresSignInForFree: isArchitectureReviewer,
+    emailOnlyFreeTool: isLandingZoneChecker,
   });
+
+  const shouldShowSignInCta =
+    !signedIn &&
+    !authUnavailable &&
+    (requiresBilling || isArchitectureReviewer);
 
   const checkoutState =
     query.checkout === "success" ? "success" : query.checkout === "cancelled" ? "cancelled" : null;
@@ -361,7 +381,7 @@ export default async function SoftwareDetailPage({
 
         <CheckoutFlashBanner state={checkoutState} />
 
-        {!signedIn && !authUnavailable ? (
+        {shouldShowSignInCta ? (
           <div className="mt-4">
             <Link
               href={`/login?callbackUrl=/software/${product.slug}`}
@@ -436,6 +456,8 @@ export default async function SoftwareDetailPage({
         />
       ) : isArchitectureReviewer ? (
         <ArchitectureDiagramReviewerForm requiresAuth={!signedIn} authUnavailable={authUnavailable} />
+      ) : isLandingZoneChecker ? (
+        <LandingZoneReadinessCheckerForm initialEmail={currentEmail ?? ""} initialName={session?.user?.name ?? ""} />
       ) : (
         <section className="surface lift-card rounded-2xl p-6">
           <h2 className="font-display text-2xl font-semibold text-slate-900">Product workflow</h2>

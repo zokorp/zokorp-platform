@@ -4,6 +4,11 @@ const { PrismaClient, AccessModel, PriceKind } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 async function main() {
+  await prisma.product.updateMany({
+    where: { slug: "free-template-tool" },
+    data: { active: false },
+  });
+
   const validator = await prisma.product.upsert({
     where: { slug: "zokorp-validator" },
     update: {
@@ -37,6 +42,25 @@ async function main() {
       name: "Architecture Diagram Reviewer",
       description:
         "Free cloud architecture diagram reviewer for PNG uploads with deterministic findings delivered by email.",
+      accessModel: AccessModel.FREE,
+      active: true,
+    },
+  });
+
+  const landingZoneChecker = await prisma.product.upsert({
+    where: { slug: "landing-zone-readiness-checker" },
+    update: {
+      name: "Landing Zone Readiness Checker",
+      description:
+        "Free deterministic landing-zone assessment for SMB teams with emailed scoring, findings, and consultation quote.",
+      accessModel: AccessModel.FREE,
+      active: true,
+    },
+    create: {
+      slug: "landing-zone-readiness-checker",
+      name: "Landing Zone Readiness Checker",
+      description:
+        "Free deterministic landing-zone assessment for SMB teams with emailed scoring, findings, and consultation quote.",
       accessModel: AccessModel.FREE,
       active: true,
     },
@@ -133,7 +157,9 @@ async function main() {
     });
   }
 
-  console.log(`Seeded products: ${validator.slug}, ${freeReviewer.slug}, ${mlopsPlatform.slug}`);
+  console.log(
+    `Seeded products: ${validator.slug}, ${freeReviewer.slug}, ${landingZoneChecker.slug}, ${mlopsPlatform.slug}`,
+  );
 }
 
 main()

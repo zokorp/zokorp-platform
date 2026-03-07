@@ -155,3 +155,7 @@ export async function sendArchitectureReviewEmail(input: SendEmailInput): Promis
     error: [resendResult.error, smtpResult.error].filter(Boolean).join(" | "),
   };
 }
+
+export async function sendToolResultEmail(input: SendEmailInput): Promise<SendEmailResult> {
+  return sendArchitectureReviewEmail(input);
+}

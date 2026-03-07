@@ -102,6 +102,22 @@ const LOW_SIGNAL_TOKENS = new Set([
   "service",
 ]);
 
+const GENERIC_NODE_LABELS: Record<NonSourceLane, string[]> = {
+  edge: ["edge", "gateway", "load balancer", "network"],
+  application: ["application", "service", "compute", "worker"],
+  data: ["database", "storage", "datastore", "data"],
+  operations: ["monitoring", "logging", "security", "identity", "operations"],
+};
+
+const SPECIFIC_NODE_HINTS: Record<NonSourceLane, RegExp[]> = {
+  edge: [
+    /route 53|cloudfront|api gateway|elastic load balancing|application gateway|front door|apigee|traffic manager/i,
+  ],
+  application: [/lambda|ecs|eks|ec2|app service|function app|aks|gke|cloud run|compute engine/i],
+  data: [/rds|aurora|dynamodb|sql|cosmos|spanner|bigquery|s3|storage account|cloud storage/i],
+  operations: [/cloudwatch|key vault|iam|kms|secrets manager|application insights|observability|managed identity/i],
+};
+
 const LANE_LABELS: Record<DiagramLane, string> = {
   source: "Internet and Users",
   edge: "Edge and Ingress",
@@ -536,6 +552,15 @@ function getProviderDefaultsForLane(provider: ArchitectureProvider, lane: Diagra
     .map((seed) => ({ ...seed }));
 }
 
+function removeGenericDuplicates(lane: NonSourceLane, seeds: DiagramNodeSeed[]) {
+  const hasSpecificNode = seeds.some((seed) => SPECIFIC_NODE_HINTS[lane].some((pattern) => pattern.test(seed.label)));
+  if (!hasSpecificNode) {
+    return seeds;
+  }
+
+  return seeds.filter((seed) => !GENERIC_NODE_LABELS[lane].includes(seed.label.toLowerCase()));
+}
+
 function collectNodesFromNarrative(provider: ArchitectureProvider, narrative: string) {
   const input = narrative.trim() || DEFAULT_NARRATIVE;
   const tokens = extractServiceTokens(provider, input).filter((token) => !LOW_SIGNAL_TOKENS.has(token));
@@ -566,6 +591,7 @@ function collectNodesFromNarrative(provider: ArchitectureProvider, narrative: st
     if (buckets[lane].length === 0) {
       buckets[lane].push(...getProviderDefaultsForLane(provider, lane));
     }
+    buckets[lane] = removeGenericDuplicates(lane, buckets[lane]);
   }
 
   const nodes: DiagramNode[] = [];
@@ -802,47 +828,46 @@ function laneNodeRectConfig(lane: DiagramLane, zone: Rect) {
   };
 }
 
+const FLOW_ROW_OFFSETS = [0, 1, -1, 2, -2];
+
 function layoutNodeRects(nodes: DiagramNode[], layout: Layout) {
   const rects = new Map<string, Rect>();
-  const laneToZone: Record<DiagramLane, Rect> = {
-    source: layout.sourceZone,
-    edge: layout.laneZones.edge,
-    application: layout.laneZones.application,
-    data: layout.laneZones.data,
-    operations: layout.laneZones.operations,
-  };
+  const sourceNodes = nodes.filter((node) => node.lane === "source");
+  if (sourceNodes.length > 0) {
+    const zone = layout.sourceZone;
+    const config = laneNodeRectConfig("source", zone);
+    const sourceNode = sourceNodes[0];
+    rects.set(sourceNode.id, {
+      x: zone.x + Math.floor((zone.width - config.width) / 2),
+      y: zone.y + Math.floor((zone.height - config.height) / 2),
+      width: config.width,
+      height: config.height,
+    });
+  }
 
-  for (const lane of ["source", ...NON_SOURCE_LANES] as DiagramLane[]) {
+  for (const lane of NON_SOURCE_LANES) {
     const laneNodes = nodes.filter((node) => node.lane === lane);
     if (laneNodes.length === 0) {
       continue;
     }
 
-    const zone = laneToZone[lane];
+    const zone = layout.laneZones[lane];
     const config = laneNodeRectConfig(lane, zone);
-    const availableHeight = zone.height - config.topPadding - config.bottomPadding;
-    let nodeHeight = config.height;
-    let gap = config.gap;
-    let total = laneNodes.length * nodeHeight + (laneNodes.length - 1) * gap;
-
-    if (total > availableHeight && laneNodes.length > 1) {
-      gap = Math.max(12, Math.floor((availableHeight - laneNodes.length * nodeHeight) / (laneNodes.length - 1)));
-      total = laneNodes.length * nodeHeight + (laneNodes.length - 1) * gap;
-    }
-    if (total > availableHeight) {
-      nodeHeight = Math.max(66, Math.floor((availableHeight - (laneNodes.length - 1) * gap) / laneNodes.length));
-      total = laneNodes.length * nodeHeight + (laneNodes.length - 1) * gap;
-    }
-
-    const startY = zone.y + config.topPadding + Math.max(0, Math.floor((availableHeight - total) / 2));
+    const minY = zone.y + config.topPadding;
+    const maxY = zone.y + zone.height - config.bottomPadding - config.height;
+    const centerY = zone.y + Math.floor((zone.height - config.height) / 2);
+    const step = config.height + 18;
     const nodeX = zone.x + Math.floor((zone.width - config.width) / 2);
 
     laneNodes.forEach((node, index) => {
+      const offset = FLOW_ROW_OFFSETS[index] ?? index;
+      const rawY = centerY + offset * step;
+      const y = Math.max(minY, Math.min(maxY, rawY));
       rects.set(node.id, {
         x: nodeX,
-        y: startY + index * (nodeHeight + gap),
+        y,
         width: config.width,
-        height: nodeHeight,
+        height: config.height,
       });
     });
   }
@@ -862,6 +887,9 @@ function routeConnectorPath(from: Rect, to: Rect, channel: number) {
     const sy = fromCenterY;
     const ex = to.x;
     const ey = toCenterY;
+    if (Math.abs(sy - ey) < 2) {
+      return `M ${sx} ${sy} L ${ex} ${ey}`;
+    }
     const midX = Math.round((sx + ex) / 2 + channelOffset);
     return `M ${sx} ${sy} L ${midX} ${sy} L ${midX} ${ey} L ${ex} ${ey}`;
   }
@@ -871,6 +899,9 @@ function routeConnectorPath(from: Rect, to: Rect, channel: number) {
     const sy = fromCenterY;
     const ex = to.x + to.width;
     const ey = toCenterY;
+    if (Math.abs(sy - ey) < 2) {
+      return `M ${sx} ${sy} L ${ex} ${ey}`;
+    }
     const midX = Math.round((sx + ex) / 2 + channelOffset);
     return `M ${sx} ${sy} L ${midX} ${sy} L ${midX} ${ey} L ${ex} ${ey}`;
   }
@@ -880,6 +911,9 @@ function routeConnectorPath(from: Rect, to: Rect, channel: number) {
     const sy = from.y + from.height;
     const ex = toCenterX;
     const ey = to.y;
+    if (Math.abs(sx - ex) < 2) {
+      return `M ${sx} ${sy} L ${ex} ${ey}`;
+    }
     const midY = Math.round((sy + ey) / 2 + channelOffset);
     return `M ${sx} ${sy} L ${sx} ${midY} L ${ex} ${midY} L ${ex} ${ey}`;
   }
@@ -888,6 +922,9 @@ function routeConnectorPath(from: Rect, to: Rect, channel: number) {
   const sy = from.y;
   const ex = toCenterX;
   const ey = to.y + to.height;
+  if (Math.abs(sx - ex) < 2) {
+    return `M ${sx} ${sy} L ${ex} ${ey}`;
+  }
   const midY = Math.round((sy + ey) / 2 + channelOffset);
   return `M ${sx} ${sy} L ${sx} ${midY} L ${ex} ${midY} L ${ex} ${ey}`;
 }

@@ -73,6 +73,7 @@ model User {
   creditBalances CreditBalance[]
   auditLogs      AuditLog[]
   leadLogs       LeadLog[]
+  landingZoneReadinessSubmissions LandingZoneReadinessSubmission[]
   checkoutFulfillments CheckoutFulfillment[]
   usageEvents    UsageEvent[]
   serviceRequests ServiceRequest[]
@@ -233,6 +234,38 @@ model LeadLog {
   @@index([createdAt])
   @@index([userEmail])
   @@index([syncedToZohoAt])
+}
+
+model LandingZoneReadinessSubmission {
+  id                   String   @id @default(cuid())
+  userId               String?
+  email                String
+  fullName             String
+  companyName          String
+  roleTitle            String
+  website              String?
+  primaryCloud         String
+  secondaryCloud       String?
+  answersJson          Json
+  scoreOverall         Int
+  scoreByCategoryJson  Json
+  maturityBand         String
+  findingsJson         Json
+  quoteJson            Json
+  freeTextChallenge    String?
+  crmSyncStatus        String?
+  emailDeliveryStatus  String?
+  zohoRecordId         String?
+  zohoSyncError        String?
+  source               String   @default("landing-zone-readiness-checker")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user                 User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([email])
+  @@index([crmSyncStatus])
 }
 
 model UserAuth {

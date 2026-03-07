@@ -507,7 +507,7 @@ export function ArchitectureDiagramReviewerForm({
                     <img
                       src={generatedDiagramPreviewUrl}
                       alt="Generated architecture diagram preview"
-                      className="h-[280px] w-full rounded object-contain"
+                      className="h-[360px] w-full rounded object-contain md:h-[460px]"
                     />
                   </div>
                 ) : null}
