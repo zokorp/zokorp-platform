@@ -104,4 +104,4 @@ For multi-thread branch/worktree operations, see [`docs/09-codex-parallel-workfl
 - Storage: `CloudCostLeakFinderSubmission` records the raw inputs, extracted signals, score snapshot, savings estimate, findings, quote, and CRM/email delivery status
 - Email delivery: reuses the existing Resend-first / SMTP-fallback delivery path
 - CRM: reuses the existing Zoho CRM credentials and attempts an upsert by email when configured
-- Pricing: quote defaults are code-configured in [`lib/cloud-cost-leak-finder/config.ts`](lib/cloud-cost-leak-finder/config.ts) so the owner can approve and tune the ranges without changing the scoring engine
+- Pricing: quote defaults are code-configured in [`lib/cloud-cost-leak-finder/config.ts`](lib/cloud-cost-leak-finder/config.ts) as a solo-consultant base package plus deterministic add-ons tied to the findings and scope

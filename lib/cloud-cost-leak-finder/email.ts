@@ -39,6 +39,12 @@ function categoryLines(categories: WasteCategory[]) {
   return categories.map((category) => WASTE_CATEGORY_LABELS[category]);
 }
 
+function quoteLineItems(report: CloudCostLeakFinderReport) {
+  return report.quote.lineItems.map(
+    (item) => `${item.label}: ${formatUsdRange(item.amountLow, item.amountHigh)}. ${item.reason}`,
+  );
+}
+
 function buildTextEmail(input: {
   answers: CloudCostLeakFinderAnswers;
   report: CloudCostLeakFinderReport;
@@ -70,6 +76,8 @@ function buildTextEmail(input: {
     "",
     `Suggested engagement: ${input.report.quote.engagementType}`,
     `Deterministic quote range: ${formatUsdRange(input.report.quote.quoteLow, input.report.quote.quoteHigh)}`,
+    "Quote breakdown:",
+    ...quoteLineItems(input.report).map((line) => `- ${line}`),
     ...input.report.quote.rationaleLines.map((line) => `- ${line}`),
     "",
     `Book a consultation: ${consultationUrl()}`,
@@ -149,6 +157,10 @@ function buildHtmlEmail(input: {
             <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;">Suggested engagement</div>
             <p style="margin:10px 0 0;color:#0f172a;font-size:18px;font-weight:800;">${escapeHtml(input.report.quote.engagementType)}</p>
             <p style="margin:8px 0 0;color:#334155;font-size:14px;line-height:1.6;">Deterministic quote range: ${escapeHtml(formatUsdRange(input.report.quote.quoteLow, input.report.quote.quoteHigh))}</p>
+            <div style="margin-top:12px;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;">Quote breakdown</div>
+            <ul style="margin:10px 0 0;padding-left:18px;color:#334155;font-size:14px;line-height:1.6;">
+              ${quoteLineItems(input.report).map((line) => `<li>${escapeHtml(line)}</li>`).join("")}
+            </ul>
             <ul style="margin:10px 0 0;padding-left:18px;color:#334155;font-size:14px;line-height:1.6;">
               ${input.report.quote.rationaleLines.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}
             </ul>

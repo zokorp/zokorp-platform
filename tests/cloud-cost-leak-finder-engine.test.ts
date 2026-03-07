@@ -100,8 +100,18 @@ describe("cloud cost leak finder engine", () => {
     expect(first.savingsEstimate.estimatedAnnualSavingsRange).toBe("$25,200 - $205,200");
     expect(first.verdictClass).toBe("HIGH_COMPLEXITY_REVIEW_RECOMMENDED");
     expect(first.quote.engagementType).toBe("Custom Scope Required");
-    expect(first.quote.quoteLow).toBe(5050);
-    expect(first.quote.quoteHigh).toBe(10800);
+    expect(first.quote.quoteLow).toBe(2300);
+    expect(first.quote.quoteHigh).toBe(4300);
+    expect(first.quote.lineItems.map((item) => item.label)).toEqual([
+      "Base custom scoping block",
+      "Kubernetes efficiency review",
+      "Egress and topology review",
+      "Non-prod runtime cleanup",
+      "Storage lifecycle cleanup",
+      "Multi-system coordination",
+      "Multi-cloud coordination",
+      "Targeted redesign work",
+    ]);
     expect(first.likelyWasteCategories).toEqual([
       "KUBERNETES_INEFFICIENCY",
       "NETWORK_EGRESS_WASTE",

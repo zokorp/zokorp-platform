@@ -38,7 +38,10 @@ describe("cloud cost leak finder email", () => {
     expect(email.text).toContain(report.verdictHeadline);
     expect(email.text).toContain(report.savingsEstimate.estimatedMonthlySavingsRange);
     expect(email.text).toContain(report.quote.engagementType);
+    expect(email.text).toContain("Quote breakdown:");
+    expect(email.text).toContain(report.quote.lineItems[0].label);
     expect(email.html).toContain("Cloud Cost Leak Finder");
+    expect(email.html).toContain("Quote breakdown");
     expect(email.html).toContain("Book a consultation");
   });
 });

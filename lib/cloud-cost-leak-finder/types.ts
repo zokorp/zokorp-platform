@@ -249,11 +249,20 @@ export const cloudCostLeakFinderFindingSchema = z.object({
 });
 export type CloudCostLeakFinderFinding = z.infer<typeof cloudCostLeakFinderFindingSchema>;
 
+export const cloudCostLeakFinderQuoteLineItemSchema = z.object({
+  label: z.string().trim().min(1).max(140),
+  amountLow: z.number().int().min(0),
+  amountHigh: z.number().int().min(0),
+  reason: z.string().trim().min(1).max(180),
+});
+export type CloudCostLeakFinderQuoteLineItem = z.infer<typeof cloudCostLeakFinderQuoteLineItemSchema>;
+
 export const cloudCostLeakFinderQuoteSchema = z.object({
   engagementType: quoteTierSchema,
   quoteLow: z.number().int().min(0),
   quoteHigh: z.number().int().min(0),
   confidence: quoteConfidenceSchema,
+  lineItems: z.array(cloudCostLeakFinderQuoteLineItemSchema).min(1).max(8),
   rationaleLines: z.array(z.string().trim().min(1).max(180)).max(3),
 });
 export type CloudCostLeakFinderQuote = z.infer<typeof cloudCostLeakFinderQuoteSchema>;

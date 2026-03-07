@@ -1,4 +1,5 @@
 import type {
+  CloudCostLeakFinderQuoteLineItem,
   QuoteTier,
   SpendBand,
   WasteCategory,
@@ -77,38 +78,229 @@ export const CATEGORY_ACTIONS: Record<WasteCategory, string> = {
   NEEDS_REAL_BILLING_DATA: "Pull a cleaner top-services billing export so the next review is more precise.",
 };
 
-export const QUOTE_PRICING_DEFAULTS: Record<
+type QuoteLineItemPricing = Pick<CloudCostLeakFinderQuoteLineItem, "label" | "amountLow" | "amountHigh" | "reason">;
+
+export const QUOTE_BASE_PACKAGES: Record<QuoteTier, QuoteLineItemPricing> = {
+  "Cost Triage Call": {
+    label: "Base triage call",
+    amountLow: 95,
+    amountHigh: 175,
+    reason: "Best when the inputs still need a sharper billing and ownership read before a larger scope.",
+  },
+  "Savings Opportunity Memo": {
+    label: "Base savings memo",
+    amountLow: 195,
+    amountHigh: 325,
+    reason: "Fits a written advisory memo with prioritized savings actions and next steps.",
+  },
+  "FinOps Cleanup Sprint": {
+    label: "Base FinOps cleanup sprint",
+    amountLow: 550,
+    amountHigh: 950,
+    reason: "Fits rightsizing, environment hygiene, guardrails, and fast cleanup work.",
+  },
+  "Architecture Cost Review": {
+    label: "Base architecture cost review",
+    amountLow: 700,
+    amountHigh: 1_200,
+    reason: "Fits platform-shape decisions where cost is tied to architecture, not just hygiene.",
+  },
+  "Cost + Platform Rationalization Sprint": {
+    label: "Base platform rationalization sprint",
+    amountLow: 1_100,
+    amountHigh: 1_850,
+    reason: "Fits broader cleanup across multiple systems, environments, or teams.",
+  },
+  "Custom Scope Required": {
+    label: "Base custom scoping block",
+    amountLow: 1_400,
+    amountHigh: 2_200,
+    reason: "Fits higher-complexity environments that still need a tighter delivery scope.",
+  },
+};
+
+export const QUOTE_TIER_GUARDRAILS: Record<
   QuoteTier,
   {
-    quoteLow: number;
-    quoteHigh: number;
+    minimumLow: number;
+    maximumHigh: number;
   }
 > = {
   "Cost Triage Call": {
-    quoteLow: 149,
-    quoteHigh: 299,
+    minimumLow: 95,
+    maximumHigh: 225,
   },
   "Savings Opportunity Memo": {
-    quoteLow: 350,
-    quoteHigh: 900,
+    minimumLow: 195,
+    maximumHigh: 650,
   },
   "FinOps Cleanup Sprint": {
-    quoteLow: 900,
-    quoteHigh: 2_200,
+    minimumLow: 550,
+    maximumHigh: 1_800,
   },
   "Architecture Cost Review": {
-    quoteLow: 1_250,
-    quoteHigh: 3_000,
+    minimumLow: 700,
+    maximumHigh: 2_400,
   },
   "Cost + Platform Rationalization Sprint": {
-    quoteLow: 2_500,
-    quoteHigh: 6_000,
+    minimumLow: 1_100,
+    maximumHigh: 3_600,
   },
   "Custom Scope Required": {
-    quoteLow: 3_500,
-    quoteHigh: 7_500,
+    minimumLow: 1_750,
+    maximumHigh: 4_500,
   },
 };
+
+export const QUOTE_CATEGORY_LINE_ITEMS: Record<WasteCategory, QuoteLineItemPricing> = {
+  IDLE_NON_PROD: {
+    label: "Non-prod runtime cleanup",
+    amountLow: 75,
+    amountHigh: 150,
+    reason: "Used when dev, test, or staging likely run longer than they should.",
+  },
+  OVERPROVISIONED_COMPUTE: {
+    label: "Compute rightsizing pass",
+    amountLow: 100,
+    amountHigh: 200,
+    reason: "Used when the likely waste points to oversized or peak-shaped compute.",
+  },
+  WEAK_AUTOSCALING: {
+    label: "Autoscaling review",
+    amountLow: 75,
+    amountHigh: 150,
+    reason: "Used when scaling policy gaps are likely inflating steady-state spend.",
+  },
+  KUBERNETES_INEFFICIENCY: {
+    label: "Kubernetes efficiency review",
+    amountLow: 150,
+    amountHigh: 300,
+    reason: "Used when cluster shape, requests, limits, or idle nodes look expensive.",
+  },
+  DATABASE_OVERSPEND: {
+    label: "Database sizing review",
+    amountLow: 125,
+    amountHigh: 250,
+    reason: "Used when database sizing, HA, replicas, or storage overhead look heavy.",
+  },
+  STORAGE_LIFECYCLE_GAPS: {
+    label: "Storage lifecycle cleanup",
+    amountLow: 75,
+    amountHigh: 150,
+    reason: "Used when storage retention and tiering likely need tightening.",
+  },
+  BACKUP_SNAPSHOT_SPRAWL: {
+    label: "Backup and snapshot cleanup",
+    amountLow: 75,
+    amountHigh: 150,
+    reason: "Used when backups, snapshots, or unattached storage likely need cleanup.",
+  },
+  LOG_RETENTION_SPRAWL: {
+    label: "Log retention tuning",
+    amountLow: 50,
+    amountHigh: 125,
+    reason: "Used when observability retention is likely carrying avoidable storage cost.",
+  },
+  NETWORK_EGRESS_WASTE: {
+    label: "Egress and topology review",
+    amountLow: 125,
+    amountHigh: 250,
+    reason: "Used when cross-region traffic or internet egress look like real leak sources.",
+  },
+  UNCLEAR_RESOURCE_OWNERSHIP: {
+    label: "Ownership mapping cleanup",
+    amountLow: 75,
+    amountHigh: 125,
+    reason: "Used when resource ownership is too weak for clean cost control.",
+  },
+  TAGGING_GAPS: {
+    label: "Tagging baseline setup",
+    amountLow: 75,
+    amountHigh: 125,
+    reason: "Used when cost allocation and ownership tags are likely incomplete.",
+  },
+  NO_BUDGET_ALERTS: {
+    label: "Budget and alert guardrails",
+    amountLow: 50,
+    amountHigh: 100,
+    reason: "Used when the environment appears to lack basic spend guardrails.",
+  },
+  COMMITMENT_GAPS: {
+    label: "Commitment coverage review",
+    amountLow: 75,
+    amountHigh: 150,
+    reason: "Used when on-demand usage likely needs reservation or commitment review.",
+  },
+  OVERENGINEERED_ARCHITECTURE: {
+    label: "Architecture simplification review",
+    amountLow: 150,
+    amountHigh: 300,
+    reason: "Used when the cost problem likely sits in platform shape, redundancy, or service sprawl.",
+  },
+  GPU_WASTE: {
+    label: "GPU utilization review",
+    amountLow: 175,
+    amountHigh: 350,
+    reason: "Used when GPU or AI workloads look expensive relative to likely usage.",
+  },
+  MANAGED_SERVICE_MISMATCH: {
+    label: "Managed-vs-self-hosted comparison",
+    amountLow: 100,
+    amountHigh: 225,
+    reason: "Used when service choice itself may be driving unnecessary operating cost.",
+  },
+  TOO_MANY_ENVIRONMENTS: {
+    label: "Environment consolidation review",
+    amountLow: 75,
+    amountHigh: 150,
+    reason: "Used when duplicate or rarely used environments likely keep spend alive.",
+  },
+  NEEDS_REAL_BILLING_DATA: {
+    label: "Billing data normalization pass",
+    amountLow: 50,
+    amountHigh: 100,
+    reason: "Used when a cleaner billing export is needed before quoting a larger scope.",
+  },
+};
+
+export const QUOTE_SCOPE_LINE_ITEMS = {
+  manySystems: {
+    label: "Multi-system coordination",
+    amountLow: 125,
+    amountHigh: 250,
+    reason: "Used when the spend spans many systems or teams instead of one main hotspot.",
+  },
+  multiCloud: {
+    label: "Multi-cloud coordination",
+    amountLow: 100,
+    amountHigh: 200,
+    reason: "Used when the review needs to compare or coordinate across more than one cloud.",
+  },
+  customerFacing: {
+    label: "Customer-facing change caution",
+    amountLow: 50,
+    amountHigh: 100,
+    reason: "Used when savings work needs more production care than a low-risk internal system.",
+  },
+  highlySensitive: {
+    label: "Sensitive workload controls",
+    amountLow: 150,
+    amountHigh: 300,
+    reason: "Used when regulated or highly sensitive workloads tighten the delivery scope.",
+  },
+  someRedesign: {
+    label: "Targeted redesign work",
+    amountLow: 125,
+    amountHigh: 250,
+    reason: "Used when the cost problem likely needs some architecture change, not just cleanup.",
+  },
+  majorRedesign: {
+    label: "Major redesign scope",
+    amountLow: 250,
+    amountHigh: 450,
+    reason: "Used when meaningful savings likely depend on larger platform changes.",
+  },
+} as const;
 
 export const SAVINGS_BAND_BY_CATEGORY: Record<
   WasteCategory,
