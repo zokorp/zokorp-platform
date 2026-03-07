@@ -1,4 +1,7 @@
-﻿import Link from "next/link";
+import Link from "next/link";
+
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 
 const platformLinks = [
   { href: "/software", label: "Software" },
@@ -23,22 +26,29 @@ const legalLinks = [
 
 export function SiteFooter() {
   return (
-    <footer className="mt-10 border-t border-slate-300 bg-white/72 backdrop-blur">
-      <div className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-10 text-sm text-slate-600 md:grid-cols-4 md:px-6">
-        <section>
-          <p className="font-display text-xl font-semibold text-slate-900">ZoKorp</p>
-          <p className="mt-2 max-w-xs text-sm text-slate-600">
+    <footer className="mt-14 border-t border-border/80 bg-white/72 backdrop-blur">
+      <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-10 md:grid-cols-[1.2fr_repeat(3,minmax(0,1fr))] md:px-6">
+        <Card tone="glass" className="rounded-[1.4rem] p-6">
+          <p className="font-display text-2xl font-semibold text-slate-900">ZoKorp</p>
+          <p className="mt-3 max-w-sm text-sm leading-7 text-slate-600">
             AWS-focused AI delivery, validation software, and account-linked billing workflows for teams that need measurable execution.
           </p>
-          <p className="mt-4 text-xs uppercase tracking-[0.12em] text-slate-500">Houston-based - Serving U.S. teams</p>
-        </section>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Badge variant="brand" className="normal-case tracking-normal">
+              Houston-based
+            </Badge>
+            <Badge variant="secondary" className="normal-case tracking-normal">
+              Serving U.S. teams
+            </Badge>
+          </div>
+        </Card>
 
-        <section>
-          <p className="font-semibold text-slate-900">Platform</p>
-          <ul className="mt-2 space-y-1">
+        <section className="space-y-3 rounded-[1.4rem] border border-border/80 bg-white/80 p-5 shadow-[var(--shadow-soft)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Platform</p>
+          <ul className="space-y-2 text-sm text-slate-600">
             {platformLinks.map((link) => (
               <li key={link.href}>
-                <Link href={link.href} className="text-slate-600 transition hover:text-slate-900">
+                <Link href={link.href} className="transition hover:text-slate-900">
                   {link.label}
                 </Link>
               </li>
@@ -46,12 +56,12 @@ export function SiteFooter() {
           </ul>
         </section>
 
-        <section>
-          <p className="font-semibold text-slate-900">Resources</p>
-          <ul className="mt-2 space-y-1">
+        <section className="space-y-3 rounded-[1.4rem] border border-border/80 bg-white/80 p-5 shadow-[var(--shadow-soft)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Resources</p>
+          <ul className="space-y-2 text-sm text-slate-600">
             {resourceLinks.map((link) => (
               <li key={link.href}>
-                <Link href={link.href} className="text-slate-600 transition hover:text-slate-900">
+                <Link href={link.href} className="transition hover:text-slate-900">
                   {link.label}
                 </Link>
               </li>
@@ -59,18 +69,18 @@ export function SiteFooter() {
           </ul>
         </section>
 
-        <section>
-          <p className="font-semibold text-slate-900">Trust and Support</p>
-          <ul className="mt-2 space-y-1">
+        <section className="space-y-3 rounded-[1.4rem] border border-border/80 bg-white/80 p-5 shadow-[var(--shadow-soft)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Trust and Support</p>
+          <ul className="space-y-2 text-sm text-slate-600">
             {legalLinks.map((link) => (
               <li key={link.href}>
-                <Link href={link.href} className="text-slate-600 transition hover:text-slate-900">
+                <Link href={link.href} className="transition hover:text-slate-900">
                   {link.label}
                 </Link>
               </li>
             ))}
           </ul>
-          <p className="mt-4 text-sm text-slate-700">zkhawaja@zokorp.com</p>
+          <p className="pt-2 text-sm font-medium text-slate-700">zkhawaja@zokorp.com</p>
         </section>
       </div>
       <div className="section-divider mx-auto w-full max-w-7xl" />
