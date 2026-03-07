@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   userFindUnique: vi.fn(),
+  submissionFindFirst: vi.fn(),
   submissionCreate: vi.fn(),
   submissionUpdate: vi.fn(),
   auditCreate: vi.fn(),
@@ -18,6 +19,7 @@ vi.mock("@/lib/db", () => ({
       findUnique: mocks.userFindUnique,
     },
     landingZoneReadinessSubmission: {
+      findFirst: mocks.submissionFindFirst,
       create: mocks.submissionCreate,
       update: mocks.submissionUpdate,
     },
@@ -127,6 +129,7 @@ describe("submit landing zone readiness route", () => {
     vi.clearAllMocks();
 
     mocks.userFindUnique.mockResolvedValue(null);
+    mocks.submissionFindFirst.mockResolvedValue(null);
     mocks.submissionCreate.mockResolvedValue({ id: "lzrc_123" });
     mocks.submissionUpdate.mockResolvedValue({ id: "lzrc_123" });
     mocks.auditCreate.mockResolvedValue({ id: "audit_123" });
@@ -228,6 +231,39 @@ describe("submit landing zone readiness route", () => {
       }),
     );
     expect(mocks.auditCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns the prior result instead of resending a duplicate recent submission", async () => {
+    const duplicateAnswers = makeAnswers({ handlesSensitiveData: true, enforcesMfa: "no" });
+    mocks.submissionFindFirst.mockResolvedValue({
+      answersJson: duplicateAnswers,
+      scoreOverall: 92,
+      maturityBand: "Strong Foundation",
+      quoteJson: {
+        quoteTier: "Advisory Review",
+        quoteLow: 2000,
+        quoteHigh: 3500,
+        estimatedDaysLow: 1,
+        estimatedDaysHigh: 2,
+        confidence: "high",
+        rationaleLines: ["Already sent."],
+      },
+      emailDeliveryStatus: "sent",
+    });
+
+    const response = await POST(makeRequest(JSON.stringify(duplicateAnswers)));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toEqual({
+      status: "sent",
+      overallScore: 92,
+      maturityBand: "Strong Foundation",
+      quoteTier: "Advisory Review",
+    });
+    expect(mocks.submissionCreate).not.toHaveBeenCalled();
+    expect(mocks.sendToolResultEmail).not.toHaveBeenCalled();
+    expect(mocks.upsertZohoLead).not.toHaveBeenCalled();
   });
 
   it("returns fallback when email delivery fails after storing the lead", async () => {

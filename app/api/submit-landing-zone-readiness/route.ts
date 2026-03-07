@@ -9,6 +9,8 @@ import { buildLandingZoneReadinessReport } from "@/lib/landing-zone-readiness/en
 import { isAllowedLandingZoneBusinessEmail, normalizeLandingZoneWebsite } from "@/lib/landing-zone-readiness/input";
 import {
   landingZoneReadinessAnswersSchema,
+  landingZoneReadinessQuoteSchema,
+  maturityBandSchema,
   type LandingZoneReadinessSubmissionResponse,
 } from "@/lib/landing-zone-readiness/types";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
@@ -23,6 +25,7 @@ const EMAIL_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const MAX_REQUEST_BODY_CHARS = 32_000;
 const JSON_CONTENT_TYPE = "application/json";
 const SUBMISSION_SOURCE = "landing-zone-readiness-checker";
+const DUPLICATE_SUBMISSION_WINDOW_MS = 15 * 60 * 1000;
 const INVALID_CONTENT_TYPE = "INVALID_CONTENT_TYPE";
 const INVALID_PAYLOAD = "INVALID_PAYLOAD";
 const PAYLOAD_TOO_LARGE = "PAYLOAD_TOO_LARGE";
@@ -71,6 +74,53 @@ function deriveZohoSyncStatus(result: Awaited<ReturnType<typeof upsertZohoLead>>
   }
 
   return "failed";
+}
+
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(",")}]`;
+  }
+
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([, nestedValue]) => nestedValue !== undefined)
+      .sort(([left], [right]) => left.localeCompare(right));
+
+    return `{${entries
+      .map(([key, nestedValue]) => `${JSON.stringify(key)}:${stableStringify(nestedValue)}`)
+      .join(",")}}`;
+  }
+
+  return JSON.stringify(value);
+}
+
+function normalizeComparableAnswers(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return value;
+  }
+
+  const record = { ...(value as Record<string, unknown>) };
+  const website = record.website;
+  if (typeof website === "string" && website.trim()) {
+    record.website = normalizeLandingZoneWebsite(website);
+  }
+
+  const email = record.email;
+  if (typeof email === "string" && email.trim()) {
+    record.email = email.trim().toLowerCase();
+  }
+
+  return record;
+}
+
+function isMatchingRecentSubmission(input: {
+  currentAnswers: unknown;
+  previousAnswers: unknown;
+}) {
+  return (
+    stableStringify(normalizeComparableAnswers(input.currentAnswers)) ===
+    stableStringify(normalizeComparableAnswers(input.previousAnswers))
+  );
 }
 
 function buildZohoDescription(input: {
@@ -165,6 +215,62 @@ export async function POST(request: Request) {
       where: { email: answers.email },
       select: { id: true },
     });
+    const recentSubmission = await db.landingZoneReadinessSubmission.findFirst({
+      where: {
+        email: answers.email,
+        source: SUBMISSION_SOURCE,
+        createdAt: {
+          gte: new Date(Date.now() - DUPLICATE_SUBMISSION_WINDOW_MS),
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      select: {
+        answersJson: true,
+        scoreOverall: true,
+        maturityBand: true,
+        quoteJson: true,
+        emailDeliveryStatus: true,
+      },
+    });
+
+    if (
+      recentSubmission &&
+      isMatchingRecentSubmission({
+        currentAnswers: answers,
+        previousAnswers: recentSubmission.answersJson,
+      })
+    ) {
+      const parsedQuote = landingZoneReadinessQuoteSchema.safeParse(recentSubmission.quoteJson);
+      const parsedMaturityBand = maturityBandSchema.safeParse(recentSubmission.maturityBand);
+      if (parsedQuote.success && parsedMaturityBand.success) {
+        if (recentSubmission.emailDeliveryStatus === "sent") {
+          return jsonResponse(
+            {
+              status: "sent",
+              overallScore: recentSubmission.scoreOverall,
+              maturityBand: parsedMaturityBand.data,
+              quoteTier: parsedQuote.data.quoteTier,
+            },
+            requestId,
+            200,
+          );
+        }
+
+        return jsonResponse(
+          {
+            status: "fallback",
+            overallScore: recentSubmission.scoreOverall,
+            maturityBand: parsedMaturityBand.data,
+            quoteTier: parsedQuote.data.quoteTier,
+            reason: "A recent matching submission already exists. Please check your email before retrying.",
+          },
+          requestId,
+          200,
+        );
+      }
+    }
 
     const created = await db.landingZoneReadinessSubmission.create({
       data: {
