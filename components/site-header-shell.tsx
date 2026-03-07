@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -31,18 +31,42 @@ export function SiteHeaderShell({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement | null>(null);
+  const moreTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const moreMenuRef = useRef<HTMLDivElement | null>(null);
+  const mobileTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const mobilePanelRef = useRef<HTMLDivElement | null>(null);
+
+  const closeMenus = useCallback(() => {
+    setMobileOpen(false);
+    setMoreOpen(false);
+  }, []);
 
   useEffect(() => {
     function onPointerDown(event: MouseEvent) {
       if (!moreRef.current?.contains(event.target as Node)) {
         setMoreOpen(false);
       }
+
+      if (
+        mobileOpen &&
+        !mobilePanelRef.current?.contains(event.target as Node) &&
+        !mobileTriggerRef.current?.contains(event.target as Node)
+      ) {
+        setMobileOpen(false);
+      }
     }
 
     function onEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        setMoreOpen(false);
-        setMobileOpen(false);
+        if (moreOpen) {
+          setMoreOpen(false);
+          window.requestAnimationFrame(() => moreTriggerRef.current?.focus());
+        }
+
+        if (mobileOpen) {
+          setMobileOpen(false);
+          window.requestAnimationFrame(() => mobileTriggerRef.current?.focus());
+        }
       }
     }
 
@@ -52,12 +76,29 @@ export function SiteHeaderShell({
       document.removeEventListener("mousedown", onPointerDown);
       window.removeEventListener("keydown", onEscape);
     };
-  }, []);
+  }, [mobileOpen, moreOpen]);
 
-  function closeMenus() {
-    setMobileOpen(false);
-    setMoreOpen(false);
-  }
+  useEffect(() => {
+    if (!moreOpen) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      const firstFocusable = moreMenuRef.current?.querySelector<HTMLElement>("a, button");
+      firstFocusable?.focus();
+    });
+  }, [moreOpen]);
+
+  useEffect(() => {
+    if (!mobileOpen) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      const firstFocusable = mobilePanelRef.current?.querySelector<HTMLElement>("a, button");
+      firstFocusable?.focus();
+    });
+  }, [mobileOpen]);
 
   const navLinkClass = cn(
     buttonVariants({ variant: "ghost", size: "sm" }),
@@ -107,6 +148,7 @@ export function SiteHeaderShell({
             type="button"
             aria-expanded={moreOpen}
             aria-controls="desktop-more-menu"
+            ref={moreTriggerRef}
             className={navLinkClass}
             onClick={() => setMoreOpen((current) => !current)}
           >
@@ -115,6 +157,8 @@ export function SiteHeaderShell({
           {moreOpen ? (
             <div
               id="desktop-more-menu"
+              ref={moreMenuRef}
+              aria-label="More pages"
               className="absolute right-0 top-full z-50 mt-2 w-56 rounded-2xl border border-border bg-white p-2 shadow-[var(--shadow-card-hover)]"
             >
               <div className="space-y-1">
@@ -160,6 +204,7 @@ export function SiteHeaderShell({
         type="button"
         aria-expanded={mobileOpen}
         aria-controls="mobile-nav-panel"
+        ref={mobileTriggerRef}
         className={cn(buttonVariants({ variant: "secondary", size: "sm" }), "md:hidden")}
         onClick={() => setMobileOpen((current) => !current)}
       >
@@ -174,6 +219,8 @@ export function SiteHeaderShell({
       {mobileOpen ? (
         <div
           id="mobile-nav-panel"
+          ref={mobilePanelRef}
+          aria-label="Mobile navigation"
           className="absolute inset-x-4 top-[calc(100%-0.25rem)] z-40 rounded-[1.4rem] border border-border bg-white/95 p-4 shadow-[var(--shadow-card-hover)] backdrop-blur md:hidden"
         >
           <div className="space-y-2">

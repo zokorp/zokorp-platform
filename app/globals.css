@@ -185,12 +185,14 @@ h3,
   text-wrap: balance;
 }
 
-.focus-ring:focus-visible {
+.focus-ring:focus-visible,
+.focus-ring:focus-within {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
-.focus-ring[data-focus-ring="inset"]:focus-visible {
+.focus-ring[data-focus-ring="inset"]:focus-visible,
+.focus-ring[data-focus-ring="inset"]:focus-within {
   outline: none;
   box-shadow: 0 0 0 4px var(--ring);
 }

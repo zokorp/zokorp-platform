@@ -57,6 +57,7 @@ export function TabsList({ className, ...props }: React.HTMLAttributes<HTMLDivEl
   return (
     <div
       role="tablist"
+      aria-orientation="horizontal"
       className={cn(
         "inline-flex flex-wrap gap-2 rounded-2xl border border-border bg-background-elevated p-1.5",
         className,

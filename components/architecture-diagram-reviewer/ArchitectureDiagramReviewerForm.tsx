@@ -998,9 +998,9 @@ export function ArchitectureDiagramReviewerForm({
           </div>
         </form>
 
-        <div className="min-h-[168px]">
+        <div className="min-h-[168px]" aria-live="polite" aria-atomic="true">
           {status === "running" ? (
-            <Card tone="glass" className="rounded-3xl p-5">
+            <Card tone="glass" className="rounded-3xl p-5" role="status">
               <CardHeader>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1">
@@ -1014,7 +1014,11 @@ export function ArchitectureDiagramReviewerForm({
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Progress value={clampPercent(progressPct)} tone="info" />
+                <Progress
+                  value={clampPercent(progressPct)}
+                  tone="info"
+                  aria-label={`Architecture review progress ${clampPercent(progressPct)} percent`}
+                />
                 <p className="text-sm text-sky-900">Timeout budget ETA {formatEta(etaSeconds)}</p>
               </CardContent>
             </Card>

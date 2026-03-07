@@ -530,7 +530,7 @@ export function ValidatorForm({
             </div>
 
             <Tabs defaultValue="recommendations" className="space-y-4">
-              <TabsList className="w-full justify-start">
+              <TabsList className="w-full justify-start" aria-label="Validator report sections">
                 <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
                 <TabsTrigger value="calibration">Calibration</TabsTrigger>
                 <TabsTrigger value="notes">Notes</TabsTrigger>

@@ -193,7 +193,7 @@ export default async function AccountPage() {
 
         <CardContent>
           <Tabs defaultValue="service-requests" className="space-y-5">
-            <TabsList className="w-full justify-start">
+            <TabsList className="w-full justify-start" aria-label="Account sections">
               <TabsTrigger value="service-requests">Service Requests</TabsTrigger>
               <TabsTrigger value="credits">Credits</TabsTrigger>
               <TabsTrigger value="entitlements">Entitlements</TabsTrigger>

@@ -124,7 +124,7 @@ export function SoftwareCatalogShell({ products }: SoftwareCatalogShellProps) {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter software by access model">
             {accessFilters.map((filter) => {
               const isActive = filter.value === accessFilter;
 
@@ -144,7 +144,7 @@ export function SoftwareCatalogShell({ products }: SoftwareCatalogShellProps) {
               );
             })}
           </div>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500" aria-live="polite">
             Showing {filteredProducts.length} of {products.length} product{products.length === 1 ? "" : "s"}.
           </p>
         </CardContent>
