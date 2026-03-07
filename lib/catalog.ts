@@ -62,6 +62,16 @@ const fallbackCatalog = [
     prices: [],
   },
   {
+    id: "fallback-cloud-cost-leak-finder",
+    slug: "cloud-cost-leak-finder",
+    name: "Cloud Cost Leak Finder",
+    description:
+      "Free deterministic cloud cost diagnostic for SMB teams with an emailed advisory memo, likely savings range, and consulting quote.",
+    active: true,
+    accessModel: "FREE" as const,
+    prices: [],
+  },
+  {
     id: "fallback-mlops-platform",
     slug: "mlops-foundation-platform",
     name: "ZoKorp MLOps Foundation Platform",
