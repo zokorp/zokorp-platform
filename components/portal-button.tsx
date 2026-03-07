@@ -5,11 +5,23 @@ import { useState } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
-export function PortalButton() {
+type PortalButtonProps = {
+  available?: boolean;
+  unavailableMessage?: string;
+};
+
+export function PortalButton({
+  available = true,
+  unavailableMessage = "Billing portal setup is still in progress. Please try again shortly.",
+}: PortalButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function onClick() {
+    if (!available) {
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -43,9 +55,10 @@ export function PortalButton() {
 
   return (
     <div className="space-y-2">
-      <Button type="button" onClick={onClick} disabled={isLoading}>
+      <Button type="button" onClick={onClick} disabled={isLoading || !available}>
         {isLoading ? "Opening..." : "Open Stripe Billing Portal"}
       </Button>
+      {!available ? <Alert tone="warning">{unavailableMessage}</Alert> : null}
       {error ? <Alert tone="danger">{error}</Alert> : null}
     </div>
   );

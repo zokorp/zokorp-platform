@@ -285,7 +285,7 @@ export default async function AccountPage() {
               {user.entitlements.length === 0 ? (
                 <Card tone="muted" className="rounded-3xl p-5">
                   <CardContent>
-                    <p className="text-sm text-slate-600">No active purchases yet.</p>
+                    <p className="text-sm text-slate-600">No active entitlements yet.</p>
                   </CardContent>
                 </Card>
               ) : (

@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 
 export default async function BillingPage() {
   const session = await auth();
+  const billingPortalReady = Boolean(process.env.STRIPE_SECRET_KEY);
 
   if (!session?.user?.email) {
     redirect("/login?callbackUrl=/account/billing");
@@ -22,7 +23,10 @@ export default async function BillingPage() {
       <p className="text-xs text-slate-500">
         For consultation or delivery status, use the account hub request timeline.
       </p>
-      <PortalButton />
+      <PortalButton
+        available={billingPortalReady}
+        unavailableMessage="Stripe billing portal is not configured in this local environment yet."
+      />
     </Card>
   );
 }
