@@ -14,6 +14,7 @@ import type {
   ArchitectureLifecycleStage,
   ArchitectureProvider,
   ArchitectureRegulatoryScope,
+  ArchitectureReviewPhase,
   ArchitectureWorkloadCriticality,
 } from "@/lib/architecture-review/types";
 
@@ -23,6 +24,14 @@ type ArchitectureDiagramReviewerFormProps = {
 };
 
 type SubmitApiResponse =
+  | {
+      status: "queued";
+      jobId: string;
+      deliveryMode: null;
+      phase: ArchitectureReviewPhase;
+      progressPct: number;
+      etaSeconds: number;
+    }
   | {
       status: "sent";
     }
@@ -35,6 +44,22 @@ type SubmitApiResponse =
   | {
       error: string;
     };
+
+type StatusApiResponse = {
+  jobId: string;
+  status: "queued" | "running" | "sent" | "fallback" | "rejected" | "failed";
+  phase: ArchitectureReviewPhase;
+  progressPct: number;
+  etaSeconds: number;
+  deliveryMode: "sent" | "fallback" | null;
+  error?: string | null;
+  reason?: string | null;
+  fallback?: {
+    mailtoUrl?: string | null;
+    emlDownloadToken?: string | null;
+    reason?: string | null;
+  } | null;
+};
 
 type SpeechRecognitionLike = {
   continuous: boolean;
@@ -50,7 +75,92 @@ type SpeechRecognitionLike = {
 type SpeechWindow = Window & {
   SpeechRecognition?: new () => SpeechRecognitionLike;
   webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+  gtag?: (...args: unknown[]) => void;
 };
+
+const PHASE_LABELS: Record<ArchitectureReviewPhase, string> = {
+  "upload-validate": "Validating upload",
+  "diagram-precheck": "Running diagram precheck",
+  ocr: "Extracting OCR evidence",
+  rules: "Computing deterministic scoring",
+  "llm-refine": "Running local model refinement",
+  "package-email": "Packaging report email",
+  "send-fallback": "Sending email or fallback draft",
+  completed: "Completed",
+};
+
+const NON_ARCH_PRECHECK_TERMS = ["tradeline", "credit", "debt", "account number", "loan", "statement", "apr"];
+const ARCH_PRECHECK_TERMS = ["architecture", "service", "api", "gateway", "database", "vpc", "subnet", "ingress"];
+
+function trackAnalyticsEvent(name: string, params?: Record<string, string | number>) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const maybeWindow = window as SpeechWindow;
+  maybeWindow.gtag?.("event", name, params);
+}
+
+function formatEta(seconds: number) {
+  const safe = Math.max(0, Math.round(seconds));
+  const minutes = Math.floor(safe / 60);
+  const remainingSeconds = safe % 60;
+
+  if (minutes <= 0) {
+    return `${remainingSeconds}s`;
+  }
+
+  return `${minutes}m ${remainingSeconds}s`;
+}
+
+function clampPercent(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function inferDeviceClass() {
+  if (typeof window === "undefined") {
+    return "unknown" as const;
+  }
+
+  const width = window.innerWidth;
+  if (width < 768) {
+    return "mobile" as const;
+  }
+
+  if (width < 1024) {
+    return "tablet" as const;
+  }
+
+  return "desktop" as const;
+}
+
+function collectSubmissionContext() {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+
+  const url = new URL(window.location.href);
+  return {
+    utmSource: url.searchParams.get("utm_source") ?? undefined,
+    utmMedium: url.searchParams.get("utm_medium") ?? undefined,
+    utmCampaign: url.searchParams.get("utm_campaign") ?? undefined,
+    landingPage: `${window.location.pathname}${window.location.search}`,
+    referrer: document.referrer || undefined,
+    deviceClass: inferDeviceClass(),
+  };
+}
+
+function quickNarrativePrecheck(paragraph: string) {
+  const normalized = paragraph.toLowerCase();
+  const nonArchHits = NON_ARCH_PRECHECK_TERMS.filter((term) => normalized.includes(term)).length;
+  const archHits = ARCH_PRECHECK_TERMS.filter((term) => normalized.includes(term)).length;
+
+  if (nonArchHits >= 3 && archHits <= 1) {
+    return "This input looks non-architectural. Upload a system architecture diagram and description.";
+  }
+
+  return null;
+}
 
 export function ArchitectureDiagramReviewerForm({
   requiresAuth = false,
@@ -80,14 +190,18 @@ export function ArchitectureDiagramReviewerForm({
   const [desiredEngagement, setDesiredEngagement] = useState<ArchitectureEngagementPreference>("hands-on-remediation");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const [progress, setProgress] = useState<string | null>(null);
-  const [status, setStatus] = useState<"idle" | "running" | "success" | "fallback" | "error">("idle");
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [phase, setPhase] = useState<ArchitectureReviewPhase>("upload-validate");
+  const [progressPct, setProgressPct] = useState(0);
+  const [etaSeconds, setEtaSeconds] = useState(0);
+  const [status, setStatus] = useState<"idle" | "running" | "success" | "fallback" | "error" | "rejected">("idle");
   const [error, setError] = useState<string | null>(null);
   const [fallbackMailtoUrl, setFallbackMailtoUrl] = useState<string | null>(null);
   const [fallbackEmlToken, setFallbackEmlToken] = useState<string | null>(null);
 
   const generatedDiagramUrlRef = useRef<string | null>(null);
   const speechRecognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const pollingIntervalRef = useRef<number | null>(null);
 
   const paragraphTooShort = paragraph.trim().length < 1;
   const paragraphTooLong = paragraph.trim().length > 2000;
@@ -95,20 +209,17 @@ export function ArchitectureDiagramReviewerForm({
     "focus-ring block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-[0_1px_0_rgba(255,255,255,0.65)_inset]";
   const fieldLabelClassName = "text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500";
 
-  const speechSupported = typeof window !== "undefined" && Boolean(((window as SpeechWindow).SpeechRecognition ?? (window as SpeechWindow).webkitSpeechRecognition));
+  const speechSupported =
+    typeof window !== "undefined" &&
+    Boolean(((window as SpeechWindow).SpeechRecognition ?? (window as SpeechWindow).webkitSpeechRecognition));
 
   const canSubmit = useMemo(() => {
-    if (!selectedFile) {
-      return false;
-    }
-
-    if (paragraphTooShort || paragraphTooLong) {
+    if (!selectedFile || paragraphTooShort || paragraphTooLong) {
       return false;
     }
 
     return status !== "running";
   }, [paragraphTooLong, paragraphTooShort, selectedFile, status]);
-
 
   useEffect(() => {
     return () => {
@@ -123,8 +234,104 @@ export function ArchitectureDiagramReviewerForm({
           // no-op cleanup
         }
       }
+
+      if (pollingIntervalRef.current !== null) {
+        window.clearInterval(pollingIntervalRef.current);
+      }
     };
   }, []);
+
+  useEffect(() => {
+    if (!activeJobId || status !== "running") {
+      if (pollingIntervalRef.current !== null) {
+        window.clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+      return;
+    }
+
+    let stopped = false;
+    const jobId = activeJobId;
+
+    async function pollStatus() {
+      if (stopped) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/architecture-review-status?jobId=${encodeURIComponent(jobId)}`, {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        const payload = (await response.json()) as StatusApiResponse | { error: string };
+
+        if (!response.ok || "error" in payload) {
+          setStatus("error");
+          setError("Unable to load processing status. Retry this review.");
+          return;
+        }
+
+        setPhase(payload.phase);
+        setProgressPct(clampPercent(payload.progressPct));
+        setEtaSeconds(Math.max(0, Math.round(payload.etaSeconds)));
+
+        if (payload.status === "sent") {
+          setStatus("success");
+          setActiveJobId(null);
+          trackAnalyticsEvent("architecture_review_completed", {
+            delivery_mode: "sent",
+          });
+          trackAnalyticsEvent("generate_lead", {
+            form: "architecture-reviewer",
+            delivery_mode: "sent",
+          });
+          return;
+        }
+
+        if (payload.status === "fallback") {
+          setStatus("fallback");
+          setActiveJobId(null);
+          setFallbackMailtoUrl(payload.fallback?.mailtoUrl ?? null);
+          setFallbackEmlToken(payload.fallback?.emlDownloadToken ?? null);
+          trackAnalyticsEvent("generate_lead", {
+            form: "architecture-reviewer",
+            delivery_mode: "fallback",
+          });
+          return;
+        }
+
+        if (payload.status === "rejected") {
+          setStatus("rejected");
+          setActiveJobId(null);
+          setError(payload.reason ?? "Uploaded file appears to be non-architecture content.");
+          return;
+        }
+
+        if (payload.status === "failed") {
+          setStatus("error");
+          setActiveJobId(null);
+          setError(payload.error ?? "Architecture review processing failed.");
+        }
+      } catch {
+        setStatus("error");
+        setError("Network error while polling review status.");
+      }
+    }
+
+    void pollStatus();
+    pollingIntervalRef.current = window.setInterval(() => {
+      void pollStatus();
+    }, 1300);
+
+    return () => {
+      stopped = true;
+      if (pollingIntervalRef.current !== null) {
+        window.clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, [activeJobId, status]);
 
   function clearGeneratedDiagramPreview() {
     const generatedFilename = generatedDiagramSummary?.filename;
@@ -158,7 +365,7 @@ export function ArchitectureDiagramReviewerForm({
     try {
       speechRecognitionRef.current.stop();
     } catch {
-      // browser can throw when already stopped
+      // no-op
     }
 
     setIsListening(false);
@@ -276,32 +483,49 @@ export function ArchitectureDiagramReviewerForm({
       return;
     }
 
+    const quickPrecheckError = quickNarrativePrecheck(paragraph.trim());
+    if (quickPrecheckError) {
+      setError(quickPrecheckError);
+      return;
+    }
+
     setStatus("running");
     setError(null);
-    setProgress("Validating diagram...");
     setFallbackMailtoUrl(null);
     setFallbackEmlToken(null);
+    setPhase("upload-validate");
+    setProgressPct(0);
+    setEtaSeconds(0);
+
+    const startedAtMs = performance.now();
+    const startedAtISO = new Date().toISOString();
 
     const diagramValidation = await isStrictDiagramFile(selectedFile);
     if (!diagramValidation.ok) {
       setStatus("error");
-      setProgress(null);
       setError(diagramValidation.error ?? "Only PNG or SVG files are allowed.");
       return;
     }
 
+    const precheckMs = Math.max(0, Math.round(performance.now() - startedAtMs));
+
     if (diagramValidation.format === "svg") {
       try {
-        await extractSvgEvidence(selectedFile);
+        const svgEvidence = await extractSvgEvidence(selectedFile);
+        const normalizedSvgText = svgEvidence.text.toLowerCase();
+        const nonArchHits = NON_ARCH_PRECHECK_TERMS.filter((term) => normalizedSvgText.includes(term)).length;
+        const archHits = ARCH_PRECHECK_TERMS.filter((term) => normalizedSvgText.includes(term)).length;
+        if (nonArchHits >= 4 && archHits <= 1) {
+          setStatus("rejected");
+          setError("Uploaded SVG appears non-architectural. No review was sent.");
+          return;
+        }
       } catch (validationError) {
         setStatus("error");
-        setProgress(null);
-        setError(validationError instanceof Error ? validationError.message : "SVG parsing failed. Upload a valid SVG diagram.");
+        setError(validationError instanceof Error ? validationError.message : "SVG parsing failed.");
         return;
       }
     }
-
-    setProgress("Uploading diagram for server-side analysis...");
 
     try {
       const submitData = new FormData();
@@ -321,6 +545,13 @@ export function ArchitectureDiagramReviewerForm({
           environment,
           lifecycleStage,
           desiredEngagement,
+          submissionContext: collectSubmissionContext(),
+          clientTiming: {
+            startedAtISO,
+            submittedAtISO: new Date().toISOString(),
+            precheckMs,
+            totalClientMs: Math.max(0, Math.round(performance.now() - startedAtMs)),
+          },
         }),
       );
       submitData.append("diagram", selectedFile, selectedFile.name);
@@ -334,31 +565,41 @@ export function ArchitectureDiagramReviewerForm({
 
       if (!response.ok) {
         setStatus("error");
-        setProgress(null);
         setError("error" in payload && payload.error ? payload.error : "Review submission failed. Please retry.");
         return;
       }
 
+      if ("status" in payload && payload.status === "queued") {
+        setActiveJobId(payload.jobId);
+        setPhase(payload.phase);
+        setProgressPct(clampPercent(payload.progressPct));
+        setEtaSeconds(Math.max(0, Math.round(payload.etaSeconds)));
+        trackAnalyticsEvent("architecture_review_started", {
+          provider,
+        });
+        return;
+      }
+
+      // Backward compatibility for older responses
       if ("status" in payload && payload.status === "sent") {
         setStatus("success");
-        setProgress(null);
+        trackAnalyticsEvent("architecture_review_completed", {
+          delivery_mode: "sent",
+        });
         return;
       }
 
       if ("status" in payload && payload.status === "fallback") {
         setStatus("fallback");
-        setProgress(null);
         setFallbackMailtoUrl(payload.mailtoUrl ?? null);
         setFallbackEmlToken(payload.emlDownloadToken ?? null);
         return;
       }
 
       setStatus("error");
-      setProgress(null);
       setError("Unexpected response from the review endpoint.");
     } catch {
       setStatus("error");
-      setProgress(null);
       setError("Network error while submitting review metadata.");
     }
   }
@@ -402,18 +643,17 @@ export function ArchitectureDiagramReviewerForm({
       <div className="relative overflow-hidden border-b border-slate-200 bg-gradient-to-br from-slate-900 via-[#123c66] to-[#0f8ea9] px-6 py-6 text-white">
         <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-white/10 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-10 left-10 h-28 w-28 rounded-full bg-amber-200/20 blur-2xl" />
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/80">Server-Validated Review</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/80">Architecture Revenue Lead Engine</p>
         <h3 className="font-display mt-2 text-3xl font-semibold">Architecture Diagram Reviewer</h3>
         <p className="mt-3 max-w-3xl text-sm leading-6 text-white/90 md:text-base">
-          Upload a PNG or SVG, select cloud provider, and describe your architecture in one paragraph. The server
-          validates the uploaded file and recomputes scoring from the diagram before emailing results to your signed-in address.
+          Upload your architecture diagram, add one paragraph, and get a deterministic review delivered to your email.
+          Findings stay off-page by design.
         </p>
-        <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-white/90">
-          <span className="rounded-full border border-white/30 bg-white/10 px-2.5 py-1">PNG + SVG</span>
-          <span className="rounded-full border border-white/30 bg-white/10 px-2.5 py-1">Server-side analysis</span>
-          <span className="rounded-full border border-white/30 bg-white/10 px-2.5 py-1">Trusted scoring</span>
-          <span className="rounded-full border border-white/30 bg-white/10 px-2.5 py-1">Optional generated SVG</span>
-          <span className="rounded-full border border-white/30 bg-white/10 px-2.5 py-1">Email delivery</span>
+        <div className="mt-4 grid gap-2 md:grid-cols-4 text-[11px] font-semibold uppercase tracking-[0.1em] text-white/90">
+          <span className="rounded-full border border-white/30 bg-white/10 px-2.5 py-1 text-center">Free</span>
+          <span className="rounded-full border border-white/30 bg-white/10 px-2.5 py-1 text-center">Private</span>
+          <span className="rounded-full border border-white/30 bg-white/10 px-2.5 py-1 text-center">Email-only report in ~2 min</span>
+          <span className="rounded-full border border-white/30 bg-white/10 px-2.5 py-1 text-center">No findings on page</span>
         </div>
       </div>
 
@@ -424,8 +664,7 @@ export function ArchitectureDiagramReviewerForm({
               Generate Sample Diagram (Optional)
             </p>
             <p className="mt-2 text-sm text-slate-600">
-              Type or dictate a short architecture narrative, then generate a provider-specific SVG that auto-attaches
-              to the review form.
+              Type or dictate an architecture narrative, then generate a provider-specific SVG that auto-attaches to this form.
             </p>
 
             <label className="mt-3 block space-y-2">
@@ -578,11 +817,12 @@ export function ArchitectureDiagramReviewerForm({
             </label>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4 md:p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Diagram Metadata (Improves Scoring Accuracy)
-            </p>
-            <div className="mt-3 grid gap-4 md:grid-cols-2">
+          <details className="rounded-xl border border-slate-200 bg-white p-4 md:p-5">
+            <summary className="cursor-pointer select-none text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+              Advanced Context (Improves Scoring Accuracy)
+            </summary>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
               <label className="space-y-2">
                 <span className={fieldLabelClassName}>Title</span>
                 <input
@@ -706,7 +946,7 @@ export function ArchitectureDiagramReviewerForm({
                 </select>
               </label>
             </div>
-          </div>
+          </details>
 
           <div className="flex flex-wrap items-center gap-3">
             <button
@@ -720,9 +960,21 @@ export function ArchitectureDiagramReviewerForm({
           </div>
         </form>
 
-        {progress ? (
-          <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5 text-sm text-sky-900">
-            <span className="font-semibold">Processing:</span> {progress}
+        {status === "running" ? (
+          <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-lg font-semibold text-sky-900">Processing: {PHASE_LABELS[phase]}</p>
+              <span className="rounded-full bg-sky-100 px-3 py-1 text-2xl font-semibold text-sky-800">
+                {clampPercent(progressPct)}%
+              </span>
+            </div>
+            <div className="mt-3 h-3 overflow-hidden rounded-full bg-sky-100">
+              <div
+                className="h-full rounded-full bg-sky-500 transition-[width] duration-500"
+                style={{ width: `${clampPercent(progressPct)}%` }}
+              />
+            </div>
+            <p className="mt-2 text-sm text-sky-900">Timeout budget ETA {formatEta(etaSeconds)}</p>
           </div>
         ) : null}
 
@@ -756,7 +1008,7 @@ export function ArchitectureDiagramReviewerForm({
           </div>
         ) : null}
 
-        {status === "error" && error ? (
+        {(status === "error" || status === "rejected") && error ? (
           <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700">{error}</div>
         ) : null}
       </div>

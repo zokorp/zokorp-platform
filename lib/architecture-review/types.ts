@@ -19,6 +19,16 @@ export const architectureCategorySchema = z.enum([
 ]);
 export type ArchitectureCategory = z.infer<typeof architectureCategorySchema>;
 
+export const architectureAnalysisConfidenceSchema = z.enum(["high", "medium", "low"]);
+export type ArchitectureAnalysisConfidence = z.infer<typeof architectureAnalysisConfidenceSchema>;
+
+export const architectureQuoteTierSchema = z.enum([
+  "advisory-review",
+  "remediation-sprint",
+  "implementation-partner",
+]);
+export type ArchitectureQuoteTier = z.infer<typeof architectureQuoteTierSchema>;
+
 export const architectureWorkloadCriticalitySchema = z.enum(["low", "standard", "mission-critical"]);
 export type ArchitectureWorkloadCriticality = z.infer<typeof architectureWorkloadCriticalitySchema>;
 
@@ -60,6 +70,8 @@ export const architectureReviewReportSchema = z.object({
   reportVersion: z.literal(ARCHITECTURE_REVIEW_VERSION),
   provider: architectureProviderSchema,
   overallScore: z.number().int().min(0).max(100),
+  analysisConfidence: architectureAnalysisConfidenceSchema,
+  quoteTier: architectureQuoteTierSchema,
   flowNarrative: z.string().trim().min(1).max(2000),
   findings: z.array(architectureFindingSchema).max(20),
   consultationQuoteUSD: z.number().int().min(0),
@@ -67,6 +79,24 @@ export const architectureReviewReportSchema = z.object({
   userEmail: z.string().email(),
 });
 export type ArchitectureReviewReport = z.infer<typeof architectureReviewReportSchema>;
+
+export const architectureSubmissionContextSchema = z.object({
+  utmSource: z.string().trim().max(120).optional(),
+  utmMedium: z.string().trim().max(120).optional(),
+  utmCampaign: z.string().trim().max(160).optional(),
+  landingPage: z.string().trim().max(300).optional(),
+  referrer: z.string().trim().max(300).optional(),
+  deviceClass: z.enum(["mobile", "tablet", "desktop", "unknown"]).optional(),
+});
+export type ArchitectureSubmissionContext = z.infer<typeof architectureSubmissionContextSchema>;
+
+export const architectureClientTimingSchema = z.object({
+  startedAtISO: z.string().datetime({ offset: true }).optional(),
+  submittedAtISO: z.string().datetime({ offset: true }).optional(),
+  precheckMs: z.number().int().min(0).max(600_000).optional(),
+  totalClientMs: z.number().int().min(0).max(600_000).optional(),
+});
+export type ArchitectureClientTiming = z.infer<typeof architectureClientTimingSchema>;
 
 export const architectureReviewMetadataSchema = z.object({
   diagramFormat: architectureDiagramFormatSchema.optional(),
@@ -84,6 +114,9 @@ export const architectureReviewMetadataSchema = z.object({
   environment: architectureEnvironmentSchema.optional(),
   lifecycleStage: architectureLifecycleStageSchema.optional(),
   desiredEngagement: architectureEngagementPreferenceSchema.optional(),
+  submissionContext: architectureSubmissionContextSchema.optional(),
+  clientTiming: architectureClientTimingSchema.optional(),
+  analysisConfidence: architectureAnalysisConfidenceSchema.optional(),
 });
 export type ArchitectureReviewMetadata = z.infer<typeof architectureReviewMetadataSchema>;
 
@@ -98,6 +131,18 @@ export const submitArchitectureReviewPayloadSchema = z.object({
   metadata: architectureReviewMetadataSchema,
 });
 export type SubmitArchitectureReviewPayload = z.infer<typeof submitArchitectureReviewPayloadSchema>;
+
+export const architectureReviewPhaseSchema = z.enum([
+  "upload-validate",
+  "diagram-precheck",
+  "ocr",
+  "rules",
+  "llm-refine",
+  "package-email",
+  "send-fallback",
+  "completed",
+]);
+export type ArchitectureReviewPhase = z.infer<typeof architectureReviewPhaseSchema>;
 
 export const llmRefinementSchema = z.object({
   flowNarrative: z.string().trim().min(1).max(2000),

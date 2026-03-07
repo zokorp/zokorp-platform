@@ -1,7 +1,32 @@
-import type { ArchitectureReviewReport } from "@/lib/architecture-review/types";
+import type { ArchitectureQuoteTier, ArchitectureReviewReport } from "@/lib/architecture-review/types";
+import { getSiteUrl } from "@/lib/site";
 
 function providerLabel(provider: ArchitectureReviewReport["provider"]) {
   return provider.toUpperCase();
+}
+
+function confidenceLabel(confidence: ArchitectureReviewReport["analysisConfidence"]) {
+  if (confidence === "high") {
+    return "High confidence";
+  }
+
+  if (confidence === "medium") {
+    return "Medium confidence";
+  }
+
+  return "Low confidence";
+}
+
+function quoteTierLabel(quoteTier: ArchitectureQuoteTier) {
+  if (quoteTier === "advisory-review") {
+    return "Advisory Review";
+  }
+
+  if (quoteTier === "remediation-sprint") {
+    return "Remediation Sprint";
+  }
+
+  return "Implementation Partner";
 }
 
 function findingLine(index: number, finding: ArchitectureReviewReport["findings"][number]) {
@@ -29,67 +54,87 @@ function escapeHtml(input: string) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
+    .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
 
 type EngagementPackage = {
   name: string;
   timeline: string;
-  priceUSD: number;
+  priceLabel: string;
   summary: string;
   recommended: boolean;
 };
 
+type EmailCtaLinks = {
+  bookArchitectureCallUrl: string;
+  requestRemediationPlanUrl: string;
+};
+
 function buildEngagementPackages(report: ArchitectureReviewReport): EngagementPackage[] {
-  const mandatoryFindings = report.findings.filter((finding) => finding.pointsDeducted > 0);
-  const severeFindings = mandatoryFindings.filter((finding) => finding.pointsDeducted >= 8).length;
-  const moderateFindings = mandatoryFindings.filter(
-    (finding) => finding.pointsDeducted >= 4 && finding.pointsDeducted < 8,
-  ).length;
-
-  const riskMultiplier = report.overallScore < 70 ? 1.18 : report.overallScore < 85 ? 1.0 : 0.9;
-  const baseQuote = report.consultationQuoteUSD;
-
-  const rapidPrice = roundToNearest(clamp(Math.round(baseQuote * 0.9 * riskMultiplier), 450, 2500), 25);
-  const implementationPrice = roundToNearest(
-    clamp(Math.round(baseQuote * 1.55 + severeFindings * 90 + moderateFindings * 45), 1200, 7500),
-    25,
-  );
-  const partnerPrice = roundToNearest(
-    clamp(Math.round(baseQuote * 2.2 + mandatoryFindings.length * 85), 2200, 12000),
-    25,
-  );
-
-  const recommendedTier = report.overallScore < 70 ? "partner" : report.overallScore < 85 ? "implementation" : "rapid";
+  const remediationLow = roundToNearest(clamp(Math.round(report.consultationQuoteUSD * 0.9), 650, 2200), 25);
+  const remediationHigh = roundToNearest(clamp(Math.round(report.consultationQuoteUSD * 1.2), 850, 2800), 25);
 
   return [
     {
-      name: "Rapid Remediation Sprint",
-      timeline: "1-2 weeks",
-      priceUSD: rapidPrice,
-      summary: "Fix top-risk findings, update diagram set, and deliver a close-out review call.",
-      recommended: recommendedTier === "rapid",
+      name: "Advisory Review",
+      timeline: "45 min",
+      priceLabel: toUsd(249),
+      summary: "Working session to prioritize findings, sequence fixes, and assign clear ownership.",
+      recommended: report.quoteTier === "advisory-review",
     },
     {
-      name: "Implementation Package",
-      timeline: "3-5 weeks",
-      priceUSD: implementationPrice,
-      summary: "Remediate major findings across security/reliability/operations with validation checkpoints.",
-      recommended: recommendedTier === "implementation",
+      name: "Remediation Sprint",
+      timeline: "1-3 weeks",
+      priceLabel: `${toUsd(remediationLow)} - ${toUsd(remediationHigh)}`,
+      summary: "Hands-on fix package for highest-impact deductions with updated architecture artifacts.",
+      recommended: report.quoteTier === "remediation-sprint",
     },
     {
-      name: "Architecture Partner Track",
-      timeline: "6-10 weeks",
-      priceUSD: partnerPrice,
-      summary: "Lead full redesign, staged rollout plan, and team enablement for sustained ownership.",
-      recommended: recommendedTier === "partner",
+      name: "Implementation Partner",
+      timeline: "3-8+ weeks",
+      priceLabel: "Custom",
+      summary: "End-to-end redesign and execution support with governance and rollout milestones.",
+      recommended: report.quoteTier === "implementation-partner",
     },
   ];
 }
 
-function buildHtmlEmail(report: ArchitectureReviewReport) {
+function confidenceStyles(confidence: ArchitectureReviewReport["analysisConfidence"]) {
+  if (confidence === "high") {
+    return {
+      border: "#16a34a",
+      text: "#166534",
+      bg: "#f0fdf4",
+    };
+  }
+
+  if (confidence === "medium") {
+    return {
+      border: "#2563eb",
+      text: "#1d4ed8",
+      bg: "#eff6ff",
+    };
+  }
+
+  return {
+    border: "#ea580c",
+    text: "#9a3412",
+    bg: "#fff7ed",
+  };
+}
+
+function resolveDefaultCtaLinks() {
+  const siteUrl = getSiteUrl();
+  return {
+    bookArchitectureCallUrl: `${siteUrl}/services#service-request`,
+    requestRemediationPlanUrl: `${siteUrl}/services#service-request`,
+  } satisfies EmailCtaLinks;
+}
+
+function buildHtmlEmail(report: ArchitectureReviewReport, ctaLinks: EmailCtaLinks) {
   const mandatoryFindings = report.findings.filter((finding) => finding.pointsDeducted > 0);
+  const topDeductions = mandatoryFindings.slice(0, 5);
   const optionalRecommendations = report.findings.filter((finding) => finding.pointsDeducted === 0);
   const packages = buildEngagementPackages(report);
   const generatedAt = new Date(report.generatedAtISO).toLocaleString("en-US", {
@@ -102,9 +147,11 @@ function buildHtmlEmail(report: ArchitectureReviewReport) {
     timeZoneName: "short",
   });
 
-  const mandatoryHtml =
-    mandatoryFindings.length > 0
-      ? mandatoryFindings
+  const confidence = confidenceStyles(report.analysisConfidence);
+
+  const topDeductionsHtml =
+    topDeductions.length > 0
+      ? topDeductions
           .map(
             (finding, index) => `
               <tr>
@@ -119,7 +166,7 @@ function buildHtmlEmail(report: ArchitectureReviewReport) {
             `,
           )
           .join("")
-      : `<tr><td colspan="2" style="padding:10px 12px;color:#0f172a;font-size:13px;">No mandatory findings.</td></tr>`;
+      : `<tr><td colspan="2" style="padding:10px 12px;color:#0f172a;font-size:13px;">No mandatory deductions were found.</td></tr>`;
 
   const optionalHtmlRows =
     optionalRecommendations.length > 0
@@ -153,14 +200,14 @@ function buildHtmlEmail(report: ArchitectureReviewReport) {
                         <div style="margin-top:4px;font-size:13px;color:#334155;">Timeline: ${escapeHtml(pkg.timeline)}</div>
                       </td>
                       <td align="right" style="vertical-align:top;color:#0f172a;font-size:18px;font-weight:800;padding-left:10px;white-space:nowrap;">
-                        ${toUsd(pkg.priceUSD)}
+                        ${escapeHtml(pkg.priceLabel)}
                       </td>
                     </tr>
                   </table>
                   <div style="margin-top:8px;color:#334155;font-size:13px;line-height:1.45;">${escapeHtml(pkg.summary)}</div>
                   ${
                     pkg.recommended
-                      ? '<div style="margin-top:10px;font-size:12px;font-weight:700;color:#1e40af;">Recommended based on score and risk profile</div>'
+                      ? '<div style="margin-top:10px;font-size:12px;font-weight:700;color:#1e40af;">Recommended for this score profile</div>'
                       : ""
                   }
                 </td>
@@ -179,7 +226,7 @@ function buildHtmlEmail(report: ArchitectureReviewReport) {
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef3f9;">
       <tr>
         <td align="center" style="padding:24px 12px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:840px;background:#ffffff;border:1px solid #dbe3ef;border-radius:14px;overflow:hidden;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:860px;background:#ffffff;border:1px solid #dbe3ef;border-radius:14px;overflow:hidden;">
             <tr>
               <td style="padding:18px 22px;background:#0f2f5f;color:#ffffff;">
                 <div style="font-size:12px;letter-spacing:0.1em;text-transform:uppercase;opacity:0.9;">ZoKorp Architecture Review</div>
@@ -192,7 +239,7 @@ function buildHtmlEmail(report: ArchitectureReviewReport) {
               <td style="padding:20px 22px;">
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                   <tr>
-                    <td width="33.33%" valign="top" style="padding:0 8px 10px 0;">
+                    <td width="25%" valign="top" style="padding:0 8px 10px 0;">
                       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #dbe3ef;border-radius:10px;">
                         <tr>
                           <td style="padding:10px 12px;">
@@ -202,7 +249,7 @@ function buildHtmlEmail(report: ArchitectureReviewReport) {
                         </tr>
                       </table>
                     </td>
-                    <td width="33.33%" valign="top" style="padding:0 4px 10px 4px;">
+                    <td width="25%" valign="top" style="padding:0 4px 10px 4px;">
                       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #dbe3ef;border-radius:10px;">
                         <tr>
                           <td style="padding:10px 12px;">
@@ -212,12 +259,22 @@ function buildHtmlEmail(report: ArchitectureReviewReport) {
                         </tr>
                       </table>
                     </td>
-                    <td width="33.33%" valign="top" style="padding:0 0 10px 8px;">
+                    <td width="25%" valign="top" style="padding:0 4px 10px 4px;">
                       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #dbe3ef;border-radius:10px;">
                         <tr>
                           <td style="padding:10px 12px;">
-                            <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">Generated</div>
-                            <div style="margin-top:4px;font-size:13px;font-weight:700;color:#0f172a;line-height:1.4;">${escapeHtml(generatedAt)}</div>
+                            <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">Recommended Tier</div>
+                            <div style="margin-top:4px;font-size:16px;font-weight:800;color:#0f172a;">${escapeHtml(quoteTierLabel(report.quoteTier))}</div>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                    <td width="25%" valign="top" style="padding:0 0 10px 8px;">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${confidence.border};border-radius:10px;background:${confidence.bg};">
+                        <tr>
+                          <td style="padding:10px 12px;">
+                            <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">Analysis Confidence</div>
+                            <div style="margin-top:4px;font-size:16px;font-weight:800;color:${confidence.text};">${escapeHtml(confidenceLabel(report.analysisConfidence))}</div>
                           </td>
                         </tr>
                       </table>
@@ -230,25 +287,31 @@ function buildHtmlEmail(report: ArchitectureReviewReport) {
                     <td style="padding:14px;">
                       <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">Flow Narrative</div>
                       <div style="margin-top:8px;line-height:1.5;font-size:14px;color:#0f172a;">${escapeHtml(report.flowNarrative)}</div>
+                      <div style="margin-top:8px;color:#64748b;font-size:12px;">Generated: ${escapeHtml(generatedAt)}</div>
                     </td>
                   </tr>
                 </table>
 
-                <div style="margin-top:22px;font-size:18px;font-weight:700;color:#0f172a;">Actionable Findings</div>
+                <div style="margin-top:18px;display:flex;flex-wrap:wrap;gap:10px;">
+                  <a href="${escapeHtml(ctaLinks.bookArchitectureCallUrl)}" style="display:inline-block;border-radius:8px;background:#0f172a;color:#ffffff;padding:10px 14px;font-size:13px;font-weight:700;text-decoration:none;">Book architecture call</a>
+                  <a href="${escapeHtml(ctaLinks.requestRemediationPlanUrl)}" style="display:inline-block;border-radius:8px;border:1px solid #cbd5e1;color:#0f172a;background:#ffffff;padding:10px 14px;font-size:13px;font-weight:700;text-decoration:none;">Request remediation plan</a>
+                </div>
+
+                <div style="margin-top:22px;font-size:18px;font-weight:700;color:#0f172a;">Top Deductions</div>
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;border-collapse:collapse;border:1px solid #dbe3ef;border-radius:10px;overflow:hidden;">
                   <tr>
                     <td style="padding:9px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:700;color:#334155;width:44px;">#</td>
                     <td style="padding:9px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:700;color:#334155;">Finding</td>
                   </tr>
-                  ${mandatoryHtml}
+                  ${topDeductionsHtml}
                 </table>
 
-                <div style="margin-top:22px;font-size:18px;font-weight:700;color:#0f172a;">Recommended Engagement Options</div>
+                <div style="margin-top:22px;font-size:18px;font-weight:700;color:#0f172a;">Engagement Options</div>
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;">
                   ${packageHtmlRows}
                 </table>
                 <div style="margin-top:6px;font-size:12px;color:#64748b;line-height:1.45;">
-                  Quote method: $249 review call + deterministic remediation effort by finding category, with score-based cap.
+                  Quote method: $249 review call + deterministic remediation effort by category, with score-based cap.
                 </div>
 
                 <div style="margin-top:22px;font-size:18px;font-weight:700;color:#0f172a;">Optional Recommendations</div>
@@ -266,10 +329,22 @@ function buildHtmlEmail(report: ArchitectureReviewReport) {
   `.trim();
 }
 
-export function buildArchitectureReviewEmailContent(report: ArchitectureReviewReport) {
+export function buildArchitectureReviewEmailContent(
+  report: ArchitectureReviewReport,
+  options?: {
+    ctaLinks?: Partial<EmailCtaLinks>;
+  },
+) {
   const mandatoryFindings = report.findings.filter((finding) => finding.pointsDeducted > 0);
+  const topDeductions = mandatoryFindings.slice(0, 5);
   const optionalRecommendations = report.findings.filter((finding) => finding.pointsDeducted === 0);
   const engagementPackages = buildEngagementPackages(report);
+  const defaults = resolveDefaultCtaLinks();
+  const ctaLinks: EmailCtaLinks = {
+    bookArchitectureCallUrl: options?.ctaLinks?.bookArchitectureCallUrl ?? defaults.bookArchitectureCallUrl,
+    requestRemediationPlanUrl:
+      options?.ctaLinks?.requestRemediationPlanUrl ?? defaults.requestRemediationPlanUrl,
+  };
 
   const lines = [
     `Architecture Diagram Review (${providerLabel(report.provider)})`,
@@ -277,35 +352,39 @@ export function buildArchitectureReviewEmailContent(report: ArchitectureReviewRe
     `Email: ${report.userEmail}`,
     "",
     `Overall score: ${report.overallScore}/100`,
+    `Analysis confidence: ${confidenceLabel(report.analysisConfidence)}`,
     `Consultation quote: $${report.consultationQuoteUSD}`,
+    `Recommended tier: ${quoteTierLabel(report.quoteTier)}`,
     "",
     "Flow narrative:",
     report.flowNarrative,
     "",
-    "Engagement options (deterministic):",
-    ...engagementPackages.map(
-      (pkg, index) =>
-        `${index + 1}. ${pkg.name} | ${pkg.timeline} | ${toUsd(pkg.priceUSD)} | ${pkg.summary}${pkg.recommended ? " | RECOMMENDED" : ""}`,
-    ),
-    "",
-    "Quote basis:",
-    "- $249 review call + per-finding remediation estimate.",
-    "- Category-specific fix-cost mapping and score-band quote cap are applied deterministically.",
-    "",
-    "Findings (single-line, deterministic format):",
-    ...(mandatoryFindings.length > 0
-      ? mandatoryFindings.map((finding, index) => findingLine(index, finding))
-      : ["No mandatory findings."]),
+    "Top deductions (single-line deterministic format):",
+    ...(topDeductions.length > 0 ? topDeductions.map((finding, index) => findingLine(index, finding)) : ["No mandatory deductions."]),
     "",
     "Optional recommendations (0 points deducted):",
     ...(optionalRecommendations.length > 0
       ? optionalRecommendations.map((finding, index) => findingLine(index, finding))
       : ["No optional recommendations."]),
+    "",
+    "Engagement options:",
+    ...engagementPackages.map(
+      (pkg, index) =>
+        `${index + 1}. ${pkg.name} | ${pkg.timeline} | ${pkg.priceLabel} | ${pkg.summary}${pkg.recommended ? " | RECOMMENDED" : ""}`,
+    ),
+    "",
+    "Primary CTAs:",
+    `- Book architecture call: ${ctaLinks.bookArchitectureCallUrl}`,
+    `- Request remediation plan: ${ctaLinks.requestRemediationPlanUrl}`,
+    "",
+    "Quote basis:",
+    "- $249 review call + per-finding remediation estimate.",
+    "- Category-specific fix-cost mapping and score-band quote cap are applied deterministically.",
   ];
 
   const subject = `[ZoKorp] ${providerLabel(report.provider)} architecture review score ${report.overallScore}/100`;
   const text = lines.join("\n");
-  const html = buildHtmlEmail(report);
+  const html = buildHtmlEmail(report, ctaLinks);
 
   return {
     subject,

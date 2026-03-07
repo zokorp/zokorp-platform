@@ -13,6 +13,8 @@ import {
   type ArchitectureEvidenceBundle,
   type ArchitectureProvider,
   type ArchitectureReviewReport,
+  type ArchitectureAnalysisConfidence,
+  type ArchitectureQuoteTier,
   type LlmRefinement,
 } from "@/lib/architecture-review/types";
 import { extractSvgLabelText, parseSvgDimensions, validateSvgMarkup } from "@/lib/architecture-review/svg-safety";
@@ -175,6 +177,8 @@ export function buildReviewReportFromEvidence(input: {
   userEmail: string;
   llmRefinement?: LlmRefinement | null;
   quoteContext?: ArchitectureQuoteContext;
+  analysisConfidenceOverride?: ArchitectureAnalysisConfidence;
+  quoteTierOverride?: ArchitectureQuoteTier;
 }): ArchitectureReviewReport {
   const deterministicFindings = buildDeterministicReviewFindings(input.bundle);
   const mergedFindings = dedupeMergeFindings(deterministicFindings, input.llmRefinement ?? null);
@@ -187,6 +191,8 @@ export function buildReviewReportFromEvidence(input: {
     findings: mergedFindings,
     userEmail: input.userEmail,
     quoteContext: input.quoteContext,
+    analysisConfidenceOverride: input.analysisConfidenceOverride,
+    quoteTierOverride: input.quoteTierOverride,
   });
 }
 

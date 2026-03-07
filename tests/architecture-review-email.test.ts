@@ -33,11 +33,11 @@ describe("architecture review email content", () => {
     const content = buildArchitectureReviewEmailContent(report);
 
     expect(content.subject).toContain("score");
-    expect(content.text).toContain("Engagement options (deterministic):");
+    expect(content.text).toContain("Engagement options:");
     expect(content.text).toContain("Quote basis:");
-    expect(content.html).toContain("Recommended Engagement Options");
-    expect(content.html).toContain("Rapid Remediation Sprint");
-    expect(content.html).toContain("Architecture Partner Track");
-    expect(content.html).toContain("Actionable Findings");
+    expect(content.html).toContain("Engagement Options");
+    expect(content.html).toContain("Advisory Review");
+    expect(content.html).toContain("Implementation Partner");
+    expect(content.html).toContain("Top Deductions");
   });
 });

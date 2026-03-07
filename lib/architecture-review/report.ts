@@ -1,8 +1,10 @@
 import {
+  calculateAnalysisConfidence,
   calculateConsultationQuoteUSD,
   calculateFixCostUSD,
   calculateOverallScore,
   compareFindingsDeterministically,
+  determineQuoteTier,
   intentGroupForRule,
   isCriticalFinding,
   mergedEvidenceText,
@@ -120,15 +122,27 @@ export function buildArchitectureReviewReport(input: {
   userEmail: string;
   generatedAtISO?: string;
   quoteContext?: ArchitectureQuoteContext;
+  analysisConfidenceOverride?: ArchitectureReviewReport["analysisConfidence"];
+  quoteTierOverride?: ArchitectureReviewReport["quoteTier"];
 }): ArchitectureReviewReport {
   const findings = finalizeFindings(input.findings);
   const overallScore = calculateOverallScore(findings);
+  const analysisConfidence = input.analysisConfidenceOverride ?? calculateAnalysisConfidence(findings, input.quoteContext);
+  const quoteTier =
+    input.quoteTierOverride ??
+    determineQuoteTier({
+      overallScore,
+      desiredEngagement: input.quoteContext?.desiredEngagement,
+      analysisConfidence,
+    });
   const consultationQuoteUSD = calculateConsultationQuoteUSD(findings, overallScore, input.quoteContext);
 
   const report: ArchitectureReviewReport = {
     reportVersion: ARCHITECTURE_REVIEW_VERSION,
     provider: input.provider,
     overallScore,
+    analysisConfidence,
+    quoteTier,
     flowNarrative: truncate(input.flowNarrative, 2000),
     findings,
     consultationQuoteUSD,

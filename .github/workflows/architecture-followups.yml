@@ -1,0 +1,25 @@
+name: Send Architecture Review Follow-ups
+
+on:
+  schedule:
+    - cron: "43 14 * * *"
+  workflow_dispatch:
+
+jobs:
+  send-followups:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger architecture follow-up endpoint
+        env:
+          ARCH_REVIEW_FOLLOWUP_URL: ${{ secrets.ARCH_REVIEW_FOLLOWUP_URL }}
+          ARCH_REVIEW_FOLLOWUP_SECRET: ${{ secrets.ARCH_REVIEW_FOLLOWUP_SECRET }}
+        run: |
+          if [ -z "$ARCH_REVIEW_FOLLOWUP_URL" ] || [ -z "$ARCH_REVIEW_FOLLOWUP_SECRET" ]; then
+            echo "Missing ARCH_REVIEW_FOLLOWUP_URL or ARCH_REVIEW_FOLLOWUP_SECRET"
+            exit 1
+          fi
+
+          curl --fail --show-error --silent \
+            -X POST "$ARCH_REVIEW_FOLLOWUP_URL" \
+            -H "x-arch-followup-secret: $ARCH_REVIEW_FOLLOWUP_SECRET" \
+            -H "Content-Type: application/json"

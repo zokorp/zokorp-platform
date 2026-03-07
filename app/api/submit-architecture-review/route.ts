@@ -3,27 +3,24 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 
 import { requireUser } from "@/lib/auth";
-import { createEvidenceBundle } from "@/lib/architecture-review/evidence";
-import { buildArchitectureReviewEmailContent, buildMailtoUrl } from "@/lib/architecture-review/email";
-import { createEmlToken } from "@/lib/architecture-review/eml-token";
-import { summarizeTopIssues } from "@/lib/architecture-review/report";
-import { extractOcrTextFromPng, extractSvgEvidenceFromBytes, isOcrTimeoutError } from "@/lib/architecture-review/server";
-import { sendArchitectureReviewEmail } from "@/lib/architecture-review/sender";
-import { buildReviewReportFromEvidence } from "@/lib/architecture-review/client";
+import {
+  createArchitectureReviewJob,
+  processArchitectureReviewJob,
+} from "@/lib/architecture-review/jobs";
+import { isSafeSvgBytes } from "@/lib/architecture-review/server";
 import { submitArchitectureReviewMetadataSchema } from "@/lib/architecture-review/types";
 import { db } from "@/lib/db";
 import { isSchemaDriftError } from "@/lib/db-errors";
-import { ensureLeadLogSchemaReady } from "@/lib/lead-log-schema";
 import { normalizeIdempotencyKey, readIdempotencyEntry, writeIdempotencyEntry } from "@/lib/idempotency-cache";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { maxUploadBytes } from "@/lib/security";
-import { archiveArchitectureReviewToWorkDrive } from "@/lib/zoho-workdrive";
 
 export const runtime = "nodejs";
 
 const ARCHITECTURE_REVIEW_MAX_MB = Number(process.env.ARCHITECTURE_REVIEW_UPLOAD_MAX_MB ?? "8");
 const ARCH_REVIEW_RATE_LIMIT = 8;
 const ARCH_REVIEW_WINDOW_MS = 60 * 60 * 1000;
+const ARCH_REVIEW_DAILY_LIMIT = Number(process.env.ARCH_REVIEW_DAILY_LIMIT ?? "24");
 const MAX_METADATA_JSON_CHARS = 40_000;
 
 type RateLimitResult = {
@@ -37,7 +34,6 @@ type ParsedDiagram = {
   bytes: Uint8Array;
   format: "png" | "svg";
   mimeType: "image/png" | "image/svg+xml";
-  svgEvidence: { text: string; dimensions: { width: number; height: number } | null } | null;
 };
 
 function responseHeaders(requestId: string, limiter?: RateLimitResult) {
@@ -75,10 +71,6 @@ function jsonResponse(
       },
     },
   );
-}
-
-function emlSecret() {
-  return process.env.ARCH_REVIEW_EML_SECRET ?? process.env.NEXTAUTH_SECRET ?? "";
 }
 
 function isPngBytes(bytes: Uint8Array) {
@@ -136,7 +128,6 @@ async function parsePayloadFromRequest(request: Request) {
         bytes,
         format: "png",
         mimeType: "image/png",
-        svgEvidence: null,
       } satisfies ParsedDiagram,
     } as const;
   }
@@ -149,6 +140,10 @@ async function parsePayloadFromRequest(request: Request) {
     throw new Error("DIAGRAM_FORMAT_MISMATCH");
   }
 
+  if (!isSafeSvgBytes(bytes)) {
+    throw new Error("INVALID_DIAGRAM_FILE");
+  }
+
   return {
     metadata,
     diagram: {
@@ -156,9 +151,20 @@ async function parsePayloadFromRequest(request: Request) {
       bytes,
       format: "svg",
       mimeType: "image/svg+xml",
-      svgEvidence: extractSvgEvidenceFromBytes(bytes),
     } satisfies ParsedDiagram,
   } as const;
+}
+
+async function exceedsDailyLimit(userId: string) {
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const count = await db.architectureReviewJob.count({
+    where: {
+      userId,
+      createdAt: { gte: since },
+    },
+  });
+
+  return count >= Math.max(1, ARCH_REVIEW_DAILY_LIMIT);
 }
 
 export async function POST(request: Request) {
@@ -209,231 +215,44 @@ export async function POST(request: Request) {
       );
     }
 
-    const { metadata, diagram } = await parsePayloadFromRequest(request);
-    const extractedText =
-      diagram.format === "png"
-        ? await extractOcrTextFromPng(Buffer.from(diagram.bytes))
-        : (diagram.svgEvidence?.text ?? "");
-
-    const evidenceBundle = createEvidenceBundle({
-      provider: metadata.provider,
-      paragraph: metadata.paragraphInput,
-      ocrText: extractedText,
-      metadata: {
-        diagramFormat: diagram.format,
-        title: metadata.title,
-        owner: metadata.owner,
-        lastUpdated: metadata.lastUpdated,
-        version: metadata.version,
-        legend: metadata.legend,
-        workloadCriticality: metadata.workloadCriticality,
-        regulatoryScope: metadata.regulatoryScope,
-        environment: metadata.environment,
-        lifecycleStage: metadata.lifecycleStage,
-        desiredEngagement: metadata.desiredEngagement,
-      },
-    });
-
-    const finalizedReport = buildReviewReportFromEvidence({
-      bundle: evidenceBundle,
-      userEmail: user.email,
-      quoteContext: {
-        tokenCount: evidenceBundle.serviceTokens.length,
-        ocrCharacterCount: evidenceBundle.ocrText.length,
-        mode: "rules-only",
-        workloadCriticality: metadata.workloadCriticality,
-        desiredEngagement: metadata.desiredEngagement,
-      },
-    });
-
-    const hasNonArchitectureFinding = finalizedReport.findings.some(
-      (finding) => finding.ruleId === "INPUT-NOT-ARCH-DIAGRAM" && finding.pointsDeducted > 0,
-    );
-    if (hasNonArchitectureFinding) {
-      const body = {
-        error:
-          "Uploaded diagram appears to be non-architecture content. No review email was sent. Upload a real architecture diagram.",
-      } as const;
-      if (idempotencyCacheKey) {
-        writeIdempotencyEntry(idempotencyCacheKey, { status: 422, body: { ...body, requestId } });
-      }
-      return jsonResponse(requestId, body, 422, limiterContext);
-    }
-
-    const resolvedUserName = user.name?.trim() || user.email.split("@")[0] || "user";
-
-    const latestAccount = await (async () => {
-      try {
-        return await db.account.findFirst({
-          where: { userId: user.id },
-          select: { provider: true },
-          orderBy: { id: "desc" },
-        });
-      } catch (error) {
-        if (!isSchemaDriftError(error)) {
-          throw error;
-        }
-
-        return null;
-      }
-    })();
-
-    const leadData = {
-      userId: user.id,
-      userEmail: user.email,
-      userName: resolvedUserName,
-      architectureProvider: finalizedReport.provider,
-      authProvider: latestAccount?.provider ?? "credentials",
-      overallScore: finalizedReport.overallScore,
-      topIssues: summarizeTopIssues(finalizedReport.findings) || "none",
-      inputParagraph: metadata.paragraphInput ?? null,
-      reportJson: finalizedReport,
-      workdriveUploadStatus: "pending",
-    } as const;
-
-    const leadSchemaReady = await ensureLeadLogSchemaReady();
-    const createdLead = leadSchemaReady
-      ? await (async () => {
-          try {
-            return await db.leadLog.create({
-              data: leadData,
-            });
-          } catch (error) {
-            if (!isSchemaDriftError(error)) {
-              throw error;
-            }
-
-            return db.leadLog.create({
-              data: {
-                userId: leadData.userId,
-                userEmail: leadData.userEmail,
-                architectureProvider: leadData.architectureProvider,
-                authProvider: leadData.authProvider,
-                overallScore: leadData.overallScore,
-                topIssues: leadData.topIssues,
-              },
-            });
-          }
-        })()
-      : null;
-
-    const archiveResult = await archiveArchitectureReviewToWorkDrive({
-      diagramFileName: diagram.filename,
-      diagramBytes: diagram.bytes,
-      diagramMimeType: diagram.mimeType,
-      report: finalizedReport,
-      userName: resolvedUserName,
-      paragraphInput: metadata.paragraphInput ?? "",
-    });
-
-    const workdriveStatus = archiveResult.error ? `${archiveResult.status}:${archiveResult.error}` : archiveResult.status;
-
-    if (createdLead) {
-      try {
-        await db.leadLog.update({
-          where: { id: createdLead.id },
-          data: {
-            workdriveDiagramFileId: archiveResult.diagramFileId,
-            workdriveReportFileId: archiveResult.reportFileId,
-            workdriveUploadStatus: workdriveStatus,
-          },
-        });
-      } catch (error) {
-        if (!isSchemaDriftError(error)) {
-          throw error;
-        }
-      }
-    }
-
-    const emailContent = buildArchitectureReviewEmailContent(finalizedReport);
-    const sendResult = await sendArchitectureReviewEmail({
-      to: user.email,
-      subject: emailContent.subject,
-      text: emailContent.text,
-      html: emailContent.html,
-    });
-
-    try {
-      await db.auditLog.create({
-        data: {
-          userId: user.id,
-          action: "tool.architecture_review_submit",
-          metadataJson: {
-            provider: finalizedReport.provider,
-            score: finalizedReport.overallScore,
-            findings: finalizedReport.findings.length,
-            ocrCharacterCount: evidenceBundle.ocrText.length,
-            emailStatus: sendResult.ok ? "sent" : "fallback",
-            emailProvider: sendResult.provider,
-            emailError: sendResult.error ?? null,
-            workdriveStatus,
-            requestId,
-          },
-        },
-      });
-    } catch (error) {
-      if (!isSchemaDriftError(error)) {
-        throw error;
-      }
-    }
-
-    if (sendResult.ok) {
-      const body = { status: "sent" } as const;
-      if (idempotencyCacheKey) {
-        writeIdempotencyEntry(idempotencyCacheKey, { status: 200, body: { ...body, requestId } });
-      }
-      return jsonResponse(requestId, body, 200, limiterContext);
-    }
-
-    const mailtoUrl = buildMailtoUrl({
-      to: user.email,
-      subject: emailContent.subject,
-      body: emailContent.text,
-    });
-
-    const secret = emlSecret();
-    if (!secret) {
-      if (mailtoUrl) {
-        const body = {
-          status: "fallback",
-          reason: "Email sending failed. Use the mailto draft fallback.",
-          mailtoUrl,
-        } as const;
-        if (idempotencyCacheKey) {
-          writeIdempotencyEntry(idempotencyCacheKey, { status: 200, body: { ...body, requestId } });
-        }
-        return jsonResponse(requestId, body, 200, limiterContext);
-      }
-
+    if (await exceedsDailyLimit(user.id)) {
       return jsonResponse(
         requestId,
         {
-          error: "Email fallback is not configured. Set ARCH_REVIEW_EML_SECRET to enable .eml downloads.",
+          error: `Daily review limit reached (${ARCH_REVIEW_DAILY_LIMIT}/day). Please retry tomorrow.`,
         },
-        503,
+        429,
         limiterContext,
       );
     }
 
-    const emlDownloadToken = createEmlToken(
-      {
-        to: user.email,
-        subject: emailContent.subject,
-        body: emailContent.text,
-      },
-      secret,
-    );
+    const { metadata, diagram } = await parsePayloadFromRequest(request);
+
+    const createdJob = await createArchitectureReviewJob({
+      userId: user.id,
+      userEmail: user.email,
+      metadata,
+      diagramFileName: diagram.filename,
+      diagramMimeType: diagram.mimeType,
+      diagramBytes: diagram.bytes,
+    });
+
+    void processArchitectureReviewJob(createdJob.id);
 
     const body = {
-      status: "fallback",
-      reason: sendResult.error ?? "Email delivery fallback triggered.",
-      mailtoUrl,
-      emlDownloadToken,
+      status: "queued",
+      jobId: createdJob.id,
+      deliveryMode: null,
+      phase: "upload-validate",
+      progressPct: 0,
+      etaSeconds: 0,
     } as const;
+
     if (idempotencyCacheKey) {
-      writeIdempotencyEntry(idempotencyCacheKey, { status: 200, body: { ...body, requestId } });
+      writeIdempotencyEntry(idempotencyCacheKey, { status: 202, body: { ...body, requestId } });
     }
-    return jsonResponse(requestId, body, 200, limiterContext);
+
+    return jsonResponse(requestId, body, 202, limiterContext);
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
       return jsonResponse(requestId, { error: "Unauthorized" }, 401, limiterContext);
@@ -465,21 +284,21 @@ export async function POST(request: Request) {
       return jsonResponse(requestId, { error: "Invalid review payload." }, 400, limiterContext);
     }
 
-    if (isOcrTimeoutError(error)) {
-      return jsonResponse(
-        requestId,
-        { error: "OCR timed out while processing the diagram. Retry with a clearer or smaller PNG." },
-        504,
-        limiterContext,
-      );
-    }
-
     if (error instanceof SyntaxError) {
       return jsonResponse(requestId, { error: "Invalid review payload." }, 400, limiterContext);
     }
 
     if (error instanceof z.ZodError) {
       return jsonResponse(requestId, { error: "Invalid review payload." }, 400, limiterContext);
+    }
+
+    if (isSchemaDriftError(error)) {
+      return jsonResponse(
+        requestId,
+        { error: "Architecture review jobs are being enabled. Run migrations and retry." },
+        503,
+        limiterContext,
+      );
     }
 
     console.error("submit-architecture-review unhandled error", { requestId, error });

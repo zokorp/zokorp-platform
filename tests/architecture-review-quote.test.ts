@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  calculateAnalysisConfidence,
   calculateConsultationQuoteUSD,
   calculateFixCostUSD,
   calculateOverallScore,
+  determineQuoteTier,
 } from "@/lib/architecture-review/quote";
 
 describe("architecture quote calculator", () => {
@@ -120,5 +122,45 @@ describe("architecture quote calculator", () => {
     });
 
     expect(quote).toBe(249);
+  });
+
+  it("derives confidence band and quote tier deterministically", () => {
+    const findings = [
+      {
+        ruleId: "MSFT-COMPONENT-LABEL-COVERAGE",
+        category: "clarity" as const,
+        pointsDeducted: 6,
+        message: "Explain each major component used in the diagram.",
+        fix: "Reference key services and state each role.",
+        evidence: "Token coverage low.",
+        fixCostUSD: 40,
+      },
+      {
+        ruleId: "PILLAR-SECURITY",
+        category: "security" as const,
+        pointsDeducted: 12,
+        message: "Document security controls.",
+        fix: "Add IAM, encryption, and secrets handling.",
+        evidence: "Missing security terms.",
+        fixCostUSD: 260,
+      },
+    ];
+
+    const confidence = calculateAnalysisConfidence(findings, {
+      tokenCount: 18,
+      ocrCharacterCount: 150,
+      mode: "rules-only",
+      desiredEngagement: "hands-on-remediation",
+      workloadCriticality: "standard",
+    });
+
+    const quoteTier = determineQuoteTier({
+      overallScore: calculateOverallScore(findings),
+      analysisConfidence: confidence,
+      desiredEngagement: "hands-on-remediation",
+    });
+
+    expect(confidence).toBe("medium");
+    expect(quoteTier).toBe("remediation-sprint");
   });
 });
