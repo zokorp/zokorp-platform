@@ -6,6 +6,7 @@ import { signIn } from "next-auth/react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { sanitizeAuthRedirectTarget } from "@/lib/callback-url";
 
 type PasswordSignInFormProps = {
   callbackUrl: string;
@@ -36,7 +37,7 @@ export function PasswordSignInForm({ callbackUrl }: PasswordSignInFormProps) {
       }
 
       if (result?.url) {
-        window.location.href = result.url;
+        window.location.href = sanitizeAuthRedirectTarget(result.url, window.location.origin, callbackUrl);
         return;
       }
 

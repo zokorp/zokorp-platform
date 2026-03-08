@@ -58,4 +58,14 @@ describe("sanitizeAuthRedirectTarget", () => {
       "https://app.zokorp.com/account",
     );
   });
+
+  it("uses a sanitized custom fallback when redirect target is invalid", () => {
+    expect(
+      sanitizeAuthRedirectTarget(
+        "https://evil.example/phish",
+        "https://app.zokorp.com",
+        "/software/cloud-cost-leak-finder",
+      ),
+    ).toBe("https://app.zokorp.com/software/cloud-cost-leak-finder");
+  });
 });
