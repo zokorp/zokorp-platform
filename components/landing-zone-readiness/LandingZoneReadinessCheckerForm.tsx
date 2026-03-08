@@ -215,6 +215,12 @@ const productHighlights = [
   },
 ] as const;
 
+const successNextSteps = [
+  "Read the emailed score, category snapshot, and top fixes.",
+  "Use the quote range to decide whether a scoped hardening pass makes sense.",
+  "Book a consultation if you want remediation planning or implementation help.",
+] as const;
+
 const FRIENDLY_REQUIRED_MESSAGES: Partial<Record<keyof FormState, string>> = {
   email: "Enter your business email.",
   fullName: "Enter your full name.",
@@ -656,6 +662,14 @@ export function LandingZoneReadinessCheckerForm({
             <AlertTitle>Readiness summary</AlertTitle>
             <AlertDescription>{result.overallScore}/100 · {result.maturityBand} · {result.quoteTier}</AlertDescription>
           </Alert>
+          <div className="grid gap-3 md:grid-cols-3">
+            {successNextSteps.map((step, index) => (
+              <div key={step} className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Next step {index + 1}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-700">{step}</p>
+              </div>
+            ))}
+          </div>
           {result.status === "fallback" && result.reason ? (
             <Alert tone="warning">
               <AlertTitle>Email delivery fallback</AlertTitle>
