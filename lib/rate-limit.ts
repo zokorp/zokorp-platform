@@ -27,6 +27,13 @@ function toRetryAfterSeconds(ms: number) {
   return Math.max(1, Math.ceil(ms / 1000));
 }
 
+function isRetryableRateLimitError(error: unknown) {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    (error.code === "P2002" || error.code === "P2034")
+  );
+}
+
 async function maybeCleanupExpiredBuckets(nowMs: number) {
   if (nowMs - lastCleanupAt < 5 * 60 * 1000) {
     return;
@@ -180,11 +187,7 @@ export async function consumeRateLimit(input: ConsumeInput): Promise<ConsumeResu
       void maybeCleanupExpiredBuckets(nowMs);
       return result;
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2034" &&
-        attempt + 1 < MAX_TRANSACTION_RETRIES
-      ) {
+      if (isRetryableRateLimitError(error) && attempt + 1 < MAX_TRANSACTION_RETRIES) {
         continue;
       }
 
