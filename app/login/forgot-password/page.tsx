@@ -1,10 +1,14 @@
 import Link from "next/link";
 
 import { PasswordResetRequestForm } from "@/components/password-reset-request-form";
+import { Alert } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
+import { isPasswordAuthEnabled } from "@/lib/auth-config";
 
 export default function ForgotPasswordPage() {
+  const passwordAuthEnabled = isPasswordAuthEnabled();
+
   return (
     <div className="mx-auto max-w-xl space-y-5">
       <Card tone="glass" className="animate-fade-up rounded-2xl p-8">
@@ -13,7 +17,13 @@ export default function ForgotPasswordPage() {
         <p className="mt-3 text-sm leading-7 text-slate-600 md:text-base">
           Enter your business email and we&apos;ll send a reset link.
         </p>
-        <PasswordResetRequestForm />
+        {passwordAuthEnabled ? (
+          <PasswordResetRequestForm />
+        ) : (
+          <Alert tone="warning" className="mt-6">
+            Password reset is currently unavailable. Please try again later.
+          </Alert>
+        )}
       </Card>
 
       <Card tone="muted" lift className="rounded-2xl p-6">

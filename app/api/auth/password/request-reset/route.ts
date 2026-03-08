@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { sendPasswordResetEmail } from "@/lib/auth-email";
+import { isPasswordAuthEnabled } from "@/lib/auth-config";
 import { db } from "@/lib/db";
 import { generateOpaqueToken, hashOpaqueToken } from "@/lib/password-auth";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
@@ -20,6 +21,10 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
+    if (!isPasswordAuthEnabled()) {
+      return NextResponse.json({ error: "Password reset is currently disabled." }, { status: 503 });
+    }
+
     const limiter = await consumeRateLimit({
       key: `auth:reset:${getRequestFingerprint(request)}`,
       limit: 10,

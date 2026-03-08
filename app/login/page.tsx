@@ -48,7 +48,7 @@ export default async function LoginPage({
           <PasswordSignInForm callbackUrl={callbackUrl} />
         ) : (
           <Alert tone="warning" className="mt-6">
-            Password auth is disabled. Set `AUTH_PASSWORD_ENABLED=true`.
+            Password sign-in is currently unavailable. Please try again later.
           </Alert>
         )}
 

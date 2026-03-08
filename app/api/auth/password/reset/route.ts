@@ -2,6 +2,7 @@ import { Role } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { isPasswordAuthEnabled } from "@/lib/auth-config";
 import { db } from "@/lib/db";
 import { hashPassword, hashOpaqueToken, validatePasswordStrength } from "@/lib/password-auth";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
@@ -17,6 +18,10 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
+    if (!isPasswordAuthEnabled()) {
+      return NextResponse.json({ error: "Password reset is currently disabled." }, { status: 503 });
+    }
+
     const limiter = await consumeRateLimit({
       key: `auth:reset:complete:${getRequestFingerprint(request)}`,
       limit: 20,

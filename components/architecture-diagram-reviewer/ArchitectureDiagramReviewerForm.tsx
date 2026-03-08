@@ -631,7 +631,7 @@ export function ArchitectureDiagramReviewerForm({
           <Alert tone="warning">
             <AlertTitle>Authentication is disabled</AlertTitle>
             <AlertDescription>
-              Password sign-in is currently disabled. Set `AUTH_PASSWORD_ENABLED=true`.
+              Password sign-in is currently unavailable. Please try again later.
             </AlertDescription>
           </Alert>
         </CardContent>

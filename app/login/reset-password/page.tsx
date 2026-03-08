@@ -4,6 +4,7 @@ import { PasswordResetForm } from "@/components/password-reset-form";
 import { Alert } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
+import { isPasswordAuthEnabled } from "@/lib/auth-config";
 
 export default async function ResetPasswordPage({
   searchParams,
@@ -12,6 +13,7 @@ export default async function ResetPasswordPage({
 }) {
   const params = await searchParams;
   const token = params.token?.trim() ?? "";
+  const passwordAuthEnabled = isPasswordAuthEnabled();
 
   return (
     <div className="mx-auto max-w-xl space-y-5">
@@ -19,7 +21,11 @@ export default async function ResetPasswordPage({
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Password Reset</p>
         <h1 className="font-display mt-2 text-4xl font-semibold text-slate-900">Set a new password</h1>
 
-        {token ? (
+        {!passwordAuthEnabled ? (
+          <Alert tone="warning" className="mt-3">
+            Password reset is currently unavailable. Please try again later.
+          </Alert>
+        ) : token ? (
           <PasswordResetForm token={token} />
         ) : (
           <Alert tone="danger" className="mt-3">Missing or invalid reset token. Request a new reset link.</Alert>

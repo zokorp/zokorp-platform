@@ -1,8 +1,10 @@
 import Link from "next/link";
 
 import { PasswordRegisterForm } from "@/components/password-register-form";
+import { Alert } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
+import { isPasswordAuthEnabled } from "@/lib/auth-config";
 import { sanitizeCallbackUrl } from "@/lib/callback-url";
 
 export default async function RegisterPage({
@@ -12,6 +14,7 @@ export default async function RegisterPage({
 }) {
   const params = await searchParams;
   const callbackUrl = sanitizeCallbackUrl(params.callbackUrl);
+  const passwordAuthEnabled = isPasswordAuthEnabled();
 
   return (
     <div className="mx-auto max-w-xl space-y-5">
@@ -22,7 +25,13 @@ export default async function RegisterPage({
           Register with a business email and strong password. Email verification is required before sign-in.
         </p>
 
-        <PasswordRegisterForm callbackUrl={callbackUrl} />
+        {passwordAuthEnabled ? (
+          <PasswordRegisterForm callbackUrl={callbackUrl} />
+        ) : (
+          <Alert tone="warning" className="mt-6">
+            Password account registration is currently unavailable. Please try again later.
+          </Alert>
+        )}
       </Card>
 
       <Card tone="muted" lift className="rounded-2xl p-6">

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { sendEmailVerificationEmail } from "@/lib/auth-email";
+import { isPasswordAuthEnabled } from "@/lib/auth-config";
 import { db } from "@/lib/db";
 import { issueEmailVerificationToken } from "@/lib/email-verification";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
@@ -21,6 +22,13 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
+    if (!isPasswordAuthEnabled()) {
+      return NextResponse.json(
+        { error: "Password account registration is currently disabled." },
+        { status: 503 },
+      );
+    }
+
     const limiter = await consumeRateLimit({
       key: `auth:register:${getRequestFingerprint(request)}`,
       limit: 10,
