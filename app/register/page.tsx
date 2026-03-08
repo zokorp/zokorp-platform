@@ -3,14 +3,7 @@ import Link from "next/link";
 import { PasswordRegisterForm } from "@/components/password-register-form";
 import { Card } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
-
-function sanitizeCallbackUrl(raw: string | undefined) {
-  if (!raw) {
-    return "/account";
-  }
-
-  return raw.startsWith("/") ? raw : "/account";
-}
+import { sanitizeCallbackUrl } from "@/lib/callback-url";
 
 export default async function RegisterPage({
   searchParams,
