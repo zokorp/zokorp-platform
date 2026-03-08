@@ -6,14 +6,7 @@ import { Alert } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { isPasswordAuthEnabled } from "@/lib/auth-config";
-
-function sanitizeCallbackUrl(raw: string | undefined) {
-  if (!raw) {
-    return "/account";
-  }
-
-  return raw.startsWith("/") ? raw : "/account";
-}
+import { sanitizeCallbackUrl } from "@/lib/callback-url";
 
 function getErrorMessage(error: string | undefined) {
   if (!error) {
