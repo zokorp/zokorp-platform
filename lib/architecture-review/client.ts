@@ -21,6 +21,7 @@ import { extractSvgLabelText, parseSvgDimensions, validateSvgMarkup } from "@/li
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 const MAX_DIAGRAM_FILE_BYTES = 8 * 1024 * 1024;
+const PNG_OCR_TIMEOUT_MS = 90_000;
 
 function isPngBytes(bytes: Uint8Array) {
   return PNG_SIGNATURE.every((byte, index) => bytes[index] === byte);
@@ -39,6 +40,51 @@ export async function extractSvgEvidence(file: File) {
     text,
     dimensions,
   };
+}
+
+type PngOcrProgress = {
+  percent: number;
+  status?: string;
+};
+
+type ExtractPngTextOptions = {
+  onProgress?: (progress: PngOcrProgress) => void;
+  timeoutMs?: number;
+};
+
+export async function extractPngTextEvidence(file: File, options?: ExtractPngTextOptions) {
+  const timeoutMs = Math.max(5_000, Math.round(options?.timeoutMs ?? PNG_OCR_TIMEOUT_MS));
+  const { createWorker } = await import("tesseract.js");
+  const worker = await createWorker("eng", 1, {
+    logger: (message) => {
+      if (typeof message.progress !== "number") {
+        return;
+      }
+
+      options?.onProgress?.({
+        percent: Math.max(0, Math.min(100, Math.round(message.progress * 100))),
+        status: typeof message.status === "string" ? message.status : undefined,
+      });
+    },
+  });
+
+  const recognizePromise = worker.recognize(file);
+  let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutHandle = setTimeout(() => {
+      reject(new Error("Browser OCR timed out while processing the PNG."));
+    }, timeoutMs);
+  });
+
+  try {
+    const result = await Promise.race([recognizePromise, timeoutPromise]);
+    return (result.data.text || "").replace(/\s+/g, " ").trim();
+  } finally {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+    await worker.terminate();
+  }
 }
 
 export async function isStrictDiagramFile(file: File): Promise<

@@ -116,6 +116,7 @@ export const architectureReviewMetadataSchema = z.object({
   desiredEngagement: architectureEngagementPreferenceSchema.optional(),
   submissionContext: architectureSubmissionContextSchema.optional(),
   clientTiming: architectureClientTimingSchema.optional(),
+  clientPngOcrText: z.string().trim().max(50_000).optional(),
   analysisConfidence: architectureAnalysisConfidenceSchema.optional(),
 });
 export type ArchitectureReviewMetadata = z.infer<typeof architectureReviewMetadataSchema>;

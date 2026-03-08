@@ -81,6 +81,7 @@ describe("architecture review schema", () => {
         precheckMs: 1100,
         totalClientMs: 4900,
       },
+      clientPngOcrText: "api gateway lambda dynamodb cloudwatch",
     });
 
     expect(parsed.success).toBe(true);

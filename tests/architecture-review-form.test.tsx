@@ -63,6 +63,9 @@ describe("ArchitectureDiagramReviewerForm", () => {
       format: "png",
       mimeType: "image/png",
     });
+    vi.spyOn(architectureReviewClient, "extractPngTextEvidence").mockResolvedValue(
+      "Users call API Gateway then Lambda writes to DynamoDB and CloudWatch captures alerts.",
+    );
 
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
       const requestUrl = String(input);
@@ -149,6 +152,9 @@ describe("ArchitectureDiagramReviewerForm", () => {
       format: "png",
       mimeType: "image/png",
     });
+    vi.spyOn(architectureReviewClient, "extractPngTextEvidence").mockResolvedValue(
+      "Clients call service endpoints and data is persisted to managed storage.",
+    );
     fetchMock.mockResolvedValue({
       ok: false,
       status: 422,
@@ -190,5 +196,93 @@ describe("ArchitectureDiagramReviewerForm", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows browser OCR progress before PNG submission is sent", async () => {
+    vi.spyOn(architectureReviewClient, "isStrictDiagramFile").mockResolvedValue({
+      ok: true,
+      format: "png",
+      mimeType: "image/png",
+    });
+
+    let resolveOcr: ((value: string) => void) | undefined;
+    vi.spyOn(architectureReviewClient, "extractPngTextEvidence").mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveOcr = resolve as (value: string) => void;
+        }),
+    );
+
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const requestUrl = String(input);
+
+      if (requestUrl.includes("/api/submit-architecture-review")) {
+        return {
+          ok: true,
+          status: 202,
+          json: async () => ({
+            status: "queued",
+            jobId: "job-ocr-001",
+            deliveryMode: null,
+            phase: "upload-validate",
+            progressPct: 0,
+            etaSeconds: 1,
+          }),
+        } as Response;
+      }
+
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          jobId: "job-ocr-001",
+          status: "sent",
+          phase: "completed",
+          progressPct: 100,
+          etaSeconds: 0,
+          deliveryMode: "sent",
+        }),
+      } as Response;
+    });
+
+    render(<ArchitectureDiagramReviewerForm />);
+
+    const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
+    const pngFile = new File([pngBytes], "diagram.png", { type: "image/png" });
+
+    const fileInput = screen.getByLabelText(/diagram file/i);
+    const submitButton = screen.getByRole("button", { name: /run review/i });
+    const form = submitButton.closest("form");
+
+    Object.defineProperty(fileInput, "files", {
+      value: [pngFile],
+      writable: false,
+    });
+    fireEvent.change(fileInput);
+
+    fireEvent.change(screen.getByLabelText(/architecture description/i), {
+      target: {
+        value: "Users call API Gateway and data persists to managed storage.",
+      },
+    });
+
+    if (!form) {
+      throw new Error("Expected form element.");
+    }
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(screen.getByText(/processing: extracting ocr evidence/i)).toBeTruthy();
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    if (!resolveOcr) {
+      throw new Error("Expected OCR resolver to be captured.");
+    }
+    resolveOcr("Users call API Gateway and data persists to managed storage.");
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled();
+    });
   });
 });

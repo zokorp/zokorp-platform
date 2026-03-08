@@ -21,7 +21,7 @@ const ARCHITECTURE_REVIEW_MAX_MB = Number(process.env.ARCHITECTURE_REVIEW_UPLOAD
 const ARCH_REVIEW_RATE_LIMIT = 8;
 const ARCH_REVIEW_WINDOW_MS = 60 * 60 * 1000;
 const ARCH_REVIEW_DAILY_LIMIT = Number(process.env.ARCH_REVIEW_DAILY_LIMIT ?? "24");
-const MAX_METADATA_JSON_CHARS = 40_000;
+const MAX_METADATA_JSON_CHARS = 120_000;
 
 type RateLimitResult = {
   allowed: boolean;

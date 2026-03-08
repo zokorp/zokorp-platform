@@ -9,7 +9,7 @@ import { createEvidenceBundle } from "@/lib/architecture-review/evidence";
 import { calculateLeadScore } from "@/lib/architecture-review/lead";
 import { summarizeTopIssues } from "@/lib/architecture-review/report";
 import { sendArchitectureReviewEmail } from "@/lib/architecture-review/sender";
-import { extractOcrTextFromPng, extractSvgEvidenceFromBytes, isOcrTimeoutError } from "@/lib/architecture-review/server";
+import { extractSvgEvidenceFromBytes } from "@/lib/architecture-review/server";
 import {
   architectureReviewMetadataSchema,
   submitArchitectureReviewMetadataSchema,
@@ -547,8 +547,12 @@ export async function processArchitectureReviewJob(jobId: string): Promise<Archi
     job = await updatePhase(job, "ocr", "start");
 
     const ocrText = isPng
-      ? await extractOcrTextFromPng(Buffer.from(diagramBytes))
+      ? metadata.clientPngOcrText?.trim() ?? ""
       : (extractSvgEvidenceFromBytes(diagramBytes).text ?? "");
+
+    if (isPng && ocrText.length === 0) {
+      return rejectJob(job, "Missing browser PNG OCR evidence. Re-upload the diagram and retry.");
+    }
 
     job = await updatePhase(job, "ocr", "complete");
     job = await updatePhase(job, "rules", "start");
@@ -900,10 +904,6 @@ export async function processArchitectureReviewJob(jobId: string): Promise<Archi
 
     return fallbackCompleted;
   } catch (error) {
-    if (isOcrTimeoutError(error)) {
-      return failJob(job, "OCR timed out while processing the diagram.");
-    }
-
     const message = error instanceof Error ? error.message : "Unhandled architecture review processing failure.";
     return failJob(job, message);
   }
