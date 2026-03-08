@@ -17,7 +17,7 @@ import { ToolPageLayout } from "@/components/ui/tool-page-layout";
 import { ValidatorForm } from "@/components/validator-form";
 import { auth } from "@/lib/auth";
 import { isPasswordAuthEnabled } from "@/lib/auth-config";
-import { CatalogUnavailableError, getProductBySlug } from "@/lib/catalog";
+import { CatalogUnavailableError, getProductBySlugCached } from "@/lib/catalog";
 import { validatorPriceTierFromAmount, validatorProfileCreditsFromTiers, validatorTierLabel } from "@/lib/credit-tiers";
 import { db } from "@/lib/db";
 import { buildPageMetadata } from "@/lib/site";
@@ -247,7 +247,7 @@ export async function generateMetadata({
   let product = null;
 
   try {
-    product = await getProductBySlug(slug);
+    product = await getProductBySlugCached(slug);
   } catch (error) {
     if (!(error instanceof CatalogUnavailableError)) {
       throw error;
@@ -282,7 +282,7 @@ export default async function SoftwareDetailPage({
   let catalogUnavailable = false;
 
   try {
-    product = await getProductBySlug(slug);
+    product = await getProductBySlugCached(slug);
   } catch (error) {
     if (error instanceof CatalogUnavailableError) {
       catalogUnavailable = true;

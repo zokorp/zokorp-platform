@@ -5,10 +5,10 @@ import { AccessModel } from "@prisma/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { CatalogUnavailableError, getSoftwareCatalog } from "@/lib/catalog";
+import { CatalogUnavailableError, getSoftwareCatalogCached } from "@/lib/catalog";
 import { buildPageMetadata } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export const metadata = buildPageMetadata({
   title: "Pricing",
@@ -46,11 +46,11 @@ const serviceOffers = [
 ];
 
 export default async function PricingPage() {
-  let products: Awaited<ReturnType<typeof getSoftwareCatalog>> = [];
+  let products: Awaited<ReturnType<typeof getSoftwareCatalogCached>> = [];
   let catalogUnavailable = false;
 
   try {
-    products = await getSoftwareCatalog();
+    products = await getSoftwareCatalogCached();
   } catch (error) {
     if (error instanceof CatalogUnavailableError) {
       catalogUnavailable = true;

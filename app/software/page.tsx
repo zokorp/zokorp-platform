@@ -5,11 +5,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { CatalogUnavailableError, getSoftwareCatalog } from "@/lib/catalog";
+import { CatalogUnavailableError, getSoftwareCatalogCached } from "@/lib/catalog";
 import { buildPageMetadata } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 export const metadata = buildPageMetadata({
   title: "Software",
   description: "Browse ZoKorp software products, pricing models, and account-linked access paths.",
@@ -36,11 +36,11 @@ const roadmapItems = [
 ];
 
 export default async function SoftwarePage() {
-  let products: Awaited<ReturnType<typeof getSoftwareCatalog>> = [];
+  let products: Awaited<ReturnType<typeof getSoftwareCatalogCached>> = [];
   let catalogUnavailable = false;
 
   try {
-    products = await getSoftwareCatalog();
+    products = await getSoftwareCatalogCached();
   } catch (error) {
     if (error instanceof CatalogUnavailableError) {
       catalogUnavailable = true;

@@ -1,3 +1,5 @@
+import { unstable_cache } from "next/cache";
+
 import { db } from "@/lib/db";
 
 export class CatalogUnavailableError extends Error {
@@ -54,3 +56,15 @@ export async function getProductBySlug(slug: string) {
     throw new CatalogUnavailableError(`Catalog unavailable: failed to load product '${slug}'.`, { cause: error });
   }
 }
+
+export const getSoftwareCatalogCached = unstable_cache(async () => getSoftwareCatalog(), ["software-catalog"], {
+  revalidate: 300,
+});
+
+export const getProductBySlugCached = unstable_cache(
+  async (slug: string) => getProductBySlug(slug),
+  ["product-by-slug"],
+  {
+    revalidate: 300,
+  },
+);
