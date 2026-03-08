@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { extractSvgEvidence, isStrictDiagramFile } from "@/lib/architecture-review/client";
+import { extractPngTextEvidence, extractSvgEvidence, isStrictDiagramFile } from "@/lib/architecture-review/client";
 import {
   generateArchitectureDiagramFromNarrative,
   makeGeneratedDiagramSvgFile,
@@ -523,6 +523,27 @@ export function ArchitectureDiagramReviewerForm({
       return;
     }
 
+    let clientPngOcrText: string | undefined;
+
+    if (diagramValidation.format === "png") {
+      setPhase("ocr");
+      setProgressPct(4);
+      setEtaSeconds(45);
+      try {
+        clientPngOcrText = await extractPngTextEvidence(selectedFile, {
+          onProgress: (progress) => {
+            setPhase("ocr");
+            setProgressPct(Math.max(4, Math.min(92, progress.percent)));
+            setEtaSeconds(Math.max(3, Math.round(((100 - progress.percent) / 100) * 45)));
+          },
+        });
+      } catch {
+        setStatus("error");
+        setError("Browser PNG text extraction failed. Retry with a clearer PNG or upload SVG.");
+        return;
+      }
+    }
+
     const precheckMs = Math.max(0, Math.round(performance.now() - startedAtMs));
 
     if (diagramValidation.format === "svg") {
@@ -568,6 +589,7 @@ export function ArchitectureDiagramReviewerForm({
             precheckMs,
             totalClientMs: Math.max(0, Math.round(performance.now() - startedAtMs)),
           },
+          clientPngOcrText,
         }),
       );
       submitData.append("diagram", selectedFile, selectedFile.name);
