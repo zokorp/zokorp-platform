@@ -27,6 +27,7 @@ This file is the operating contract for the `ZoKorp release hardening` automatio
    - `npm run typecheck`
    - `npm test`
    - `npm run build`
+   - If `npm run build` fails with a sandbox-specific Turbopack runtime restriction such as `Operation not permitted` during process binding, rerun `npm run build:webpack` and treat a passing webpack build as the required production-build verification for that run.
    - `node scripts/production_smoke_check.mjs` when public routes changed and `SMOKE_BASE_URL` is configured.
 
 ## Git and GitHub workflow
@@ -35,6 +36,7 @@ This file is the operating contract for the `ZoKorp release hardening` automatio
 2. If direct push to `main` is blocked:
    - Push a `codex/` branch.
    - Verify GitHub CLI access with `gh auth status`.
+   - If GitHub API or DNS access fails during `gh` operations, retry the failing `gh` command up to 3 times with short backoff before treating it as a blocker.
    - Create or update a PR targeting `main`.
    - Reuse an existing PR for the same branch instead of creating duplicates.
    - Add the `automerge` label when the PR is ready.
