@@ -6,6 +6,7 @@ import type { ComponentProps } from "react";
 
 import { CheckoutButton } from "@/components/checkout-button";
 import { CheckoutFlashBanner } from "@/components/checkout-flash-banner";
+import { FreeToolAccessGate } from "@/components/free-tool-access-gate";
 import { AiDeciderForm } from "@/components/ai-decider/AiDeciderForm";
 import { ArchitectureDiagramReviewerForm } from "@/components/architecture-diagram-reviewer/ArchitectureDiagramReviewerForm";
 import { LandingZoneReadinessCheckerForm } from "@/components/landing-zone-readiness/LandingZoneReadinessCheckerForm";
@@ -17,6 +18,7 @@ import { ToolPageLayout } from "@/components/ui/tool-page-layout";
 import { ValidatorForm } from "@/components/validator-form";
 import { auth } from "@/lib/auth";
 import { isPasswordAuthEnabled } from "@/lib/auth-config";
+import { shouldHidePublicProductPricing } from "@/lib/billing-readiness";
 import { CatalogUnavailableError, getProductBySlugCached } from "@/lib/catalog";
 import { validatorPriceTierFromAmount, validatorProfileCreditsFromTiers, validatorTierLabel } from "@/lib/credit-tiers";
 import { db } from "@/lib/db";
@@ -35,7 +37,7 @@ type DisplayPrice = {
   amount: number;
   currency: string;
   creditsGranted: number;
-  creditTier?: CreditTier;
+  creditTier?: CreditTier | null;
   active?: boolean;
 };
 
@@ -121,8 +123,8 @@ function entitlementMessage(input: {
   entitlementStatus: EntitlementStatus | null;
   remainingUses: number;
   isTieredValidator?: boolean;
-  requiresSignInForFree?: boolean;
-  emailOnlyFreeTool?: boolean;
+  requiresVerifiedFreeToolAccount?: boolean;
+  publicPricingHidden?: boolean;
 }): { tone: Tone; text: string } {
   if (input.authUnavailable) {
     return {
@@ -131,19 +133,17 @@ function entitlementMessage(input: {
     };
   }
 
-  if (input.emailOnlyFreeTool) {
+  if (input.publicPricingHidden) {
     return {
-      tone: input.signedIn ? "success" : "info",
-      text: input.signedIn
-        ? "This diagnostic is free. Results are emailed to your business address unless you change it below."
-        : "This diagnostic is free. Enter a business email and the full report will be emailed to you.",
+      tone: "info",
+      text: "Subscription pricing for this product is still being finalized. Public checkout stays hidden until commercial terms are approved.",
     };
   }
 
-  if (!input.signedIn && input.accessModel === AccessModel.FREE && input.requiresSignInForFree) {
+  if (!input.signedIn && input.accessModel === AccessModel.FREE && input.requiresVerifiedFreeToolAccount) {
     return {
       tone: "info",
-      text: "Sign in with your business email to run this architecture review.",
+      text: "Sign in with your verified business email before running this diagnostic. Full consulting-style output is not sent to unverified inboxes.",
     };
   }
 
@@ -183,12 +183,12 @@ function entitlementMessage(input: {
   }
 
   if (input.accessModel === AccessModel.FREE) {
-    if (input.requiresSignInForFree) {
+    if (input.requiresVerifiedFreeToolAccount) {
       return {
         tone: input.signedIn ? "success" : "info",
         text: input.signedIn
-          ? "Run the architecture review and the results will be emailed to your signed-in business address."
-          : "Sign in with a business email before running this architecture review.",
+          ? "This free diagnostic is active. Results are sent only to your signed-in verified business email."
+          : "Sign in with your verified business email before running this diagnostic.",
       };
     }
 
@@ -331,13 +331,14 @@ export default async function SoftwareDetailPage({
   const isAiDecider = product.slug === "ai-decider";
   const isArchitectureReviewer = product.slug === "architecture-diagram-reviewer";
   const isLandingZoneChecker = product.slug === "landing-zone-readiness-checker";
+  const requiresVerifiedFreeToolAccount = isArchitectureReviewer || isAiDecider || isLandingZoneChecker;
   const productDescription = isArchitectureReviewer
-    ? "Free cloud architecture diagram reviewer for PNG/SVG uploads with deterministic findings delivered by email."
+    ? "Free cloud architecture diagram reviewer for PNG/SVG uploads with deterministic findings delivered to a verified business-email account."
     : isAiDecider
-      ? "Free deterministic consulting diagnostic for SMB teams. Describe the business problem, answer targeted follow-up questions, and receive the verdict, findings, and quote range by email."
+      ? "Free deterministic consulting diagnostic for SMB teams. Sign in with a verified business email, answer targeted follow-up questions, and receive the verdict, findings, and quote range by email."
     : isLandingZoneChecker
-      ? "Free deterministic landing-zone assessment for SMB teams. Answer structured questions and receive your score, top gaps, and consultation quote by email."
-    : product.description;
+      ? "Free deterministic landing-zone assessment for SMB teams. Sign in with a verified business email, answer structured questions, and receive your score, top gaps, and consultation quote by email."
+      : product.description;
   const validatorTargets = isValidator ? getValidatorTargetOptions() : [];
   let validatorProfileCredits: Record<ValidationProfile, number> = {
     FTR: 0,
@@ -413,11 +414,12 @@ export default async function SoftwareDetailPage({
   const pricesFromDb = product.prices.filter((price) => price.active !== false);
   const displayPrices =
     pricesFromDb.length > 0 ? pricesFromDb : isValidator ? validatorFallbackPrices : [];
+  const publicPricingHidden = shouldHidePublicProductPricing(product.accessModel);
 
-  const authUnavailable = !isPasswordAuthEnabled();
+  const authUnavailable = !authRuntimeReady;
   const stripeConfigured = Boolean(process.env.STRIPE_SECRET_KEY);
   const hasRealStripePrice = displayPrices.some((price) => isCheckoutEnabledStripePriceId(price.stripePriceId));
-  const billingUnavailable = !stripeConfigured || !hasRealStripePrice;
+  const billingUnavailable = publicPricingHidden || !stripeConfigured || !hasRealStripePrice;
   const requiresBilling = product.accessModel !== AccessModel.FREE;
 
   const message = entitlementMessage({
@@ -428,14 +430,15 @@ export default async function SoftwareDetailPage({
     entitlementStatus: entitlement?.status ?? null,
     remainingUses: entitlement?.remainingUses ?? 0,
     isTieredValidator: isValidator,
-    requiresSignInForFree: isArchitectureReviewer,
-    emailOnlyFreeTool: isLandingZoneChecker || isAiDecider,
+    requiresVerifiedFreeToolAccount,
+    publicPricingHidden,
   });
 
   const shouldShowSignInCta =
     !signedIn &&
     !authUnavailable &&
-    (requiresBilling || isArchitectureReviewer);
+    !publicPricingHidden &&
+    (requiresBilling || requiresVerifiedFreeToolAccount);
 
   const checkoutState =
     query.checkout === "success" ? "success" : query.checkout === "cancelled" ? "cancelled" : null;
@@ -443,11 +446,18 @@ export default async function SoftwareDetailPage({
   const toolMeta = (
     <>
       <Badge variant={accessBadgeVariant(product.accessModel)}>{getAccessModelLabel(product.accessModel)}</Badge>
-      <Badge variant="secondary">{signedIn ? "Signed in" : "Account optional"}</Badge>
+      <Badge variant="secondary">
+        {signedIn
+          ? "Verified account active"
+          : requiresVerifiedFreeToolAccount
+            ? "Verified account required"
+            : "Account optional"}
+      </Badge>
       {isValidator ? <Badge variant="outline">1 credit per run</Badge> : null}
       {isArchitectureReviewer ? <Badge variant="outline">Email-only review</Badge> : null}
       {isLandingZoneChecker ? <Badge variant="outline">Deterministic score</Badge> : null}
-      {!isValidator && !isArchitectureReviewer && !isLandingZoneChecker ? (
+      {isAiDecider ? <Badge variant="outline">Verified delivery</Badge> : null}
+      {!isValidator && !isArchitectureReviewer && !isLandingZoneChecker && !isAiDecider ? (
         <Badge variant="outline">Account-linked access</Badge>
       ) : null}
     </>
@@ -463,7 +473,27 @@ export default async function SoftwareDetailPage({
         </p>
       </div>
 
-      {displayPrices.length > 0 ? (
+      {publicPricingHidden ? (
+        <Card tone="muted" className="rounded-[calc(var(--radius-xl)+0.25rem)] p-6">
+          <CardHeader>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Subscription rollout</p>
+            <h3 className="font-display text-3xl font-semibold text-slate-900">Public subscription pricing is not live yet</h3>
+          </CardHeader>
+          <CardContent>
+            <p className="max-w-2xl text-sm leading-6 text-slate-600">
+              This product is still in pilot positioning. Public checkout is intentionally hidden until pricing, refund posture, and tax handling are approved for launch.
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Link href="/services#service-request" className={buttonVariants()}>
+              Request pilot access
+            </Link>
+            <Link href="/pricing" className={buttonVariants({ variant: "secondary" })}>
+              Review approved pricing
+            </Link>
+          </CardFooter>
+        </Card>
+      ) : displayPrices.length > 0 ? (
         <div className={cn("grid gap-4", displayPrices.length === 1 ? "md:grid-cols-2" : "md:grid-cols-3")}>
           {displayPrices.map((price) => (
             <Card key={price.id} lift className="rounded-[calc(var(--radius-xl)+0.25rem)] p-5">
@@ -604,9 +634,9 @@ export default async function SoftwareDetailPage({
         </>
       }
       pricing={pricingSection}
-      bodyTitle={!isValidator && !isArchitectureReviewer && !isLandingZoneChecker ? "Tool workflow" : undefined}
+      bodyTitle={!isValidator && !isArchitectureReviewer && !isLandingZoneChecker && !isAiDecider ? "Tool workflow" : undefined}
       bodyDescription={
-        !isValidator && !isArchitectureReviewer && !isLandingZoneChecker
+        !isValidator && !isArchitectureReviewer && !isLandingZoneChecker && !isAiDecider
           ? product.accessModel === AccessModel.FREE
             ? "This product is free to use today and can later connect to account-linked history and access controls."
             : "This product is configured for account-based access. Sign in, purchase access, then launch it from your account context."
@@ -622,11 +652,43 @@ export default async function SoftwareDetailPage({
           profileCredits={validatorProfileCredits}
         />
       ) : isArchitectureReviewer ? (
-        <ArchitectureDiagramReviewerForm requiresAuth={!signedIn} authUnavailable={authUnavailable} />
+        <FreeToolAccessGate
+          toolName="Architecture Diagram Reviewer"
+          callbackPath={`/software/${product.slug}`}
+          authRuntimeReady={authRuntimeReady}
+          signedIn={signedIn}
+          currentEmail={currentEmail}
+        >
+          <ArchitectureDiagramReviewerForm />
+        </FreeToolAccessGate>
       ) : isAiDecider ? (
-        <AiDeciderForm initialEmail={currentEmail ?? ""} initialName={session?.user?.name ?? ""} />
+        <FreeToolAccessGate
+          toolName="AI Decider"
+          callbackPath={`/software/${product.slug}`}
+          authRuntimeReady={authRuntimeReady}
+          signedIn={signedIn}
+          currentEmail={currentEmail}
+        >
+          <AiDeciderForm
+            initialEmail={currentEmail ?? ""}
+            initialName={session?.user?.name ?? ""}
+            lockedEmail={currentEmail ?? ""}
+          />
+        </FreeToolAccessGate>
       ) : isLandingZoneChecker ? (
-        <LandingZoneReadinessCheckerForm initialEmail={currentEmail ?? ""} initialName={session?.user?.name ?? ""} />
+        <FreeToolAccessGate
+          toolName="Landing Zone Readiness Checker"
+          callbackPath={`/software/${product.slug}`}
+          authRuntimeReady={authRuntimeReady}
+          signedIn={signedIn}
+          currentEmail={currentEmail}
+        >
+          <LandingZoneReadinessCheckerForm
+            initialEmail={currentEmail ?? ""}
+            initialName={session?.user?.name ?? ""}
+            lockedEmail={currentEmail ?? ""}
+          />
+        </FreeToolAccessGate>
       ) : (
         <Card className="rounded-[calc(var(--radius-xl)+0.25rem)] p-6">
           <CardHeader>

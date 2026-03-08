@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  userFindUnique: vi.fn(),
   submissionFindFirst: vi.fn(),
   submissionCreate: vi.fn(),
   submissionUpdate: vi.fn(),
@@ -11,13 +10,11 @@ const mocks = vi.hoisted(() => ({
   consumeRateLimit: vi.fn(),
   getRequestFingerprint: vi.fn(),
   isSchemaDriftError: vi.fn(),
+  requireVerifiedFreeToolAccess: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
   db: {
-    user: {
-      findUnique: mocks.userFindUnique,
-    },
     landingZoneReadinessSubmission: {
       findFirst: mocks.submissionFindFirst,
       create: mocks.submissionCreate,
@@ -44,6 +41,11 @@ vi.mock("@/lib/rate-limit", () => ({
 
 vi.mock("@/lib/db-errors", () => ({
   isSchemaDriftError: mocks.isSchemaDriftError,
+}));
+
+vi.mock("@/lib/free-tool-access", () => ({
+  requireVerifiedFreeToolAccess: mocks.requireVerifiedFreeToolAccess,
+  isFreeToolAccessError: (error: unknown) => error instanceof Error && error.name === "FreeToolAccessError",
 }));
 
 import { POST } from "@/app/api/submit-landing-zone-readiness/route";
@@ -128,7 +130,6 @@ describe("submit landing zone readiness route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mocks.userFindUnique.mockResolvedValue(null);
     mocks.submissionFindFirst.mockResolvedValue(null);
     mocks.submissionCreate.mockResolvedValue({ id: "lzrc_123" });
     mocks.submissionUpdate.mockResolvedValue({ id: "lzrc_123" });
@@ -145,6 +146,10 @@ describe("submit landing zone readiness route", () => {
     }));
     mocks.getRequestFingerprint.mockReturnValue("203.0.113.10");
     mocks.isSchemaDriftError.mockReturnValue(false);
+    mocks.requireVerifiedFreeToolAccess.mockResolvedValue({
+      user: { id: "user_123", email: "owner@acmecloud.com", emailVerified: new Date() },
+      email: "owner@acmecloud.com",
+    });
   });
 
   it("rejects non-json submissions before any persistence work", async () => {
@@ -231,6 +236,26 @@ describe("submit landing zone readiness route", () => {
       }),
     );
     expect(mocks.auditCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects unverified or unsigned access before any persistence or email send", async () => {
+    const error = Object.assign(
+      new Error("Sign in with your verified business email to run Landing Zone Readiness Checker."),
+      {
+        name: "FreeToolAccessError",
+        status: 401,
+      },
+    );
+    mocks.requireVerifiedFreeToolAccess.mockRejectedValueOnce(error);
+
+    const response = await POST(makeRequest(JSON.stringify(makeAnswers())));
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({
+      error: "Sign in with your verified business email to run Landing Zone Readiness Checker.",
+    });
+    expect(mocks.submissionCreate).not.toHaveBeenCalled();
+    expect(mocks.sendToolResultEmail).not.toHaveBeenCalled();
   });
 
   it("returns the prior result instead of resending a duplicate recent submission", async () => {

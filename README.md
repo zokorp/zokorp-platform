@@ -1,116 +1,63 @@
 # ZoKorp Platform
 
-Production-oriented Next.js platform for `zokorp.com` SaaS migration.
+Production-oriented Next.js App Router application for ZoKorp marketing, free diagnostics, paid software access, billing, and operator workflows.
 
-## Stack
-- Next.js App Router + TypeScript + Tailwind
-- NextAuth credentials authentication (business email + password)
+## Current architecture
+- Next.js 16 App Router + TypeScript + Tailwind CSS
 - Prisma + Postgres
+- NextAuth credentials auth with business-email verification
 - Stripe Checkout + Webhooks + Customer Portal
+- Zoho CRM lead sync + Zoho WorkDrive archival hooks
 
-## Product scope (current)
-- Marketing pages: `/`, `/services`, `/case-studies`, `/media`
-- Software catalog: `/software`, `/software/[slug]`
-- Account pages: `/account`, `/account/billing`
-- Admin pages: `/admin/products`, `/admin/prices`, `/admin/service-requests`
-- Service request workflow: `/services#service-request` (submission) + account timeline tracking
-- First tool: `ZoKorpValidator` (`zokorp-validator`) for PDF/XLSX input and text output
-- Free assessment tools:
-  - `AI Decider` (`ai-decider`)
-  - `Architecture Diagram Reviewer` (`architecture-diagram-reviewer`)
-  - `Landing Zone Readiness Checker` (`landing-zone-readiness-checker`)
-  - `Cloud Cost Leak Finder` (`cloud-cost-leak-finder`)
+## Product surfaces
+- Marketing pages: `/`, `/about`, `/services`, `/case-studies`, `/media`, `/contact`
+- Software hub: `/software`, `/software/[slug]`
+- Account area: `/account`, `/account/billing`
+- Admin area: `/admin/products`, `/admin/prices`, `/admin/service-requests`
+- Free diagnostic tools:
+  - `Architecture Diagram Reviewer`
+  - `AI Decider`
+  - `Landing Zone Readiness Checker`
+  - `Cloud Cost Leak Finder`
+- Paid software:
+  - `ZoKorpValidator`
 
-## Quick start
-1. Install dependencies:
-   - `npm install`
-2. Configure env:
-   - `cp .env.example .env.local`
-   - set real values (do not commit secrets)
-3. Prisma setup:
-   - `npm run prisma:generate`
-   - `npm run prisma:migrate`
-   - production deploys: `npm run prisma:migrate:deploy`
-   - `npm run prisma:seed`
-4. Start dev server:
-   - `npm run dev`
+## Current platform rules
+- Free diagnostic tools require a signed-in, verified business-email account before full consulting-style output is delivered.
+- Public subscription pricing stays hidden unless `PUBLIC_SUBSCRIPTION_PRICING_APPROVED=true`.
+- Public software and pricing pages fall back to a static core catalog when the DB-backed catalog is unavailable.
+- Billing, admin, and entitlement-protected routes enforce access server-side.
 
-## Quality commands
+## Local setup
+1. Install dependencies with `npm install`.
+2. Copy the template with `cp .env.example .env.local`.
+3. Fill in `.env.local` values. Start with the minimum local contract in [`docs/03-environment-variables-template.md`](docs/03-environment-variables-template.md).
+4. Generate Prisma client with `npm run prisma:generate`.
+5. Run migrations after Postgres is reachable with `npm run prisma:migrate`.
+6. Seed baseline catalog data with `npm run prisma:seed`.
+7. Start the app with `npm run dev`.
+
+Without email, Stripe, or Zoho credentials, the UI can still run locally, but verification, password reset, billing, worker, and CRM-backed flows will stay unavailable or degrade to fallback behavior.
+
+## Validation commands
 - `npm run lint`
 - `npm run typecheck`
 - `npm test`
+- `npm run build`
+- `node scripts/production_smoke_check.mjs`
+- `SMOKE_BASE_URL=http://127.0.0.1:3000 node scripts/production_smoke_check.mjs`
 
-## Key environment variables
-- Auth:
-  - `NEXTAUTH_SECRET`
-  - `NEXTAUTH_URL`
-  - `AUTH_PASSWORD_ENABLED`
-- Email delivery:
-  - `RESEND_API_KEY`
-  - `RESEND_FROM_EMAIL`
-  - `EMAIL_SERVER_HOST`
-  - `EMAIL_SERVER_PORT`
-  - `EMAIL_SERVER_USER`
-  - `EMAIL_SERVER_PASSWORD`
-  - `EMAIL_FROM`
-  - `ARCH_REVIEW_EML_SECRET`
-- Database:
-  - `DATABASE_URL`
-- Stripe:
-  - `STRIPE_SECRET_KEY`
-  - `STRIPE_WEBHOOK_SECRET`
-  - `STRIPE_PRICE_ID_FTR_SINGLE`
-  - `STRIPE_PRICE_ID_SDP_SRP_SINGLE`
-  - `STRIPE_PRICE_ID_COMPETENCY_REVIEW`
-  - `STRIPE_PRICE_ID_PLATFORM_MONTHLY`
-  - `STRIPE_PRICE_ID_PLATFORM_ANNUAL`
-- Admin/ops:
-  - `ZOKORP_ADMIN_EMAILS`
-  - `UPLOAD_MAX_MB`
-  - `ZOHO_SYNC_SECRET`
-  - `ZOHO_CRM_ACCESS_TOKEN`
-  - `ZOHO_CRM_REFRESH_TOKEN`
-  - `ZOHO_CLIENT_ID`
-  - `ZOHO_CLIENT_SECRET`
-  - `ZOHO_CRM_API_DOMAIN`
-  - `ZOHO_ACCOUNTS_DOMAIN`
-  - `ZOHO_WORKDRIVE_FOLDER_ID`
-  - `ZOHO_WORKDRIVE_ACCESS_TOKEN`
-  - `ZOHO_WORKDRIVE_REFRESH_TOKEN`
-  - `ZOHO_WORKDRIVE_CLIENT_ID`
-  - `ZOHO_WORKDRIVE_CLIENT_SECRET`
-  - `ZOHO_WORKDRIVE_BASE_API_URI`
-  - `ZOHO_WORKDRIVE_ACCOUNTS_DOMAIN`
+## Important docs
+- [`docs/03-environment-variables-template.md`](docs/03-environment-variables-template.md): env contract, split by local vs production and secret vs non-secret
+- [`docs/04-stripe-product-map.md`](docs/04-stripe-product-map.md): current Stripe product and price mapping posture
+- [`docs/free-tool-access-policy.md`](docs/free-tool-access-policy.md): verified business-email policy for free diagnostics
+- [`docs/billing-readiness-checklist.md`](docs/billing-readiness-checklist.md): billing launch readiness checklist
+- [`docs/admin-enterprise-readiness-execution-log.md`](docs/admin-enterprise-readiness-execution-log.md): execution evidence for the current enterprise-readiness work
+- [`docs/08-how-to-operate.md`](docs/08-how-to-operate.md): operator workflow notes
+- [`docs/09-codex-parallel-workflow.md`](docs/09-codex-parallel-workflow.md): worktree and automation branch workflow
 
-## Deployment notes
-- MVP deployment target is Vercel preview first.
-- Domain strategy: keep Squarespace live and connect app on `app.zokorp.com`.
-- Configure Stripe in test mode before any live switch.
-
-## Operations
-See [`docs/08-how-to-operate.md`](docs/08-how-to-operate.md).
-For multi-thread branch/worktree operations, see [`docs/09-codex-parallel-workflow.md`](docs/09-codex-parallel-workflow.md).
-
-## Landing Zone Readiness Checker
-- Route: `/software/landing-zone-readiness-checker`
-- Purpose: collect business-email leads, score landing-zone readiness deterministically, email the full report, and generate a deterministic consultation quote
-- Storage: `LandingZoneReadinessSubmission` records the submitted answers, score snapshot, findings, quote, and CRM/email delivery status
-- Email delivery: reuses the existing Resend-first / SMTP-fallback delivery path
-- CRM: reuses the existing Zoho CRM credentials and attempts an upsert by email when configured
-- Pricing: quote defaults are code-configured in [`lib/landing-zone-readiness/config.ts`](lib/landing-zone-readiness/config.ts) so the owner can approve and tune ranges without changing the scoring engine
-
-## Cloud Cost Leak Finder
-- Route: `/software/cloud-cost-leak-finder`
-- Purpose: collect business-email leads, parse narrative plus rough billing summaries, ask adaptive follow-up questions, and email a deterministic cloud cost advisory memo
-- Storage: `CloudCostLeakFinderSubmission` records the raw inputs, extracted signals, score snapshot, savings estimate, findings, quote, and CRM/email delivery status
-- Email delivery: reuses the existing Resend-first / SMTP-fallback delivery path
-- CRM: reuses the existing Zoho CRM credentials and attempts an upsert by email when configured
-- Pricing: quote defaults are code-configured in [`lib/cloud-cost-leak-finder/config.ts`](lib/cloud-cost-leak-finder/config.ts) as a solo-consultant base package plus deterministic add-ons tied to the findings and scope
-
-## AI Decider
-- Route: `/software/ai-decider`
-- Purpose: collect a business-email lead, analyze a narrative problem statement deterministically, ask adaptive follow-up questions, and email a short advisory memo with findings and a quote range
-- Storage: `AiDeciderSubmission` records the narrative, extracted signals, adaptive answers, score snapshot, recommendation, findings, blockers, quote, and CRM/email delivery status
-- Recommendation engine: deterministic keyword extraction plus fixed scoring, recommendation, and pricing rules in [`lib/ai-decider`](lib/ai-decider)
-- Email domains: blocked personal-email domains are configured in [`lib/ai-decider/config.ts`](lib/ai-decider/config.ts)
-- Email delivery and CRM: reuses the existing Resend-first / SMTP-fallback email path and Zoho CRM upsert when credentials are configured
+## Known human-owned blockers
+- Final live Stripe pricing, refund posture, and tax/legal configuration
+- Final privacy policy and terms approval
+- Final support posture and SLA wording
+- Final founder bio, proof assets, and booking/contact decisions

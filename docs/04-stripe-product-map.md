@@ -3,33 +3,40 @@
 > Initial catalog only. Created in Stripe **test mode**.
 > Re-verification in this session is blocked pending Stripe login.
 
-## Products/prices (test IDs)
+## Approved for current public display
 
 - **FTR Validator — Single Run**
+  - status: approved for current public display
   - price: USD 50 one-time
   - product_id: `prod_U4XpwCnAI9OGjJ`
   - price_id: `price_1T6Ok95wcnm215lAmfzvDgov`
   - env var mapping: `STRIPE_PRICE_ID_FTR_SINGLE`
 
 - **Competency Validation Review — Single Purchase**
+  - status: approved for current public display
   - price: USD 500 one-time
   - product_id: `prod_U4Xq9hET6yAEuG`
   - price_id: `price_1T6OkZ5wcnm215lAu28bpxYD`
   - env var mapping: `STRIPE_PRICE_ID_COMPETENCY_REVIEW`
 
 - **SDP/SRP Validation — Single Purchase**
-  - price: USD 150 one-time
+  - status: price missing in Stripe test mode; not ready for public display
+  - price: USD 150 one-time target
   - product_id: `TBD (create in Stripe test mode)`
   - price_id: `TBD`
   - env var mapping: `STRIPE_PRICE_ID_SDP_SRP_SINGLE`
 
+## Placeholder-only / not approved for public subscription pricing
+
 - **ZoKorp Platform — Monthly**
+  - status: placeholder-only, not approved for public display
   - price: USD 1/month (**placeholder pricing; fix before launch**)
   - product_id: `prod_U4XqLrequWQSbj`
   - price_id: `price_1T6Ol35wcnm215lAyWsfGR6q`
   - env var mapping: `STRIPE_PRICE_ID_PLATFORM_MONTHLY`
 
 - **ZoKorp Platform — Annual**
+  - status: placeholder-only, not approved for public display
   - price: USD 10/year (**placeholder pricing; fix before launch**)
   - product_id: `prod_U4XrrmAj5XHAzk`
   - price_id: `price_1T6Oln5wcnm215lAUXJ9gNQt`
@@ -47,6 +54,7 @@
 - Dashboard check in this session: blocked by Stripe login page.
 - Existing IDs above are preserved from prior setup notes and must be re-confirmed once authenticated.
 - Live mode status: unchanged (test mode only).
+- Public UI safeguard: subscription pricing is hidden by default unless `PUBLIC_SUBSCRIPTION_PRICING_APPROVED=true`.
 - Guardrail before any live billing/tax/legal/account ownership action:
   - `Approval required before high-impact change`
 

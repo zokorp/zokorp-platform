@@ -14,6 +14,7 @@ import {
   aiDeciderSubmissionRequestSchema,
   type AiDeciderSubmissionResponse,
 } from "@/lib/ai-decider/types";
+import { isFreeToolAccessError, requireVerifiedFreeToolAccess } from "@/lib/free-tool-access";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { upsertZohoLead } from "@/lib/zoho-crm";
 
@@ -81,6 +82,13 @@ export async function POST(request: Request) {
       );
     }
 
+    const access = await requireVerifiedFreeToolAccess({
+      toolName: "AI Decider",
+      submittedEmail: submission.email,
+    });
+
+    submission.email = access.email;
+
     const signals = extractAiDeciderSignals(submission.narrativeInput);
     const questions = buildAiDeciderQuestions(signals);
     const answerValidation = validateAiDeciderAnswers(questions, submission.answers);
@@ -93,14 +101,9 @@ export async function POST(request: Request) {
       answers: submission.answers,
     });
 
-    const user = await db.user.findUnique({
-      where: { email: submission.email },
-      select: { id: true },
-    });
-
     const created = await db.aiDeciderSubmission.create({
       data: {
-        userId: user?.id ?? null,
+        userId: access.user.id,
         email: submission.email,
         fullName: submission.fullName,
         companyName: submission.companyName,
@@ -172,7 +175,7 @@ export async function POST(request: Request) {
 
     await db.auditLog.create({
       data: {
-        userId: user?.id ?? null,
+        userId: access.user.id,
         action: "tool.ai_decider_submit",
         metadataJson: {
           email: submission.email,
@@ -212,6 +215,10 @@ export async function POST(request: Request) {
       200,
     );
   } catch (error) {
+    if (isFreeToolAccessError(error)) {
+      return jsonResponse({ error: error.message }, requestId, error.status);
+    }
+
     if (error instanceof SyntaxError) {
       return jsonResponse({ error: "Invalid submission payload." }, requestId, 400);
     }

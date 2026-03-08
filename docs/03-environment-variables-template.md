@@ -1,36 +1,199 @@
-# Environment variables template
+# Environment Variables Contract
 
-**Important:** do not commit real secrets.
+Use `.env.example` as the editable starter for local development. This document is the human-readable contract for what each variable does, which ones are secrets, and which environments actually need them.
 
-## Required
-- NEXT_PUBLIC_SITE_URL=__PLACEHOLDER__
-- NEXT_PUBLIC_SUPABASE_URL=__PLACEHOLDER__
-- NEXT_PUBLIC_SUPABASE_ANON_KEY=__PLACEHOLDER__
-- SUPABASE_SERVICE_ROLE_KEY=__PLACEHOLDER__
-- DATABASE_URL=__PLACEHOLDER__
-- STRIPE_SECRET_KEY=__PLACEHOLDER__
-- STRIPE_WEBHOOK_SECRET=__PLACEHOLDER__
-- STRIPE_PRICE_ID_FTR_SINGLE=__PLACEHOLDER__
-- STRIPE_PRICE_ID_SDP_SRP_SINGLE=__PLACEHOLDER__
-- STRIPE_PRICE_ID_COMPETENCY_REVIEW=__PLACEHOLDER__
-- STRIPE_PRICE_ID_PLATFORM_MONTHLY=__PLACEHOLDER__
-- STRIPE_PRICE_ID_PLATFORM_ANNUAL=__PLACEHOLDER__
-- AUTH_MAGIC_LINK_ENABLED=true
-- AUTH_MAGIC_LINK_MAX_PER_IP_10M=5
-- AUTH_MAGIC_LINK_MAX_PER_EMAIL_1H=6
+Do not commit real secrets.
 
-## Planned values (non-secret mapping)
+## Public non-secret config
+
+These values can ship to the browser or public metadata surfaces.
+
 - `NEXT_PUBLIC_SITE_URL`
-  - Preview: Vercel preview URL (per deployment)
-  - Production: `https://www.zokorp.com`
-- `STRIPE_PRICE_ID_FTR_SINGLE` -> `price_1T6Ok95wcnm215lAmfzvDgov`
-- `STRIPE_PRICE_ID_SDP_SRP_SINGLE` -> `price_...` (new price for SDP/SRP at $150)
-- `STRIPE_PRICE_ID_COMPETENCY_REVIEW` -> `price_1T6OkZ5wcnm215lAu28bpxYD`
-- `STRIPE_PRICE_ID_PLATFORM_MONTHLY` -> `price_1T6Ol35wcnm215lAyWsfGR6q`
-- `STRIPE_PRICE_ID_PLATFORM_ANNUAL` -> `price_1T6Oln5wcnm215lAUXJ9gNQt`
+  - Purpose: canonical site origin used by metadata, CTA links, and fallback URL generation.
+  - Local: usually `http://localhost:3000`.
+  - Production: final public origin.
+- `NEXT_PUBLIC_GA_MEASUREMENT_ID`
+  - Purpose: optional Google Analytics measurement ID.
+  - Local: usually empty.
+  - Production: set only when GA is approved.
+- `GOOGLE_SITE_VERIFICATION`
+  - Purpose: optional Google Search Console verification token.
+- `BING_SITE_VERIFICATION`
+  - Purpose: optional Bing verification token.
+- `PUBLIC_SUBSCRIPTION_PRICING_APPROVED`
+  - Purpose: non-secret launch flag that controls whether subscription pricing can appear in public UI.
+  - Default: unset or `false`.
+  - Production: set to `true` only after pricing, refund posture, and tax setup are approved.
 
-## Notes
-- Keep secrets in Vercel/Supabase/Stripe dashboards or an encrypted secret manager.
-- Use dashboard values only after authentication and copy-paste verification.
-- Never commit real secret values to GitHub, even in a private repo.
-- Check callback URLs for auth and Stripe webhook endpoints once routes are defined.
+## Core app and auth
+
+These values are required for a normal local app and production runtime.
+
+- `DATABASE_URL`
+  - Secret: yes.
+  - Purpose: Prisma/Postgres connection string.
+- `NEXTAUTH_SECRET`
+  - Secret: yes.
+  - Purpose: canonical auth/session secret for NextAuth and several signed internal flows.
+- `AUTH_SECRET`
+  - Secret: yes.
+  - Purpose: legacy fallback for auth secret lookup. Prefer `NEXTAUTH_SECRET`.
+- `NEXTAUTH_URL`
+  - Secret: no.
+  - Purpose: explicit auth callback base URL. Useful locally and in some deployments.
+- `AUTH_PASSWORD_ENABLED`
+  - Secret: no.
+  - Purpose: enables the credentials login flow. Defaults to enabled unless set to a false-like value.
+
+## Email delivery
+
+These values control verification, password reset, and tool-result delivery.
+
+- `EMAIL_SERVER_HOST`
+- `EMAIL_SERVER_PORT`
+- `EMAIL_SERVER_USER`
+- `EMAIL_SERVER_PASSWORD`
+- `EMAIL_FROM`
+  - Secret: host/user/password are secrets; `EMAIL_FROM` is not.
+  - Purpose: SMTP path for auth emails and fallback delivery.
+- `RESEND_API_KEY`
+  - Secret: yes.
+  - Purpose: preferred provider key for result-email delivery where Resend is used.
+- `RESEND_FROM_EMAIL`
+  - Secret: no.
+  - Purpose: sender identity for Resend-delivered emails.
+
+If these are missing, login-related email flows and some tool-result delivery paths will be unavailable. The UI should still load, but those workflows will degrade or stop.
+
+## Stripe and billing
+
+These values are required for checkout, webhook verification, and billing-driven entitlements.
+
+- `STRIPE_SECRET_KEY`
+  - Secret: yes.
+  - Purpose: server-side Stripe API access.
+- `STRIPE_WEBHOOK_SECRET`
+  - Secret: yes.
+  - Purpose: Stripe webhook signature verification.
+- `STRIPE_PRICE_ID_FTR_SINGLE`
+- `STRIPE_PRICE_ID_SDP_SRP_SINGLE`
+- `STRIPE_PRICE_ID_COMPETENCY_REVIEW`
+- `STRIPE_PRICE_ID_PLATFORM_MONTHLY`
+- `STRIPE_PRICE_ID_PLATFORM_ANNUAL`
+  - Secret: no, but operationally sensitive.
+  - Purpose: map current product prices to checkout and entitlement logic.
+
+Price IDs can exist before public display. Subscription prices should still stay hidden publicly until `PUBLIC_SUBSCRIPTION_PRICING_APPROVED=true`.
+
+## Upload and diagnostic controls
+
+- `UPLOAD_MAX_MB`
+  - Secret: no.
+  - Purpose: default upload size cap used across routes.
+- `ARCHITECTURE_REVIEW_UPLOAD_MAX_MB`
+  - Secret: no.
+  - Purpose: architecture-review-specific upload cap.
+- `ARCH_REVIEW_DAILY_LIMIT`
+  - Secret: no.
+  - Purpose: rate cap for architecture review submissions.
+- `ARCH_REVIEW_RATE_USD_PER_HOUR`
+  - Secret: no.
+  - Purpose: internal pricing input for architecture-review quote math.
+
+## Architecture review worker, follow-up, and CTA signing
+
+- `ARCH_REVIEW_EML_SECRET`
+  - Secret: yes.
+  - Purpose: signs fallback `.eml` download flows and related review artifacts.
+- `ARCH_REVIEW_CTA_SECRET`
+  - Secret: yes.
+  - Purpose: signs architecture-review CTA links.
+- `ARCH_REVIEW_WORKER_SECRET`
+  - Secret: yes.
+  - Purpose: authenticates the architecture worker route.
+- `ARCH_REVIEW_FOLLOWUP_SECRET`
+  - Secret: yes.
+  - Purpose: authenticates the architecture follow-up sender route.
+- `ARCH_REVIEW_BOOK_CALL_URL`
+  - Secret: no.
+  - Purpose: operator-controlled CTA destination for booking.
+- `ARCH_REVIEW_REMEDIATION_PLAN_URL`
+  - Secret: no.
+  - Purpose: operator-controlled remediation CTA destination.
+
+## Zoho CRM and WorkDrive
+
+These values are needed only when CRM sync and WorkDrive archival are enabled.
+
+- `ZOHO_SYNC_SECRET`
+  - Secret: yes.
+  - Purpose: authenticates the Zoho lead-sync route.
+- `ZOHO_CRM_ACCESS_TOKEN`
+- `ZOHO_CRM_REFRESH_TOKEN`
+- `ZOHO_CLIENT_ID`
+- `ZOHO_CLIENT_SECRET`
+  - Secret: yes.
+  - Purpose: Zoho CRM API access and token refresh.
+- `ZOHO_CRM_API_DOMAIN`
+- `ZOHO_ACCOUNTS_DOMAIN`
+  - Secret: no.
+  - Purpose: Zoho API/account endpoints.
+- `ZOHO_WORKDRIVE_FOLDER_ID`
+  - Secret: operationally sensitive.
+  - Purpose: target folder for archival uploads.
+- `ZOHO_WORKDRIVE_ACCESS_TOKEN`
+- `ZOHO_WORKDRIVE_REFRESH_TOKEN`
+- `ZOHO_WORKDRIVE_CLIENT_ID`
+- `ZOHO_WORKDRIVE_CLIENT_SECRET`
+  - Secret: yes.
+  - Purpose: WorkDrive API access.
+- `ZOHO_WORKDRIVE_BASE_API_URI`
+- `ZOHO_WORKDRIVE_ACCOUNTS_DOMAIN`
+  - Secret: no.
+  - Purpose: WorkDrive endpoint overrides.
+
+## Admin and operator config
+
+- `ZOKORP_ADMIN_EMAILS`
+  - Secret: no.
+  - Purpose: comma-separated admin email allowlist.
+- `SMOKE_BASE_URL`
+  - Secret: no.
+  - Purpose: override target for route smoke checks.
+- `SMOKE_TIMEOUT_MS`
+  - Secret: no.
+  - Purpose: smoke-check timeout override.
+
+## Minimum local setup
+
+Use this set to boot the app and develop most UI flows:
+
+- `NEXT_PUBLIC_SITE_URL`
+- `NEXTAUTH_URL`
+- `NEXTAUTH_SECRET`
+- `DATABASE_URL`
+- `AUTH_PASSWORD_ENABLED`
+
+Recommended local additions:
+
+- SMTP values plus `EMAIL_FROM` if you want verification and password reset to work
+- Stripe secret + webhook secret + price IDs if you want billing flows
+- `ARCH_REVIEW_*` secrets if you want worker and CTA flows
+- `ZOHO_*` values only if you are testing CRM or WorkDrive integration
+
+## Production-required baseline
+
+Before production is considered launch-ready, confirm:
+
+- core app/auth values are set
+- email delivery is configured
+- Stripe secret, webhook secret, and live-approved price IDs are configured
+- worker and scheduled-route secrets are configured
+- Zoho credentials are configured if CRM/archival automation is expected
+- public pricing approval flag is intentionally set or intentionally left off
+
+## Source of truth notes
+
+- `.env.example` should stay aligned with this document.
+- `lib/env.ts` is only a partial env validator today and should not be treated as the complete contract yet.
+- When this document and runtime behavior diverge, fix the document or the runtime immediately rather than letting both drift.

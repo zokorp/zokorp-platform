@@ -5,6 +5,7 @@ import { AccessModel } from "@prisma/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { shouldHidePublicProductPricing } from "@/lib/billing-readiness";
 import { CatalogUnavailableError, getSoftwareCatalogCached } from "@/lib/catalog";
 import { buildPageMetadata } from "@/lib/site";
 
@@ -65,8 +66,8 @@ export default async function PricingPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-200">Pricing</p>
         <h1 className="font-display mt-2 text-balance text-4xl font-semibold">Clear access models for software and services</h1>
         <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-100 md:text-base">
-          ZoKorp uses a mix of free tools, credit-based software, and subscription-ready products. Services are
-          scoped separately when the work goes beyond self-serve usage.
+          ZoKorp uses a mix of free tools, credit-based software, and pilot subscription surfaces. Services are
+          scoped separately when the work goes beyond self-serve usage, and public subscription pricing stays hidden until commercial terms are approved.
         </p>
       </section>
 
@@ -89,7 +90,14 @@ export default async function PricingPage() {
               </div>
               <p className="mt-3 text-sm leading-6 text-slate-600">{product.description}</p>
               <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                {product.prices.length > 0 ? (
+                {shouldHidePublicProductPricing(product.accessModel) ? (
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-slate-900">Subscription pricing pending approval</p>
+                    <p className="text-sm text-slate-700">
+                      This product is still in pilot positioning. Public subscription pricing and checkout stay hidden until pricing, refund posture, and tax setup are approved.
+                    </p>
+                  </div>
+                ) : product.prices.length > 0 ? (
                   <ul className="space-y-2 text-sm text-slate-700">
                     {product.prices.map((price) => (
                       <li key={price.id} className="flex items-center justify-between gap-4">
