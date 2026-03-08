@@ -7,11 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { ToolPageLayout } from "@/components/ui/tool-page-layout";
-import { auth } from "@/lib/auth";
 import { isPasswordAuthEnabled } from "@/lib/auth-config";
 import { buildPageMetadata } from "@/lib/site";
-
-export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Cloud Cost Leak Finder",
@@ -20,17 +17,8 @@ export const metadata: Metadata = buildPageMetadata({
   path: "/software/cloud-cost-leak-finder",
 });
 
-export default async function CloudCostLeakFinderPage() {
+export default function CloudCostLeakFinderPage() {
   const authRuntimeReady = isPasswordAuthEnabled() && Boolean(process.env.NEXTAUTH_SECRET);
-  let session = null;
-
-  if (authRuntimeReady) {
-    try {
-      session = await auth();
-    } catch {
-      session = null;
-    }
-  }
 
   return (
     <ToolPageLayout
@@ -40,32 +28,27 @@ export default async function CloudCostLeakFinderPage() {
       meta={
         <>
           <Badge variant="success">Free</Badge>
-          <Badge variant="secondary">{session?.user?.email ? "Signed in" : "Business email delivery"}</Badge>
+          <Badge variant="secondary">Business email delivery</Badge>
           <Badge variant="outline">Deterministic memo</Badge>
           <Badge variant="outline">Results by email</Badge>
         </>
       }
       alert={
-        <Alert tone={session?.user?.email ? "success" : "info"}>
+        <Alert tone="info">
           <AlertTitle>Delivery model</AlertTitle>
           <AlertDescription>
-            {session?.user?.email
-              ? "This checker is free. Results are emailed to your signed-in business address unless you change it below."
-              : "This checker is free. Enter a business email and the full report will be emailed to you."}
+            This checker is free. Enter a business email below, or sign in first to reuse your account details.
           </AlertDescription>
         </Alert>
       }
       actions={
         <>
-          {!session?.user?.email && authRuntimeReady ? (
+          {authRuntimeReady ? (
             <Link href="/login?callbackUrl=/software/cloud-cost-leak-finder" className={buttonVariants()}>
               Sign in with business email
             </Link>
           ) : null}
-          <Link
-            href="/services#service-request"
-            className={buttonVariants({ variant: !session?.user?.email && authRuntimeReady ? "secondary" : "primary" })}
-          >
+          <Link href="/services#service-request" className={buttonVariants({ variant: authRuntimeReady ? "secondary" : "primary" })}>
             Request cost optimization help
           </Link>
         </>
@@ -135,10 +118,7 @@ export default async function CloudCostLeakFinderPage() {
       }
     >
       <div id="cloud-cost-tool">
-        <CloudCostLeakFinderForm
-          initialEmail={session?.user?.email ?? ""}
-          initialName={session?.user?.name ?? ""}
-        />
+        <CloudCostLeakFinderForm />
       </div>
     </ToolPageLayout>
   );

@@ -30,6 +30,9 @@ export function SiteHeaderShell({
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [sessionResolved, setSessionResolved] = useState(!authRuntimeReady);
+  const [resolvedIsAdmin, setResolvedIsAdmin] = useState(isAdmin);
+  const [resolvedUserEmail, setResolvedUserEmail] = useState(userEmail);
   const moreRef = useRef<HTMLDivElement | null>(null);
   const moreTriggerRef = useRef<HTMLButtonElement | null>(null);
   const moreMenuRef = useRef<HTMLDivElement | null>(null);
@@ -100,21 +103,81 @@ export function SiteHeaderShell({
     });
   }, [mobileOpen]);
 
+  useEffect(() => {
+    if (!authRuntimeReady) {
+      setResolvedIsAdmin(false);
+      setResolvedUserEmail(null);
+      setSessionResolved(true);
+      return;
+    }
+
+    let isMounted = true;
+
+    async function syncSession() {
+      try {
+        const response = await fetch("/api/auth/session", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const data = (await response.json()) as {
+          user?: { email?: string | null; role?: string | null };
+        };
+
+        if (!isMounted) {
+          return;
+        }
+
+        setResolvedUserEmail(data.user?.email ?? null);
+        setResolvedIsAdmin(data.user?.role === "ADMIN");
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+
+        setResolvedUserEmail(userEmail);
+        setResolvedIsAdmin(isAdmin);
+      } finally {
+        if (isMounted) {
+          setSessionResolved(true);
+        }
+      }
+    }
+
+    void syncSession();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [authRuntimeReady, isAdmin, userEmail]);
+
   const navLinkClass = cn(
     buttonVariants({ variant: "ghost", size: "sm" }),
     "rounded-full border-transparent px-3.5 text-foreground-muted hover:bg-white hover:text-foreground",
   );
 
-  const authActions = userEmail ? (
+  const authActions = !authRuntimeReady ? (
+    <Badge variant="warning" className="normal-case tracking-normal">
+      Auth setup pending
+    </Badge>
+  ) : !sessionResolved ? (
+    <Badge variant="secondary" className="normal-case tracking-normal">
+      Checking session
+    </Badge>
+  ) : resolvedUserEmail ? (
     <>
       <Badge variant="secondary" className="max-w-full normal-case tracking-normal">
-        <span className="truncate">{userEmail}</span>
+        <span className="truncate">{resolvedUserEmail}</span>
       </Badge>
       <Link href="/api/auth/signout?callbackUrl=/" className={buttonVariants({ variant: "secondary", size: "sm" })}>
         Sign out
       </Link>
     </>
-  ) : authRuntimeReady ? (
+  ) : (
     <>
       <Link href="/login" className={buttonVariants({ variant: "secondary", size: "sm" })}>
         Sign in
@@ -123,10 +186,6 @@ export function SiteHeaderShell({
         Create account
       </Link>
     </>
-  ) : (
-    <Badge variant="warning" className="normal-case tracking-normal">
-      Auth setup pending
-    </Badge>
   );
 
   return (
@@ -172,7 +231,7 @@ export function SiteHeaderShell({
                     {link.label}
                   </Link>
                 ))}
-                {isAdmin ? (
+                {resolvedIsAdmin ? (
                   <Link
                     href="/admin/service-requests"
                     className={cn(buttonVariants({ variant: "outline", size: "sm", fullWidth: true }), "justify-start")}
@@ -188,7 +247,7 @@ export function SiteHeaderShell({
       </nav>
 
       <div className="hidden items-center gap-2 md:flex">
-        {isAdmin ? (
+        {resolvedIsAdmin ? (
           <Link
             href="/admin/service-requests"
             className={buttonVariants({ variant: "outline", size: "sm" })}
@@ -234,7 +293,7 @@ export function SiteHeaderShell({
                 {link.label}
               </Link>
             ))}
-            {isAdmin ? (
+            {resolvedIsAdmin ? (
               <Link
                 href="/admin/service-requests"
                 className={cn(buttonVariants({ variant: "outline", size: "md", fullWidth: true }), "justify-start")}

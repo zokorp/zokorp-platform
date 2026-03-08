@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { SiteHeaderShell } from "@/components/site-header-shell";
-import { auth } from "@/lib/auth";
 import { isPasswordAuthEnabled } from "@/lib/auth-config";
 
 const primaryLinks = [
@@ -18,17 +17,8 @@ const secondaryLinks = [
   { href: "/about", label: "About" },
 ];
 
-export async function SiteHeader() {
+export function SiteHeader() {
   const authRuntimeReady = isPasswordAuthEnabled() && Boolean(process.env.NEXTAUTH_SECRET);
-
-  let session = null;
-  if (authRuntimeReady) {
-    try {
-      session = await auth();
-    } catch {
-      session = null;
-    }
-  }
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/80 bg-white/84 backdrop-blur-xl">
@@ -51,8 +41,8 @@ export async function SiteHeader() {
           <SiteHeaderShell
             primaryLinks={primaryLinks}
             secondaryLinks={secondaryLinks}
-            isAdmin={session?.user?.role === "ADMIN"}
-            userEmail={session?.user?.email ?? null}
+            isAdmin={false}
+            userEmail={null}
             authRuntimeReady={authRuntimeReady}
           />
         </div>

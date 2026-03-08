@@ -2,12 +2,9 @@ import Link from "next/link";
 
 import { ServiceRequestPanel } from "@/components/service-request-panel";
 import { buttonVariants } from "@/components/ui/button";
-import { auth } from "@/lib/auth";
-import { isPasswordAuthEnabled } from "@/lib/auth-config";
 import { cn } from "@/lib/utils";
 import { buildPageMetadata } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
 export const metadata = buildPageMetadata({
   title: "Services",
   description: "Request AWS consultation, readiness support, or software-backed delivery work from ZoKorp.",
@@ -84,18 +81,7 @@ const serviceFaq = [
   },
 ];
 
-export default async function ServicesPage() {
-  const authRuntimeReady = isPasswordAuthEnabled() && Boolean(process.env.NEXTAUTH_SECRET);
-  let session = null;
-  if (authRuntimeReady) {
-    try {
-      session = await auth();
-    } catch {
-      session = null;
-    }
-  }
-  const signedIn = Boolean(session?.user?.email);
-
+export default function ServicesPage() {
   return (
     <div className="space-y-10">
       <section className="hero-surface animate-fade-up px-6 py-8 text-white md:px-8">
@@ -153,7 +139,7 @@ export default async function ServicesPage() {
         </div>
       </section>
 
-      <ServiceRequestPanel signedIn={signedIn} />
+      <ServiceRequestPanel />
 
       <section className="grid gap-4 md:grid-cols-[1.2fr_1fr]">
         <article className="surface lift-card rounded-2xl p-6">
