@@ -37,6 +37,7 @@ import {
 type CloudCostLeakFinderFormProps = {
   initialEmail?: string;
   initialName?: string;
+  lockedEmail?: string;
 };
 
 type FormState = {
@@ -96,7 +97,7 @@ const productHighlights = [
   },
   {
     title: "Deterministic advisory memo",
-    description: "You get a structured email with likely waste, first actions, savings range, and a consulting quote. No AI scoring.",
+    description: "You get a structured email with likely waste, first actions, savings range, and a consulting quote sent to your verified account. No AI scoring.",
   },
 ] as const;
 
@@ -191,10 +192,12 @@ function buildPayload(form: FormState) {
 export function CloudCostLeakFinderForm({
   initialEmail = "",
   initialName = "",
+  lockedEmail = "",
 }: CloudCostLeakFinderFormProps) {
+  const effectiveEmail = lockedEmail || initialEmail;
   const [form, setForm] = useState<FormState>({
     ...INITIAL_STATE,
-    email: initialEmail,
+    email: effectiveEmail,
     fullName: initialName,
   });
   const [currentStep, setCurrentStep] = useState(0);
@@ -216,6 +219,17 @@ export function CloudCostLeakFinderForm({
   useEffect(() => {
     trackAnalyticsEvent("cloud_cost_leak_finder_page_viewed");
   }, []);
+
+  useEffect(() => {
+    if (!lockedEmail) {
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+      email: lockedEmail,
+    }));
+  }, [lockedEmail]);
 
   function markStarted() {
     if (hasTrackedStart) {
@@ -478,7 +492,7 @@ export function CloudCostLeakFinderForm({
             <h1 className="font-display text-3xl font-semibold text-slate-900">Find where your cloud bill is leaking money.</h1>
             <p className="mt-3 text-sm leading-7 text-slate-600">
               Describe the environment, paste whatever cost summary you have, answer a short set of relevant follow-up
-              questions, and get the full advisory memo by email.
+              questions, and get the full advisory memo by email to your verified business account.
             </p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
@@ -526,17 +540,27 @@ export function CloudCostLeakFinderForm({
 
         {currentStep === 0 ? (
           <div className="mt-6 grid gap-4 md:grid-cols-2">
-            <label className="space-y-1">
-              <span className={fieldLabelClassName}>Business email</span>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(event) => setStringField("email", event.target.value)}
-                autoComplete="email"
-                className={fieldClassName}
-                placeholder="you@company.com"
-              />
-            </label>
+            {lockedEmail ? (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 md:col-span-2">
+                <p className={fieldLabelClassName}>Verified business email</p>
+                <p className="mt-2 text-base font-semibold text-slate-900">{form.email}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Results are sent only to the verified email on your signed-in account. To use a different inbox, sign out and verify that business email first.
+                </p>
+              </div>
+            ) : (
+              <label className="space-y-1">
+                <span className={fieldLabelClassName}>Business email</span>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(event) => setStringField("email", event.target.value)}
+                  autoComplete="email"
+                  className={fieldClassName}
+                  placeholder="you@company.com"
+                />
+              </label>
+            )}
             <label className="space-y-1">
               <span className={fieldLabelClassName}>Full name</span>
               <input

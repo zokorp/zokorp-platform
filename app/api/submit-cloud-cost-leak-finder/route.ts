@@ -22,6 +22,7 @@ import {
 } from "@/lib/cloud-cost-leak-finder/types";
 import { db } from "@/lib/db";
 import { isSchemaDriftError } from "@/lib/db-errors";
+import { isFreeToolAccessError, requireVerifiedFreeToolAccess } from "@/lib/free-tool-access";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { upsertZohoLead } from "@/lib/zoho-crm";
 
@@ -86,6 +87,13 @@ export async function POST(request: Request) {
       );
     }
 
+    const access = await requireVerifiedFreeToolAccess({
+      toolName: "Cloud Cost Leak Finder",
+      submittedEmail: answers.email,
+    });
+
+    answers.email = access.email;
+
     const narrativeError = narrativeValidationMessage(answers.narrativeInput);
     if (narrativeError) {
       return jsonResponse({ error: narrativeError }, requestId, 400);
@@ -109,14 +117,10 @@ export async function POST(request: Request) {
     };
 
     const report = buildCloudCostLeakFinderReport(normalizedAnswers);
-    const user = await db.user.findUnique({
-      where: { email: normalizedAnswers.email },
-      select: { id: true },
-    });
 
     const created = await db.cloudCostLeakFinderSubmission.create({
       data: {
-        userId: user?.id ?? null,
+        userId: access.user.id,
         email: normalizedAnswers.email,
         fullName: normalizedAnswers.fullName,
         companyName: normalizedAnswers.companyName,
@@ -197,7 +201,7 @@ export async function POST(request: Request) {
 
     await db.auditLog.create({
       data: {
-        userId: user?.id ?? null,
+        userId: access.user.id,
         action: "tool.cloud_cost_leak_finder_submit",
         metadataJson: {
           email: normalizedAnswers.email,
@@ -229,6 +233,10 @@ export async function POST(request: Request) {
 
     return jsonResponse(responseBody, requestId, 200);
   } catch (error) {
+    if (isFreeToolAccessError(error)) {
+      return jsonResponse({ error: error.message }, requestId, error.status);
+    }
+
     if (error instanceof SyntaxError) {
       return jsonResponse({ error: "Invalid submission payload." }, requestId, 400);
     }

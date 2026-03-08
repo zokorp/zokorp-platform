@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   Children,
   isValidElement,
+  useEffect,
   useState,
   type InputHTMLAttributes,
   type ReactElement,
@@ -89,6 +90,7 @@ type FormState = {
 type LandingZoneReadinessCheckerFormProps = {
   initialEmail?: string;
   initialName?: string;
+  lockedEmail?: string;
 };
 
 type StepDefinition = {
@@ -207,7 +209,7 @@ const productHighlights = [
   },
   {
     title: "Real output, not a teaser",
-    description: "The email includes category scores, blunt findings, concrete fixes, and a scoped consulting quote.",
+    description: "The email includes category scores, blunt findings, concrete fixes, and a scoped consulting quote delivered to your verified account.",
   },
   {
     title: "Built for SMB cloud teams",
@@ -515,10 +517,12 @@ function QuestionCard({
 export function LandingZoneReadinessCheckerForm({
   initialEmail = "",
   initialName = "",
+  lockedEmail = "",
 }: LandingZoneReadinessCheckerFormProps) {
+  const effectiveEmail = lockedEmail || initialEmail;
   const [form, setForm] = useState<FormState>({
     ...INITIAL_STATE,
-    email: initialEmail,
+    email: effectiveEmail,
     fullName: initialName,
   });
   const [currentStep, setCurrentStep] = useState(0);
@@ -535,6 +539,17 @@ export function LandingZoneReadinessCheckerForm({
       }
     | null
   >(null);
+
+  useEffect(() => {
+    if (!lockedEmail) {
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+      email: lockedEmail,
+    }));
+  }, [lockedEmail]);
 
   function markStarted() {
     if (hasTrackedStart) {
@@ -714,7 +729,7 @@ export function LandingZoneReadinessCheckerForm({
           <div className="max-w-3xl">
             <h2 className="font-display text-3xl font-semibold text-slate-900">Free cloud foundation check for real SMB environments</h2>
             <p className="mt-3 text-sm leading-7 text-slate-600">
-              Answer structured questions, get a deterministic readiness score, and receive the full report plus a quote by email.
+              Answer structured questions from your verified business-email account, get a deterministic readiness score, and receive the full report plus a quote by email.
             </p>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
@@ -753,17 +768,27 @@ export function LandingZoneReadinessCheckerForm({
 
         {currentStep === 0 ? (
           <div className="mt-6 grid gap-4 md:grid-cols-2">
-            <label className="space-y-1">
-              <span className={fieldLabelClassName}>Business email</span>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(event) => setStringField("email", event.target.value)}
-                autoComplete="email"
-                className={fieldClassName}
-                placeholder="you@company.com"
-              />
-            </label>
+            {lockedEmail ? (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 md:col-span-2">
+                <p className={fieldLabelClassName}>Verified business email</p>
+                <p className="mt-2 text-base font-semibold text-slate-900">{form.email}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Results are sent only to the verified email on your signed-in account. To use a different inbox, sign out and verify that business email first.
+                </p>
+              </div>
+            ) : (
+              <label className="space-y-1">
+                <span className={fieldLabelClassName}>Business email</span>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(event) => setStringField("email", event.target.value)}
+                  autoComplete="email"
+                  className={fieldClassName}
+                  placeholder="you@company.com"
+                />
+              </label>
+            )}
             <label className="space-y-1">
               <span className={fieldLabelClassName}>Full name</span>
               <input

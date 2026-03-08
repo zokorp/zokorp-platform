@@ -1,23 +1,31 @@
 # Open questions / unresolved items
 
-## Human login/MFA blockers (required before full account verification)
-- GitHub dashboard login/MFA required to verify repo visibility in UI, issues list, and project board columns.
-- Vercel login/MFA required to verify linked repo/team settings and deployment configuration.
-- Squarespace login/MFA required to verify DNS dashboard state, forwarding rules, and capture DNS screenshots.
-- Supabase login/MFA required to verify auth/storage settings and current project configuration.
-- Stripe login/MFA required to verify test-mode product/price/portal configuration in-dashboard.
+## Human login and provider access blockers
 
-## Business/legal/policy decisions
-- Stripe live-mode activation details (legal entity and payout/banking setup).
-- Tax collection policy and tax configuration regions.
-- Refund policy, dispute handling policy, and customer support policy.
-- Privacy Policy and Terms of Service content.
+- GitHub login/MFA is still required to verify repo settings, branch protections, PR automation posture, and any existing project-board workflows.
+- Vercel login/MFA is still required to verify production env vars, deployment targets, preview behavior, and custom-domain wiring.
+- Stripe login/MFA is still required to verify live-mode products, prices, tax settings, customer portal posture, and webhook configuration.
+- Zoho login/MFA is still required to verify CRM fields, refresh-token posture, and WorkDrive destination setup.
+- Email-provider and sending-domain access is still required to verify SMTP/Resend configuration plus SPF, DKIM, and DMARC posture.
 
-## Product and pricing decisions
-- Final production pricing for monthly/annual plans (current Stripe values are placeholders).
-- Final launch gating matrix: exact products/features unlocked by one-time purchase vs subscription.
-- PayPal/Braintree phase-2 decision (confirm whether Stripe-only is sufficient for MVP launch).
+## Business, legal, and policy decisions
 
-## Content/ops decisions
-- Blog migration execution approach (static migration vs CMS-backed).
-- Final canonical wording for location/contact (current public pages show both Houston and Sugar Land references).
+- Final live pricing for subscription and service offers.
+- Refund policy and dispute posture.
+- Privacy Policy approval.
+- Terms of Service approval.
+- Support posture and any SLA commitments.
+- Tax/legal entity setup for live billing.
+
+## Product and workflow decisions
+
+- Final live-mode launch gating for what is unlocked by free tools, one-time credit packs, and future subscriptions.
+- Final booking-link destination for architecture-review and service CTA flows.
+- Final outbound nurture cadence for free-tool leads.
+- Long-term CRM direction if Zoho remains too heavy for the operator workflow.
+
+## Public positioning and proof inputs
+
+- Final founder bio, headshot, and public-positioning language.
+- Real case studies, customer proof, or a decision to keep representative-pattern framing only.
+- Canonical contact and location wording for public pages and docs.

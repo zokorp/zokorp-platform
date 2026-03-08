@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { sendToolResultEmail } from "@/lib/architecture-review/sender";
 import { db } from "@/lib/db";
 import { isSchemaDriftError } from "@/lib/db-errors";
+import { isFreeToolAccessError, requireVerifiedFreeToolAccess } from "@/lib/free-tool-access";
 import { buildLandingZoneReadinessEmailContent } from "@/lib/landing-zone-readiness/email";
 import { buildLandingZoneReadinessReport } from "@/lib/landing-zone-readiness/engine";
 import { isAllowedLandingZoneBusinessEmail, normalizeLandingZoneWebsite } from "@/lib/landing-zone-readiness/input";
@@ -191,6 +192,13 @@ export async function POST(request: Request) {
       );
     }
 
+    const access = await requireVerifiedFreeToolAccess({
+      toolName: "Landing Zone Readiness Checker",
+      submittedEmail: answers.email,
+    });
+
+    answers.email = access.email;
+
     const emailLimiter = await consumeRateLimit({
       key: `landing-zone-readiness-email:${answers.email}`,
       limit: EMAIL_RATE_LIMIT,
@@ -211,10 +219,6 @@ export async function POST(request: Request) {
     }
 
     const report = buildLandingZoneReadinessReport(answers);
-    const user = await db.user.findUnique({
-      where: { email: answers.email },
-      select: { id: true },
-    });
     const recentSubmission = await db.landingZoneReadinessSubmission.findFirst({
       where: {
         email: answers.email,
@@ -274,7 +278,7 @@ export async function POST(request: Request) {
 
     const created = await db.landingZoneReadinessSubmission.create({
       data: {
-        userId: user?.id ?? null,
+        userId: access.user.id,
         email: answers.email,
         fullName: answers.fullName,
         companyName: answers.companyName,
@@ -328,7 +332,7 @@ export async function POST(request: Request) {
 
     await db.auditLog.create({
       data: {
-        userId: user?.id ?? null,
+        userId: access.user.id,
         action: "tool.landing_zone_readiness_submit",
         metadataJson: {
           email: answers.email,
@@ -370,6 +374,10 @@ export async function POST(request: Request) {
       200,
     );
   } catch (error) {
+    if (isFreeToolAccessError(error)) {
+      return jsonResponse({ error: error.message }, requestId, error.status);
+    }
+
     if (error instanceof Error && error.message === INVALID_CONTENT_TYPE) {
       return jsonResponse({ error: "Submissions must be sent as JSON." }, requestId, 415);
     }

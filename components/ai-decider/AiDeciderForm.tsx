@@ -11,6 +11,7 @@ import { aiDeciderSubmissionResponseSchema } from "@/lib/ai-decider/types";
 type AiDeciderFormProps = {
   initialEmail?: string;
   initialName?: string;
+  lockedEmail?: string;
 };
 
 type FormState = {
@@ -64,7 +65,7 @@ const productHighlights = [
   },
   {
     title: "Email-only advisory memo",
-    description: "The verdict, findings, blockers, and quote range are delivered to your business inbox.",
+    description: "The verdict, findings, blockers, and quote range are delivered to your verified business inbox.",
   },
 ] as const;
 
@@ -72,10 +73,15 @@ function unique(values: string[]) {
   return [...new Set(values)];
 }
 
-export function AiDeciderForm({ initialEmail = "", initialName = "" }: AiDeciderFormProps) {
+export function AiDeciderForm({
+  initialEmail = "",
+  initialName = "",
+  lockedEmail = "",
+}: AiDeciderFormProps) {
+  const effectiveEmail = lockedEmail || initialEmail;
   const [form, setForm] = useState<FormState>({
     ...INITIAL_STATE,
-    email: initialEmail,
+    email: effectiveEmail,
     fullName: initialName,
   });
   const [phase, setPhase] = useState<"intake" | "followup" | "success" | "fallback">("intake");
@@ -118,6 +124,17 @@ export function AiDeciderForm({ initialEmail = "", initialName = "" }: AiDecider
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!lockedEmail) {
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+      email: lockedEmail,
+    }));
+  }, [lockedEmail]);
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({
@@ -365,7 +382,7 @@ export function AiDeciderForm({ initialEmail = "", initialName = "" }: AiDecider
             Find out if your business problem actually needs AI
           </h2>
           <p className="mt-3 text-sm leading-7 text-slate-600 md:text-base">
-            Start with a business email, explain the problem in plain language, and answer the targeted
+            Start from your verified business-email account, explain the problem in plain language, and answer the targeted
             follow-up questions. The full memo is emailed to you, not shown in the browser.
           </p>
         </div>
@@ -385,17 +402,27 @@ export function AiDeciderForm({ initialEmail = "", initialName = "" }: AiDecider
 
       <form className="mt-7 space-y-6" onSubmit={handleSubmit}>
         <div className="grid gap-4 md:grid-cols-2">
-          <label className="block">
-            <span className={fieldLabelClassName}>Business Email</span>
-            <input
-              aria-label="Business email"
-              className={`${fieldClassName} mt-1.5`}
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={(event) => updateField("email", event.target.value)}
-            />
-          </label>
+          {lockedEmail ? (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 md:col-span-2">
+              <p className={fieldLabelClassName}>Verified Business Email</p>
+              <p className="mt-2 text-base font-semibold text-slate-900">{form.email}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Results are sent only to the verified email on your signed-in account. To use a different inbox, sign out and verify that business email first.
+              </p>
+            </div>
+          ) : (
+            <label className="block">
+              <span className={fieldLabelClassName}>Business Email</span>
+              <input
+                aria-label="Business email"
+                className={`${fieldClassName} mt-1.5`}
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={(event) => updateField("email", event.target.value)}
+              />
+            </label>
+          )}
           <label className="block">
             <span className={fieldLabelClassName}>Full Name</span>
             <input

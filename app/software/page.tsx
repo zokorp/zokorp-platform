@@ -5,6 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { isPublicSubscriptionPricingApproved } from "@/lib/billing-readiness";
 import { CatalogUnavailableError, getSoftwareCatalogCached } from "@/lib/catalog";
 import { buildPageMetadata } from "@/lib/site";
 import { cn } from "@/lib/utils";
@@ -49,6 +50,9 @@ export default async function SoftwarePage() {
     }
   }
   const activeProductBadge = catalogUnavailable ? "Catalog unavailable" : `${products.length} active products`;
+  const subscriptionBadge = isPublicSubscriptionPricingApproved()
+    ? "Hosted checkout + portal"
+    : "Checkout for approved products";
 
   return (
     <div className="space-y-8 md:space-y-10">
@@ -63,12 +67,11 @@ export default async function SoftwarePage() {
           Products, access, and billing in one place
         </h1>
         <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-200 md:text-base">
-          Purchase software, run tools, manage subscriptions, and track usage through a single account
-          and Stripe-backed billing experience.
+          Run diagnostics, purchase approved products, and manage account access through one customer account while pilot subscription pricing stays private until it is approved.
         </p>
         <div className="mt-6 flex flex-wrap gap-2">
           <Badge className="bg-white/90 text-slate-800">{activeProductBadge}</Badge>
-          <Badge className="bg-white/90 text-slate-800">Hosted checkout + portal</Badge>
+          <Badge className="bg-white/90 text-slate-800">{subscriptionBadge}</Badge>
           <Badge className="bg-white/90 text-slate-800">Entitlement-protected access</Badge>
         </div>
         <div className="mt-7 flex flex-wrap gap-3">

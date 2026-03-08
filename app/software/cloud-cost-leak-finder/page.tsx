@@ -2,11 +2,13 @@ import { type Metadata } from "next";
 import Link from "next/link";
 
 import { CloudCostLeakFinderForm } from "@/components/cloud-cost-leak-finder/CloudCostLeakFinderForm";
+import { FreeToolAccessGate } from "@/components/free-tool-access-gate";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { ToolPageLayout } from "@/components/ui/tool-page-layout";
+import { auth } from "@/lib/auth";
 import { isPasswordAuthEnabled } from "@/lib/auth-config";
 import { buildPageMetadata } from "@/lib/site";
 
@@ -17,8 +19,21 @@ export const metadata: Metadata = buildPageMetadata({
   path: "/software/cloud-cost-leak-finder",
 });
 
-export default function CloudCostLeakFinderPage() {
+export const dynamic = "force-dynamic";
+
+export default async function CloudCostLeakFinderPage() {
   const authRuntimeReady = isPasswordAuthEnabled() && Boolean(process.env.NEXTAUTH_SECRET);
+  let session = null;
+  if (authRuntimeReady) {
+    try {
+      session = await auth();
+    } catch {
+      session = null;
+    }
+  }
+
+  const currentEmail = session?.user?.email;
+  const signedIn = Boolean(currentEmail);
 
   return (
     <ToolPageLayout
@@ -28,27 +43,35 @@ export default function CloudCostLeakFinderPage() {
       meta={
         <>
           <Badge variant="success">Free</Badge>
-          <Badge variant="secondary">Business email delivery</Badge>
+          <Badge variant="secondary">{signedIn ? "Verified account active" : "Verified account required"}</Badge>
           <Badge variant="outline">Deterministic memo</Badge>
           <Badge variant="outline">Results by email</Badge>
         </>
       }
       alert={
         <Alert tone="info">
-          <AlertTitle>Delivery model</AlertTitle>
+          <AlertTitle>Verified delivery model</AlertTitle>
           <AlertDescription>
-            This checker is free. Enter a business email below, or sign in first to reuse your account details.
+            This checker is free, but full results are sent only to a signed-in verified business-email account.
           </AlertDescription>
         </Alert>
       }
       actions={
         <>
-          {authRuntimeReady ? (
+          {authRuntimeReady && !signedIn ? (
             <Link href="/login?callbackUrl=/software/cloud-cost-leak-finder" className={buttonVariants()}>
-              Sign in with business email
+              Sign in to continue
             </Link>
           ) : null}
-          <Link href="/services#service-request" className={buttonVariants({ variant: authRuntimeReady ? "secondary" : "primary" })}>
+          {signedIn ? (
+            <Link href="/account" className={buttonVariants({ variant: "secondary" })}>
+              Open account
+            </Link>
+          ) : null}
+          <Link
+            href="/services#service-request"
+            className={buttonVariants({ variant: authRuntimeReady && !signedIn ? "secondary" : "primary" })}
+          >
             Request cost optimization help
           </Link>
         </>
@@ -118,7 +141,19 @@ export default function CloudCostLeakFinderPage() {
       }
     >
       <div id="cloud-cost-tool">
-        <CloudCostLeakFinderForm />
+        <FreeToolAccessGate
+          toolName="Cloud Cost Leak Finder"
+          callbackPath="/software/cloud-cost-leak-finder"
+          authRuntimeReady={authRuntimeReady}
+          signedIn={signedIn}
+          currentEmail={currentEmail}
+        >
+          <CloudCostLeakFinderForm
+            initialEmail={currentEmail ?? ""}
+            initialName={session?.user?.name ?? ""}
+            lockedEmail={currentEmail ?? ""}
+          />
+        </FreeToolAccessGate>
       </div>
     </ToolPageLayout>
   );
