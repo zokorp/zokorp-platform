@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { isCheckoutEnabledStripePriceId } from "@/lib/stripe-price-id";
 
 const createProductSchema = z.object({
   slug: z.string().min(3).regex(/^[a-z0-9-]+$/),
@@ -16,7 +17,7 @@ const createProductSchema = z.object({
 
 const createPriceSchema = z.object({
   productSlug: z.string().min(3),
-  stripePriceId: z.string().min(3),
+  stripePriceId: z.string().trim().min(3),
   kind: z.nativeEnum(PriceKind),
   amount: z.coerce.number().int().positive(),
   creditsGranted: z.coerce.number().int().nonnegative().default(1),
@@ -79,6 +80,10 @@ export async function createPriceAction(formData: FormData) {
 
   if (!parsed.success) {
     throw new Error("Invalid price form values");
+  }
+
+  if (!isCheckoutEnabledStripePriceId(parsed.data.stripePriceId)) {
+    throw new Error("Invalid Stripe price ID");
   }
 
   const product = await db.product.findUnique({

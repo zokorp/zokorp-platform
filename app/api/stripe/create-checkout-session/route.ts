@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { getSiteOriginFromRequest } from "@/lib/site-origin";
+import { isCheckoutEnabledStripePriceId } from "@/lib/stripe-price-id";
 import { getStripeClient } from "@/lib/stripe";
 
 const schema = z.object({
@@ -28,6 +29,10 @@ export async function POST(request: Request) {
 
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    }
+
+    if (!isCheckoutEnabledStripePriceId(parsed.data.priceId)) {
+      return NextResponse.json({ error: "Price not available" }, { status: 404 });
     }
 
     const limiter = await consumeRateLimit({
@@ -54,6 +59,10 @@ export async function POST(request: Request) {
     });
 
     if (!price || !price.active || !price.product.active || price.product.slug !== parsed.data.productSlug) {
+      return NextResponse.json({ error: "Price not available" }, { status: 404 });
+    }
+
+    if (!isCheckoutEnabledStripePriceId(price.stripePriceId)) {
       return NextResponse.json({ error: "Price not available" }, { status: 404 });
     }
 

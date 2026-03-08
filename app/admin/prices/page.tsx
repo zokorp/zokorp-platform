@@ -11,13 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { isCheckoutEnabledStripePriceId } from "@/lib/stripe-price-id";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
-
-function isRealStripePriceId(value: string) {
-  return value.startsWith("price_");
-}
 
 export default async function AdminPricesPage() {
   try {
@@ -143,7 +140,7 @@ export default async function AdminPricesPage() {
                       <Badge variant={price.active ? "success" : "warning"}>
                         {price.active ? "Active" : "Inactive"}
                       </Badge>
-                      {!isRealStripePriceId(price.stripePriceId) ? (
+                      {!isCheckoutEnabledStripePriceId(price.stripePriceId) ? (
                         <Badge variant="warning">Placeholder ID</Badge>
                       ) : null}
                     </div>

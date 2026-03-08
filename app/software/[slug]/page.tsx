@@ -20,6 +20,7 @@ import { CatalogUnavailableError, getProductBySlug } from "@/lib/catalog";
 import { validatorPriceTierFromAmount, validatorProfileCreditsFromTiers, validatorTierLabel } from "@/lib/credit-tiers";
 import { db } from "@/lib/db";
 import { buildPageMetadata } from "@/lib/site";
+import { isCheckoutEnabledStripePriceId } from "@/lib/stripe-price-id";
 import { cn } from "@/lib/utils";
 import { getValidatorTargetOptions } from "@/lib/validator-library";
 import type { ValidationProfile } from "@/lib/zokorp-validator-engine";
@@ -220,10 +221,6 @@ function accessBadgeVariant(accessModel: AccessModel): ComponentProps<typeof Bad
   }
 }
 
-function isRealStripePriceId(priceId: string) {
-  return priceId.startsWith("price_");
-}
-
 function isSchemaDriftError(error: unknown) {
   if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
     return false;
@@ -415,7 +412,7 @@ export default async function SoftwareDetailPage({
 
   const authUnavailable = !isPasswordAuthEnabled();
   const stripeConfigured = Boolean(process.env.STRIPE_SECRET_KEY);
-  const hasRealStripePrice = displayPrices.some((price) => isRealStripePriceId(price.stripePriceId));
+  const hasRealStripePrice = displayPrices.some((price) => isCheckoutEnabledStripePriceId(price.stripePriceId));
   const billingUnavailable = !stripeConfigured || !hasRealStripePrice;
   const requiresBilling = product.accessModel !== AccessModel.FREE;
 
@@ -494,7 +491,7 @@ export default async function SoftwareDetailPage({
                   requiresAuth={!signedIn}
                   authUnavailable={authUnavailable}
                   billingUnavailable={
-                    requiresBilling ? billingUnavailable || !isRealStripePriceId(price.stripePriceId) : false
+                    requiresBilling ? billingUnavailable || !isCheckoutEnabledStripePriceId(price.stripePriceId) : false
                   }
                 />
               </CardFooter>
