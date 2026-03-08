@@ -4,12 +4,11 @@ import { cn } from "@/lib/utils";
 
 const variantClasses = {
   primary:
-    "border-brand-strong/20 bg-[linear-gradient(180deg,#15497d_0%,#0f355d_100%)] text-white shadow-[0_1px_0_rgba(255,255,255,0.14)_inset,0_18px_34px_rgba(8,31,61,0.18)] hover:brightness-105",
+    "border-transparent bg-brand text-white shadow-[var(--shadow-card)] hover:bg-brand-strong",
   secondary:
-    "border-border/80 bg-white/88 text-foreground shadow-[0_1px_0_rgba(255,255,255,0.88)_inset,0_12px_24px_rgba(8,31,61,0.06)] hover:border-border-strong hover:bg-background-elevated",
-  outline:
-    "border-border/80 bg-white/65 text-foreground shadow-[var(--shadow-soft)] hover:border-border-strong hover:bg-white/88",
-  ghost: "border-transparent bg-transparent text-foreground hover:bg-background-elevated/78",
+    "border-border bg-surface text-foreground shadow-[var(--shadow-soft)] hover:bg-background-elevated",
+  outline: "border-border bg-white/80 text-foreground hover:bg-background-elevated",
+  ghost: "border-transparent bg-transparent text-foreground hover:bg-background-elevated/80",
   destructive: "border-transparent bg-danger text-white hover:brightness-95",
   link: "border-transparent bg-transparent px-0 py-0 text-brand shadow-none hover:text-brand-strong hover:underline",
 } as const;
@@ -38,7 +37,7 @@ export function buttonVariants({
   loading = false,
 }: ButtonVariantOptions = {}) {
   return cn(
-    "focus-ring inline-flex items-center justify-center gap-2 border font-semibold transition-[transform,box-shadow,background-color,border-color,color,filter] duration-200 active:translate-y-px disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-60",
+    "focus-ring inline-flex items-center justify-center gap-2 border font-semibold transition disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-60",
     variantClasses[variant],
     sizeClasses[size],
     fullWidth && "w-full",

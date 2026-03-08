@@ -157,7 +157,7 @@ export function SiteHeaderShell({
 
   const navLinkClass = cn(
     buttonVariants({ variant: "ghost", size: "sm" }),
-    "rounded-full border border-transparent px-4 text-slate-600 hover:border-white/70 hover:bg-white/90 hover:text-foreground",
+    "rounded-full border-transparent px-3.5 text-foreground-muted hover:bg-white hover:text-foreground",
   );
 
   const authActions = !authRuntimeReady ? (
@@ -190,16 +190,12 @@ export function SiteHeaderShell({
 
   return (
     <div className="flex flex-1 items-center justify-end gap-3">
-      <nav className="glass-surface hidden items-center gap-1.5 px-2.5 py-2 text-sm shadow-[0_16px_32px_rgba(8,31,61,0.08)] md:flex">
+      <nav className="glass-surface hidden items-center gap-1.5 px-2 py-1.5 text-sm md:flex">
         {primaryLinks.map((link) => (
           <Link
             key={link.href}
             href={link.href}
-            className={cn(
-              navLinkClass,
-              pathname === link.href &&
-                "border-white/80 bg-white text-foreground shadow-[0_12px_24px_rgba(8,31,61,0.08)]",
-            )}
+            className={cn(navLinkClass, pathname === link.href && "bg-white text-foreground shadow-[var(--shadow-soft)]")}
             onClick={closeMenus}
           >
             {link.label}
@@ -222,7 +218,7 @@ export function SiteHeaderShell({
               id="desktop-more-menu"
               ref={moreMenuRef}
               aria-label="More pages"
-              className="glass-surface absolute right-0 top-full z-50 mt-2 w-56 rounded-2xl p-2 shadow-[var(--shadow-card-hover)]"
+              className="absolute right-0 top-full z-50 mt-2 w-56 rounded-2xl border border-border bg-white p-2 shadow-[var(--shadow-card-hover)]"
             >
               <div className="space-y-1">
                 {secondaryLinks.map((link) => (
@@ -284,7 +280,7 @@ export function SiteHeaderShell({
           id="mobile-nav-panel"
           ref={mobilePanelRef}
           aria-label="Mobile navigation"
-          className="glass-surface absolute inset-x-4 top-[calc(100%-0.25rem)] z-40 rounded-[1.4rem] p-4 shadow-[var(--shadow-card-hover)] md:hidden"
+          className="absolute inset-x-4 top-[calc(100%-0.25rem)] z-40 rounded-[1.4rem] border border-border bg-white/95 p-4 shadow-[var(--shadow-card-hover)] backdrop-blur md:hidden"
         >
           <div className="space-y-2">
             {[...primaryLinks, ...secondaryLinks].map((link) => (

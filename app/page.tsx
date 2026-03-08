@@ -91,9 +91,8 @@ export default function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
 
       <section className="hero-surface animate-fade-up overflow-hidden px-6 py-12 text-white md:px-10 md:py-14">
-        <div className="pointer-events-none absolute -right-16 top-0 h-52 w-52 rounded-full bg-cyan-100/10 blur-3xl animate-float-soft" />
-        <div className="pointer-events-none absolute right-24 top-10 h-16 w-16 rounded-full border border-white/10 bg-white/8 blur-xl" />
-        <div className="pointer-events-none absolute -bottom-16 left-8 h-44 w-44 rounded-full bg-amber-300/20 blur-3xl" />
+        <div className="pointer-events-none absolute -right-8 top-4 h-36 w-36 rounded-full border border-white/15 bg-white/10 blur-md animate-float-soft" />
+        <div className="pointer-events-none absolute -bottom-16 left-8 h-44 w-44 rounded-full bg-amber-300/25 blur-3xl" />
 
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] lg:items-end">
           <div>
@@ -133,28 +132,22 @@ export default function HomePage() {
             </div>
           </div>
 
-          <Card
-            tone="glass"
-            className="rounded-[calc(var(--radius-xl)+0.25rem)] border border-white/18 bg-[linear-gradient(160deg,rgba(7,22,44,0.52),rgba(13,78,102,0.28))] p-6 text-white shadow-[0_32px_72px_rgba(5,16,36,0.36)] ring-1 ring-white/10 backdrop-blur-xl"
-          >
+          <div className="rounded-[calc(var(--radius-xl)+0.25rem)] border border-white/12 bg-[linear-gradient(155deg,rgba(11,24,45,0.76),rgba(13,48,73,0.64))] p-6 text-white shadow-[0_28px_70px_rgba(15,23,42,0.28)] backdrop-blur-md">
             <CardHeader className="gap-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/68">Operating Signal</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-100/75">Operating Signal</p>
               <h2 className="font-display text-3xl font-semibold">Move from discovery to delivery without switching surfaces</h2>
             </CardHeader>
             <CardContent className="space-y-3">
               {operatingSignals.map((signal) => (
-                <div
-                  key={signal}
-                  className="rounded-2xl border border-white/14 bg-slate-950/18 px-4 py-3 text-sm font-medium text-white/92"
-                >
+                <div key={signal} className="rounded-2xl border border-white/10 bg-white/6 px-4 py-3 text-sm text-slate-100/92">
                   {signal}
                 </div>
               ))}
             </CardContent>
-            <CardFooter className="pt-1 text-sm text-white/72">
+            <CardFooter className="pt-1 text-sm text-slate-100/78">
               Keep tool access, purchases, and service follow-up under one customer account.
             </CardFooter>
-          </Card>
+          </div>
         </div>
       </section>
 

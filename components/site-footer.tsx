@@ -26,9 +26,9 @@ const legalLinks = [
 
 export function SiteFooter() {
   return (
-    <footer className="mt-16 border-t border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.74),rgba(242,247,252,0.96))] backdrop-blur-xl">
+    <footer className="mt-14 border-t border-border/80 bg-white/72 backdrop-blur">
       <div className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-10 md:grid-cols-[1.2fr_repeat(3,minmax(0,1fr))] md:px-6">
-        <Card tone="glass" className="rounded-[1.4rem] p-6 shadow-[0_18px_38px_rgba(8,31,61,0.08)]">
+        <Card tone="glass" className="rounded-[1.4rem] p-6">
           <p className="font-display text-2xl font-semibold text-slate-900">ZoKorp</p>
           <p className="mt-3 max-w-sm text-sm leading-7 text-slate-600">
             AWS-focused AI delivery, validation software, and account-linked billing workflows for teams that need measurable execution.
@@ -43,7 +43,7 @@ export function SiteFooter() {
           </div>
         </Card>
 
-        <section className="glass-surface space-y-3 rounded-[1.4rem] p-5">
+        <section className="space-y-3 rounded-[1.4rem] border border-border/80 bg-white/80 p-5 shadow-[var(--shadow-soft)]">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Platform</p>
           <ul className="space-y-2 text-sm text-slate-600">
             {platformLinks.map((link) => (
@@ -56,7 +56,7 @@ export function SiteFooter() {
           </ul>
         </section>
 
-        <section className="glass-surface space-y-3 rounded-[1.4rem] p-5">
+        <section className="space-y-3 rounded-[1.4rem] border border-border/80 bg-white/80 p-5 shadow-[var(--shadow-soft)]">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Resources</p>
           <ul className="space-y-2 text-sm text-slate-600">
             {resourceLinks.map((link) => (
@@ -69,7 +69,7 @@ export function SiteFooter() {
           </ul>
         </section>
 
-        <section className="glass-surface space-y-3 rounded-[1.4rem] p-5">
+        <section className="space-y-3 rounded-[1.4rem] border border-border/80 bg-white/80 p-5 shadow-[var(--shadow-soft)]">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Trust and Support</p>
           <ul className="space-y-2 text-sm text-slate-600">
             {legalLinks.map((link) => (
