@@ -1,8 +1,6 @@
-import { Role } from "@prisma/client";
-
+import { expectedAdminRole } from "@/lib/admin-access";
 import { db } from "@/lib/db";
 import { generateOpaqueToken, hashOpaqueToken } from "@/lib/password-auth";
-import { parseAdminEmails } from "@/lib/security";
 
 const EMAIL_VERIFICATION_PREFIX = "verify-email:";
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
@@ -82,7 +80,6 @@ export async function consumeEmailVerificationToken(rawToken: string) {
     return { status: "expired" as const, email };
   }
 
-  const shouldPromoteToAdmin = parseAdminEmails(process.env.ZOKORP_ADMIN_EMAILS).has(email);
   const now = new Date();
 
   const user = await db.$transaction(async (tx) => {
@@ -97,7 +94,10 @@ export async function consumeEmailVerificationToken(rawToken: string) {
       },
       data: {
         emailVerified: now,
-        ...(shouldPromoteToAdmin ? { role: Role.ADMIN } : {}),
+        role: expectedAdminRole({
+          email,
+          emailVerified: now,
+        }),
       },
     });
 

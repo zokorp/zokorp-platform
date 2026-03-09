@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   CreditTier,
   EntitlementStatus,
+  Role,
   ServiceRequestStatus,
   type ServiceRequest,
 } from "@prisma/client";
@@ -42,6 +43,7 @@ function formatTierLabel(tier: CreditTier) {
 export default async function AccountPage() {
   const session = await auth();
   const email = session?.user?.email;
+  const isAdminAccount = session?.user?.role === Role.ADMIN;
 
   if (!email) {
     redirect("/login?callbackUrl=/account");
@@ -167,6 +169,7 @@ export default async function AccountPage() {
               <p className="mt-2 text-sm text-slate-600">Signed in as {user.email}</p>
             </div>
             <div className="flex flex-wrap gap-2">
+              {isAdminAccount ? <Badge variant="brand">Admin workspace active</Badge> : null}
               <Badge variant="secondary">{openServiceRequests.length} open requests</Badge>
               <Badge variant="secondary">{activeSubscriptions.length} active subscriptions</Badge>
               <Badge variant="secondary">{activeCredits.length} active credit wallets</Badge>
@@ -174,6 +177,16 @@ export default async function AccountPage() {
           </div>
 
           <div className="flex flex-wrap gap-3">
+            {isAdminAccount ? (
+              <Link href="/admin/leads" className={buttonVariants({ variant: "secondary" })}>
+                Admin leads
+              </Link>
+            ) : null}
+            {isAdminAccount ? (
+              <Link href="/admin/service-requests" className={buttonVariants({ variant: "secondary" })}>
+                Admin queue
+              </Link>
+            ) : null}
             <Link href="/account/billing" className={buttonVariants()}>
               Billing and Invoices
             </Link>
@@ -183,6 +196,17 @@ export default async function AccountPage() {
           </div>
         </CardHeader>
       </Card>
+
+      {isAdminAccount ? (
+        <Card tone="muted" className="rounded-[calc(var(--radius-xl)+0.25rem)] p-5">
+          <CardContent className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Admin testing</p>
+            <p className="text-sm leading-6 text-slate-600">
+              This verified allowlisted account has admin-only workspace access and server-side paid-tool testing overrides where supported.
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <section className="grid gap-3 md:grid-cols-4">
         {[

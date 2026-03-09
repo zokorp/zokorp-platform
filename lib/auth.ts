@@ -5,10 +5,11 @@ import { getServerSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 import { getAuthSecret } from "@/lib/auth-secret";
+import { hasVerifiedAdminAccess, loadAndSyncAdminUserById, syncAdminRoleForUser } from "@/lib/admin-access";
 import { isPasswordAuthEnabled } from "@/lib/auth-config";
 import { sanitizeAuthRedirectTarget } from "@/lib/callback-url";
 import { db } from "@/lib/db";
-import { parseAdminEmails, isBusinessEmail } from "@/lib/security";
+import { isBusinessEmail } from "@/lib/security";
 import { verifyPassword } from "@/lib/password-auth";
 import { ensureUserAuthSchemaReady } from "@/lib/user-auth-schema";
 
@@ -178,12 +179,14 @@ export const authOptions: NextAuthOptions = {
         };
       }
 
+      const syncedUser = await syncAdminRoleForUser(dbUser);
+
       return {
         ...token,
-        sub: dbUser.id,
-        email: dbUser.email,
+        sub: syncedUser.id,
+        email: syncedUser.email,
         name: dbUser.name ?? token.name,
-        role: dbUser.role,
+        role: syncedUser.role,
         passwordUpdatedAt: passwordUpdatedAtMs,
         authError: undefined,
       };
@@ -212,20 +215,7 @@ export const authOptions: NextAuthOptions = {
       });
 
       if (user.email) {
-        const dbUser = await db.user.findUnique({
-          where: { id: user.id },
-          select: { emailVerified: true },
-        });
-        const adminEmails = parseAdminEmails(process.env.ZOKORP_ADMIN_EMAILS);
-        if (dbUser?.emailVerified && adminEmails.has(user.email.toLowerCase())) {
-          await db.user.updateMany({
-            where: {
-              id: user.id,
-              role: { not: Role.ADMIN },
-            },
-            data: { role: Role.ADMIN },
-          });
-        }
+        await loadAndSyncAdminUserById(user.id);
       }
     },
   },
@@ -249,24 +239,14 @@ export async function requireUser(): Promise<User> {
     throw new Error("UNAUTHORIZED");
   }
 
-  return user;
+  return syncAdminRoleForUser(user);
 }
 
 export async function requireAdmin(): Promise<User> {
   const user = await requireUser();
 
-  if (user.role === Role.ADMIN) {
+  if (hasVerifiedAdminAccess(user)) {
     return user;
-  }
-
-  const adminEmails = parseAdminEmails(process.env.ZOKORP_ADMIN_EMAILS);
-  if (user.emailVerified && user.email && adminEmails.has(user.email.toLowerCase())) {
-    const promoted = await db.user.update({
-      where: { id: user.id },
-      data: { role: Role.ADMIN },
-    });
-
-    return promoted;
   }
 
   throw new Error("FORBIDDEN");

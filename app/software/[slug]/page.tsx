@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AccessModel, CreditTier, EntitlementStatus, PriceKind, Prisma } from "@prisma/client";
+import { AccessModel, CreditTier, EntitlementStatus, PriceKind, Prisma, Role } from "@prisma/client";
 import { notFound } from "next/navigation";
 import type { ComponentProps } from "react";
 
@@ -125,6 +125,7 @@ function entitlementMessage(input: {
   isTieredValidator?: boolean;
   requiresVerifiedFreeToolAccount?: boolean;
   publicPricingHidden?: boolean;
+  adminBypass?: boolean;
 }): { tone: Tone; text: string } {
   if (input.authUnavailable) {
     return {
@@ -137,6 +138,16 @@ function entitlementMessage(input: {
     return {
       tone: "info",
       text: "Subscription pricing for this product is still being finalized. Public checkout stays hidden until commercial terms are approved.",
+    };
+  }
+
+  if (input.adminBypass) {
+    return {
+      tone: "success",
+      text:
+        input.accessModel === AccessModel.ONE_TIME_CREDIT
+          ? "Admin testing override active. This allowlisted verified account can run the paid tool without consuming credits."
+          : "Admin access is active for this account.",
     };
   }
 
@@ -327,6 +338,7 @@ export default async function SoftwareDetailPage({
   }
   const currentEmail = session?.user?.email;
   const signedIn = Boolean(currentEmail);
+  const isAdminTester = session?.user?.role === Role.ADMIN;
   const isValidator = product.slug === "zokorp-validator";
   const isAiDecider = product.slug === "ai-decider";
   const isArchitectureReviewer = product.slug === "architecture-diagram-reviewer";
@@ -432,6 +444,7 @@ export default async function SoftwareDetailPage({
     isTieredValidator: isValidator,
     requiresVerifiedFreeToolAccount,
     publicPricingHidden,
+    adminBypass: isAdminTester && product.accessModel !== AccessModel.FREE,
   });
 
   const shouldShowSignInCta =
@@ -447,7 +460,9 @@ export default async function SoftwareDetailPage({
     <>
       <Badge variant={accessBadgeVariant(product.accessModel)}>{getAccessModelLabel(product.accessModel)}</Badge>
       <Badge variant="secondary">
-        {signedIn
+        {isAdminTester
+          ? "Admin override active"
+          : signedIn
           ? "Verified account active"
           : requiresVerifiedFreeToolAccount
             ? "Verified account required"
@@ -650,6 +665,7 @@ export default async function SoftwareDetailPage({
           authUnavailable={authUnavailable}
           validationTargets={validatorTargets}
           profileCredits={validatorProfileCredits}
+          adminBypass={isAdminTester}
         />
       ) : isArchitectureReviewer ? (
         <FreeToolAccessGate

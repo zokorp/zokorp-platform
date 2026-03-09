@@ -4,6 +4,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const items = [
+  { id: "leads", href: "/admin/leads", label: "Leads" },
   { id: "products", href: "/admin/products", label: "Products" },
   { id: "prices", href: "/admin/prices", label: "Prices" },
   { id: "service-requests", href: "/admin/service-requests", label: "Service Requests" },

@@ -1,5 +1,6 @@
 import { AccessModel, CreditTier, EntitlementStatus, Prisma } from "@prisma/client";
 
+import { hasAdminEntitlementBypass } from "@/lib/admin-access";
 import { db } from "@/lib/db";
 import { isSchemaDriftError } from "@/lib/db-errors";
 
@@ -45,8 +46,14 @@ export async function requireEntitlement(input: {
     throw new Error("PRODUCT_NOT_AVAILABLE");
   }
 
+  const adminBypass = await hasAdminEntitlementBypass(input.userId);
+
   if (product.accessModel === AccessModel.FREE) {
-    return { productId: product.id, entitlement: null };
+    return { productId: product.id, entitlement: null, adminBypass };
+  }
+
+  if (adminBypass) {
+    return { productId: product.id, entitlement: null, adminBypass: true };
   }
 
   const entitlement = await db.entitlement.findUnique({
@@ -114,7 +121,7 @@ export async function requireEntitlement(input: {
     throw new Error("SUBSCRIPTION_EXPIRED");
   }
 
-  return { productId: product.id, entitlement };
+  return { productId: product.id, entitlement, adminBypass: false };
 }
 
 export async function decrementUsesAtomically(input: {
@@ -125,6 +132,11 @@ export async function decrementUsesAtomically(input: {
   allowGeneralCreditFallback?: boolean;
 }) {
   const uses = input.uses ?? 1;
+  const adminBypass = await hasAdminEntitlementBypass(input.userId);
+
+  if (adminBypass) {
+    return;
+  }
 
   await db.$transaction(async (tx) => {
     const product = await tx.product.findUnique({
