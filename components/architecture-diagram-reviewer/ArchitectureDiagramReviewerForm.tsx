@@ -124,6 +124,7 @@ const DELIVERY_PACKAGE_ITEMS = [
   "Top deductions, optional recommendations, and service-line context",
   "Recommended next package: advisory review, remediation sprint, or implementation partner",
   "Fallback email actions if automated delivery is unavailable",
+  "Ephemeral processing by default; archival is optional and explicit",
 ];
 
 function trackAnalyticsEvent(name: string, params?: Record<string, string | number>) {
@@ -222,6 +223,7 @@ export function ArchitectureDiagramReviewerForm({
   const [environment, setEnvironment] = useState<ArchitectureEnvironment>("prod");
   const [lifecycleStage, setLifecycleStage] = useState<ArchitectureLifecycleStage>("production");
   const [desiredEngagement, setDesiredEngagement] = useState<ArchitectureEngagementPreference>("hands-on-remediation");
+  const [archiveForFollowup, setArchiveForFollowup] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -604,6 +606,7 @@ export function ArchitectureDiagramReviewerForm({
           environment,
           lifecycleStage,
           desiredEngagement,
+          archiveForFollowup,
           submissionContext: collectSubmissionContext(),
           clientTiming: {
             startedAtISO,
@@ -792,6 +795,12 @@ export function ArchitectureDiagramReviewerForm({
                 className="inline-flex text-sm font-semibold text-sky-700 transition hover:text-sky-800"
               >
                 Review benchmark patterns
+              </Link>
+              <Link
+                href="/software/architecture-diagram-reviewer/sample-report"
+                className="inline-flex text-sm font-semibold text-sky-700 transition hover:text-sky-800"
+              >
+                View sample report
               </Link>
             </CardContent>
           </Card>
@@ -1092,6 +1101,22 @@ export function ArchitectureDiagramReviewerForm({
                 </select>
               </label>
             </div>
+
+            <label className="mt-4 flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+              <input
+                type="checkbox"
+                checked={archiveForFollowup}
+                onChange={(event) => setArchiveForFollowup(event.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-slate-300"
+              />
+              <span className="space-y-1 text-sm text-slate-600">
+                <span className="block font-medium text-slate-900">Allow archival for follow-up</span>
+                <span className="block">
+                  Off by default. If checked, ZoKorp may keep the uploaded diagram and report for follow-up work.
+                  If left unchecked, the review stays on the ephemeral processing path and does not request external archival.
+                </span>
+              </span>
+            </label>
           </details>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -1103,7 +1128,7 @@ export function ArchitectureDiagramReviewerForm({
               {status === "running" ? "Reviewing..." : "Run Review"}
             </Button>
             <p className="text-xs text-slate-500">
-              Full findings and quote context are delivered by email only. This page stays limited to processing status and any fallback actions.
+              Full findings and quote context are delivered by email only. This page stays limited to processing status and any fallback actions. By default the review uses the ephemeral path and does not request archival.
             </p>
           </div>
         </form>

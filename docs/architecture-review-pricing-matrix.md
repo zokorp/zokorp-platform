@@ -12,8 +12,8 @@ Canonical implementation sources:
 1. The reviewer generates deterministic findings from the uploaded diagram evidence and narrative.
 2. Each finding has a `pointsDeducted` value and a deterministic `fixCostUSD`.
 3. `fixCostUSD` is not a direct invoice line by itself. It is a scope driver used to build the core quote.
-4. The core quote starts from a $249 advisory baseline and then applies score-band caps, confidence adjustments, workload criticality, and engagement-preference rules.
-5. Low-confidence or partner-led requests intentionally stay diagnostic-first rather than pretending a large fixed remediation quote is approved.
+4. The live reviewer path starts from a $249 advisory baseline and then applies deterministic effort-hours, evidence complexity, workload criticality, confidence, and engagement-preference rules.
+5. Low-confidence or broader-scope requests intentionally stay diagnostic-first rather than pretending a large fixed remediation quote is approved.
 
 ## Package-level pricing posture
 
@@ -26,8 +26,9 @@ Canonical implementation sources:
 ## Quote-behavior notes
 
 - `review-call-only` always forces the core quote to `$249`.
-- `ongoing-quarterly-reviews` and `architect-on-call` also keep the core quote at the advisory baseline even when the recommended tier becomes `implementation-partner`.
-- If confidence drops below `0.85`, the core quote falls back to a diagnostic-first price (`$450` by default with the current hourly-rate setting).
+- `ongoing-quarterly-reviews`, `architect-on-call`, and any regulated scope also keep the core quote at the advisory baseline even when the recommended tier becomes `implementation-partner`.
+- If confidence drops below `0.85`, the core quote falls back to the diagnostic-first advisory price of `$249`.
+- Score-band caps now exist only in the legacy no-context helper path; the normal reviewer flow does not rely on them for customer-facing quote output.
 - Optional findings stay at `0` points and `$0` fix effort.
 - `INPUT-NOT-ARCH-DIAGRAM` is a rejection path. It does not produce a customer quote.
 

@@ -658,6 +658,8 @@ export default async function SoftwareDetailPage({
           authRuntimeReady={authRuntimeReady}
           signedIn={signedIn}
           currentEmail={currentEmail}
+          sampleHref="/software/architecture-diagram-reviewer/sample-report"
+          sampleLabel="View sample report"
         >
           <ArchitectureDiagramReviewerForm />
         </FreeToolAccessGate>

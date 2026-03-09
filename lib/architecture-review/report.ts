@@ -134,6 +134,7 @@ export function buildArchitectureReviewReport(input: {
       overallScore,
       desiredEngagement: input.quoteContext?.desiredEngagement,
       analysisConfidence,
+      regulatoryScope: input.quoteContext?.regulatoryScope,
     });
   const consultationQuoteUSD = calculateConsultationQuoteUSD(findings, overallScore, input.quoteContext);
 

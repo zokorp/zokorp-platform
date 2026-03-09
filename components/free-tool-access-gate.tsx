@@ -11,6 +11,8 @@ type FreeToolAccessGateProps = {
   authRuntimeReady: boolean;
   signedIn: boolean;
   currentEmail?: string | null;
+  sampleHref?: string;
+  sampleLabel?: string;
   children: ReactNode;
 };
 
@@ -20,6 +22,8 @@ export function FreeToolAccessGate({
   authRuntimeReady,
   signedIn,
   currentEmail,
+  sampleHref,
+  sampleLabel = "View sample output",
   children,
 }: FreeToolAccessGateProps) {
   if (!authRuntimeReady) {
@@ -37,6 +41,13 @@ export function FreeToolAccessGate({
             </AlertDescription>
           </Alert>
         </CardContent>
+        {sampleHref ? (
+          <CardFooter>
+            <Link href={sampleHref} className={buttonVariants({ variant: "secondary" })}>
+              {sampleLabel}
+            </Link>
+          </CardFooter>
+        ) : null}
       </Card>
     );
   }
@@ -55,6 +66,11 @@ export function FreeToolAccessGate({
               ZoKorp sends free diagnostic output only to the signed-in verified business-email account that owns the run. This prevents advisory results from being delivered to an unverified inbox and keeps account history tied to one owner.
             </AlertDescription>
           </Alert>
+          {sampleHref ? (
+            <p className="text-sm leading-6 text-slate-600">
+              You can still review a sample report without signing in before you decide to run your own upload.
+            </p>
+          ) : null}
         </CardContent>
         <CardFooter>
           <Link href={`/login?callbackUrl=${encodeURIComponent(callbackPath)}`} className={buttonVariants()}>
@@ -63,6 +79,11 @@ export function FreeToolAccessGate({
           <Link href={`/register?callbackUrl=${encodeURIComponent(callbackPath)}`} className={buttonVariants({ variant: "secondary" })}>
             Create verified account
           </Link>
+          {sampleHref ? (
+            <Link href={sampleHref} className={buttonVariants({ variant: "secondary" })}>
+              {sampleLabel}
+            </Link>
+          ) : null}
         </CardFooter>
       </Card>
     );

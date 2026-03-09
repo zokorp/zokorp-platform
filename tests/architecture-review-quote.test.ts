@@ -56,7 +56,7 @@ describe("architecture quote calculator", () => {
     expect(score).toBe(63);
   });
 
-  it("uses deterministic diagnostic pricing in low-confidence contexts", () => {
+  it("keeps low-confidence reviews at the advisory baseline", () => {
     const findings = [
       {
         ruleId: "MSFT-COMPONENT-LABEL-COVERAGE",
@@ -96,7 +96,7 @@ describe("architecture quote calculator", () => {
       desiredEngagement: "hands-on-remediation",
     });
 
-    expect(quote).toBe(450);
+    expect(quote).toBe(249);
   });
 
   it("returns review-call quote when review-call-only engagement is selected", () => {
@@ -162,5 +162,38 @@ describe("architecture quote calculator", () => {
 
     expect(confidence).toBe("medium");
     expect(quoteTier).toBe("remediation-sprint");
+  });
+
+  it("forces regulated scopes into custom-after-call pricing", () => {
+    const findings = [
+      {
+        ruleId: "SEC-BASELINE-MISSING",
+        category: "security" as const,
+        pointsDeducted: 8,
+        message: "Map the architecture to the required control baseline.",
+        fix: "Document the compliance controls and their placement in the request path.",
+        evidence: "Regulated scope is present without explicit control mapping.",
+        fixCostUSD: 205,
+      },
+    ];
+
+    const score = calculateOverallScore(findings);
+    const quote = calculateConsultationQuoteUSD(findings, score, {
+      tokenCount: 24,
+      ocrCharacterCount: 720,
+      mode: "rules-only",
+      workloadCriticality: "standard",
+      desiredEngagement: "hands-on-remediation",
+      regulatoryScope: "soc2",
+    });
+    const quoteTier = determineQuoteTier({
+      overallScore: score,
+      desiredEngagement: "hands-on-remediation",
+      analysisConfidence: "high",
+      regulatoryScope: "soc2",
+    });
+
+    expect(quote).toBe(249);
+    expect(quoteTier).toBe("implementation-partner");
   });
 });

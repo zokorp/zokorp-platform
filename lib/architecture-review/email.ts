@@ -68,35 +68,116 @@ type EngagementPackage = {
   recommended: boolean;
 };
 
+type EngagementGuidance = {
+  mode: "standard" | "diagnostic-only" | "custom-after-call";
+  noteTitle: string;
+  noteBody: string;
+  quoteBasisHtml: string;
+  quoteBasisLines: string[];
+  secondaryCtaLabel: string;
+};
+
 type EmailCtaLinks = {
   bookArchitectureCallUrl: string;
   requestRemediationPlanUrl: string;
 };
 
-function buildEngagementPackages(report: ArchitectureReviewReport): EngagementPackage[] {
+function buildEngagementGuidance(report: ArchitectureReviewReport): EngagementGuidance {
+  if (report.analysisConfidence === "low") {
+    return {
+      mode: "diagnostic-only",
+      noteTitle: "This review stays diagnostic-first",
+      noteBody:
+        "The current evidence bundle is too ambiguous to pre-approve a remediation sprint. Start with the fixed advisory review, then scope any delivery work only after the live call confirms the findings.",
+      quoteBasisHtml:
+        "Quote method: the advisory review stays fixed at $249. Low-confidence reviews do not auto-approve a remediation package from the free submission alone.",
+      quoteBasisLines: [
+        "- The advisory review stays fixed at $249.",
+        "- Low-confidence reviews do not auto-approve remediation scope from the free submission alone.",
+        "- serviceLine values identify the consulting work implied by each finding.",
+      ],
+      secondaryCtaLabel: "Request scoped follow-up",
+    };
+  }
+
+  if (report.quoteTier === "implementation-partner") {
+    return {
+      mode: "custom-after-call",
+      noteTitle: "This moves to custom scope",
+      noteBody:
+        "This review points to broader delivery work, higher scoping risk, or constraints that should not be auto-quoted from a free upload. The next step is the fixed advisory review, followed by a custom proposal if the work is a fit.",
+      quoteBasisHtml:
+        "Quote method: the advisory review stays fixed at $249. Broader or riskier delivery paths move to custom scoping after the advisory call instead of pretending the free review produced a final implementation quote.",
+      quoteBasisLines: [
+        "- The advisory review stays fixed at $249.",
+        "- Broader or riskier delivery paths move to custom scoping after the advisory call.",
+        "- serviceLine values identify the consulting work implied by each finding.",
+      ],
+      secondaryCtaLabel: "Request scoped engagement",
+    };
+  }
+
+  return {
+    mode: "standard",
+    noteTitle: "How the next step is chosen",
+    noteBody:
+      "The core quote is built from deterministic finding-based scope drivers. Remediation Sprint remains a bounded micro-sprint, not an open-ended implementation commitment.",
+    quoteBasisHtml:
+      "Quote method: $249 advisory baseline plus deterministic finding-based scope drivers, then workload criticality and evidence confidence shape the bounded core quote. Top-finding fix estimates are scope drivers, not separate invoice lines.",
+    quoteBasisLines: [
+      "- $249 advisory baseline + deterministic per-finding scope drivers.",
+      "- Workload criticality and evidence confidence shape the bounded core quote.",
+      "- serviceLine values identify the consulting work implied by each finding.",
+    ],
+    secondaryCtaLabel: "Request remediation plan",
+  };
+}
+
+function buildEngagementPackages(
+  report: ArchitectureReviewReport,
+  guidance: EngagementGuidance,
+): EngagementPackage[] {
   const remediationLow = roundToNearest(clamp(Math.round(report.consultationQuoteUSD * 0.9), 650, 2200), 25);
   const remediationHigh = roundToNearest(clamp(Math.round(report.consultationQuoteUSD * 1.2), 850, 2800), 25);
+  const advisorySummary =
+    guidance.mode === "diagnostic-only"
+      ? "Required first step to validate the findings, sequence fixes, and decide whether any paid delivery scope is safe to quote."
+      : guidance.mode === "custom-after-call"
+        ? "Required scoping call to confirm constraints, stakeholders, and the first safe delivery milestone."
+        : "Working session to prioritize findings, sequence fixes, and assign clear ownership.";
+  const remediationSummary =
+    guidance.mode === "diagnostic-only"
+      ? "Held until the advisory review confirms the findings and defines a bounded micro-sprint."
+      : guidance.mode === "custom-after-call"
+        ? "Used only if the advisory call narrows the work into a hard-capped remediation sprint."
+        : "Hard-capped fix package for the highest-impact deductions with updated architecture artifacts.";
+  const implementationSummary =
+    guidance.mode === "diagnostic-only"
+      ? "Not quoted from the free report alone. Only discussed if the diagnostic call shows a broader redesign is justified."
+      : guidance.mode === "custom-after-call"
+        ? "Custom scoped redesign and execution support after the advisory call confirms scope, ownership, and rollout constraints."
+        : "End-to-end redesign and execution support with governance and rollout milestones.";
 
   return [
     {
       name: "Advisory Review",
       timeline: "45 min",
       priceLabel: toUsd(249),
-      summary: "Working session to prioritize findings, sequence fixes, and assign clear ownership.",
+      summary: advisorySummary,
       recommended: report.quoteTier === "advisory-review",
     },
     {
       name: "Remediation Sprint",
       timeline: "1-3 weeks",
       priceLabel: `${toUsd(remediationLow)} - ${toUsd(remediationHigh)}`,
-      summary: "Hands-on fix package for highest-impact deductions with updated architecture artifacts.",
+      summary: remediationSummary,
       recommended: report.quoteTier === "remediation-sprint",
     },
     {
       name: "Implementation Partner",
       timeline: "3-8+ weeks",
       priceLabel: "Custom",
-      summary: "End-to-end redesign and execution support with governance and rollout milestones.",
+      summary: implementationSummary,
       recommended: report.quoteTier === "implementation-partner",
     },
   ];
@@ -138,7 +219,8 @@ function buildHtmlEmail(report: ArchitectureReviewReport, ctaLinks: EmailCtaLink
   const mandatoryFindings = report.findings.filter((finding) => finding.pointsDeducted > 0);
   const topDeductions = mandatoryFindings.slice(0, 5);
   const optionalRecommendations = report.findings.filter((finding) => finding.pointsDeducted === 0);
-  const packages = buildEngagementPackages(report);
+  const guidance = buildEngagementGuidance(report);
+  const packages = buildEngagementPackages(report, guidance);
   const generatedAt = new Date(report.generatedAtISO).toLocaleString("en-US", {
     year: "numeric",
     month: "short",
@@ -300,8 +382,17 @@ function buildHtmlEmail(report: ArchitectureReviewReport, ctaLinks: EmailCtaLink
 
                 <div style="margin-top:18px;display:flex;flex-wrap:wrap;gap:10px;">
                   <a href="${escapeHtml(ctaLinks.bookArchitectureCallUrl)}" style="display:inline-block;border-radius:8px;background:#0f172a;color:#ffffff;padding:10px 14px;font-size:13px;font-weight:700;text-decoration:none;">Book architecture call</a>
-                  <a href="${escapeHtml(ctaLinks.requestRemediationPlanUrl)}" style="display:inline-block;border-radius:8px;border:1px solid #cbd5e1;color:#0f172a;background:#ffffff;padding:10px 14px;font-size:13px;font-weight:700;text-decoration:none;">Request remediation plan</a>
+                  <a href="${escapeHtml(ctaLinks.requestRemediationPlanUrl)}" style="display:inline-block;border-radius:8px;border:1px solid #cbd5e1;color:#0f172a;background:#ffffff;padding:10px 14px;font-size:13px;font-weight:700;text-decoration:none;">${escapeHtml(guidance.secondaryCtaLabel)}</a>
                 </div>
+
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;border:1px solid #dbe3ef;border-radius:10px;background:#f8fafc;">
+                  <tr>
+                    <td style="padding:14px;">
+                      <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">${escapeHtml(guidance.noteTitle)}</div>
+                      <div style="margin-top:8px;line-height:1.5;font-size:14px;color:#0f172a;">${escapeHtml(guidance.noteBody)}</div>
+                    </td>
+                  </tr>
+                </table>
 
                 <div style="margin-top:22px;font-size:18px;font-weight:700;color:#0f172a;">Top Deductions</div>
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;border-collapse:collapse;border:1px solid #dbe3ef;border-radius:10px;overflow:hidden;">
@@ -317,7 +408,7 @@ function buildHtmlEmail(report: ArchitectureReviewReport, ctaLinks: EmailCtaLink
                   ${packageHtmlRows}
                 </table>
                 <div style="margin-top:6px;font-size:12px;color:#64748b;line-height:1.45;">
-                  Quote method: $249 advisory baseline plus deterministic finding-based scope drivers, then confidence and score-band controls are applied. Top-finding fix estimates are scope drivers, not separate invoice lines.
+                  ${escapeHtml(guidance.quoteBasisHtml)}
                 </div>
 
                 <div style="margin-top:22px;font-size:18px;font-weight:700;color:#0f172a;">Optional Recommendations</div>
@@ -344,7 +435,8 @@ export function buildArchitectureReviewEmailContent(
   const mandatoryFindings = report.findings.filter((finding) => finding.pointsDeducted > 0);
   const topDeductions = mandatoryFindings.slice(0, 5);
   const optionalRecommendations = report.findings.filter((finding) => finding.pointsDeducted === 0);
-  const engagementPackages = buildEngagementPackages(report);
+  const guidance = buildEngagementGuidance(report);
+  const engagementPackages = buildEngagementPackages(report, guidance);
   const defaults = resolveDefaultCtaLinks();
   const ctaLinks: EmailCtaLinks = {
     bookArchitectureCallUrl: options?.ctaLinks?.bookArchitectureCallUrl ?? defaults.bookArchitectureCallUrl,
@@ -379,14 +471,15 @@ export function buildArchitectureReviewEmailContent(
         `${index + 1}. ${pkg.name} | ${pkg.timeline} | ${pkg.priceLabel} | ${pkg.summary}${pkg.recommended ? " | RECOMMENDED" : ""}`,
     ),
     "",
+    "Next-step policy:",
+    `- ${guidance.noteTitle}: ${guidance.noteBody}`,
+    "",
     "Primary CTAs:",
     `- Book architecture call: ${ctaLinks.bookArchitectureCallUrl}`,
-    `- Request remediation plan: ${ctaLinks.requestRemediationPlanUrl}`,
+    `- ${guidance.secondaryCtaLabel}: ${ctaLinks.requestRemediationPlanUrl}`,
     "",
     "Quote basis:",
-    "- $249 advisory baseline + deterministic per-finding scope drivers.",
-    "- Confidence and score-band caps can reduce the core quote below the raw sum of all fix estimates.",
-    "- serviceLine values identify the consulting work implied by each finding.",
+    ...guidance.quoteBasisLines,
   ];
 
   const subject = `[ZoKorp] ${providerLabel(report.provider)} architecture review score ${report.overallScore}/100`;

@@ -37,6 +37,10 @@ describe("ArchitectureDiagramReviewerForm", () => {
     expect(screen.getByRole("link", { name: /review benchmark patterns/i }).getAttribute("href")).toBe(
       "/software/architecture-diagram-reviewer/benchmarks",
     );
+    expect(screen.getByRole("link", { name: /view sample report/i }).getAttribute("href")).toBe(
+      "/software/architecture-diagram-reviewer/sample-report",
+    );
+    expect(screen.getByText(/allow archival for follow-up/i)).toBeTruthy();
 
     const fileInput = screen.getByLabelText(/diagram file/i);
     const descriptionInput = screen.getByLabelText(/architecture description/i);
@@ -258,6 +262,64 @@ describe("ArchitectureDiagramReviewerForm", () => {
     const metadata = JSON.parse(String(metadataRaw)) as Record<string, unknown>;
     expect(metadata.clientSvgText).toBe("edge -> api -> database");
     expect(metadata.clientSvgDimensions).toEqual({ width: 1440, height: 900 });
+    expect(metadata.archiveForFollowup).toBe(false);
+  });
+
+  it("submits opt-in archival metadata when follow-up archival is explicitly requested", async () => {
+    vi.spyOn(architectureReviewClient, "isStrictDiagramFile").mockResolvedValue({
+      ok: true,
+      format: "svg",
+      mimeType: "image/svg+xml",
+    });
+    vi.spyOn(architectureReviewClient, "extractSvgEvidence").mockResolvedValue({
+      text: "edge -> api -> queue",
+      dimensions: { width: 1280, height: 720 },
+    });
+
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        status: "sent",
+      }),
+    });
+
+    render(<ArchitectureDiagramReviewerForm />);
+
+    const svgMarkup = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720"><text>edge</text></svg>';
+    const svgFile = new File([svgMarkup], "diagram.svg", { type: "image/svg+xml" });
+
+    const fileInput = screen.getByLabelText(/diagram file/i);
+    const submitButton = screen.getByRole("button", { name: /run review/i });
+    const form = submitButton.closest("form");
+
+    Object.defineProperty(fileInput, "files", {
+      value: [svgFile],
+      writable: false,
+    });
+    fireEvent.change(fileInput);
+
+    fireEvent.change(screen.getByLabelText(/architecture description/i), {
+      target: { value: "Users enter through the edge, requests move to the API, and queue-backed workers process the workload." },
+    });
+
+    fireEvent.click(screen.getByRole("checkbox"));
+
+    if (!form) {
+      throw new Error("Expected form element.");
+    }
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    const requestInit = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const formData = requestInit.body as FormData;
+    const metadataRaw = formData.get("metadata");
+    expect(typeof metadataRaw).toBe("string");
+    const metadata = JSON.parse(String(metadataRaw)) as Record<string, unknown>;
+    expect(metadata.archiveForFollowup).toBe(true);
   });
 
   it("shows browser OCR progress before PNG submission is sent", async () => {

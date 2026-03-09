@@ -4,6 +4,7 @@ import type {
   ArchitectureEngagementPreference,
   ArchitectureFinding,
   ArchitectureFindingDraft,
+  ArchitectureRegulatoryScope,
   ArchitectureQuoteTier,
   ArchitectureWorkloadCriticality,
 } from "@/lib/architecture-review/types";
@@ -47,6 +48,7 @@ export type ArchitectureQuoteContext = {
   ocrCharacterCount?: number;
   mode?: "rules-only" | "webllm";
   workloadCriticality?: ArchitectureWorkloadCriticality;
+  regulatoryScope?: ArchitectureRegulatoryScope;
   desiredEngagement?: ArchitectureEngagementPreference;
 };
 
@@ -98,6 +100,21 @@ function criticalityMultiplier(level: ArchitectureWorkloadCriticality | undefine
   }
 }
 
+function requiresCustomScope(context: ArchitectureQuoteContext | undefined) {
+  if (!context) {
+    return false;
+  }
+
+  if (context.regulatoryScope && context.regulatoryScope !== "none") {
+    return true;
+  }
+
+  return (
+    context.desiredEngagement === "ongoing-quarterly-reviews" ||
+    context.desiredEngagement === "architect-on-call"
+  );
+}
+
 function hasHighFalsePositiveRiskFinding(finding: ArchitectureFinding) {
   if (HIGH_FALSE_POSITIVE_RULE_IDS.has(finding.ruleId)) {
     return true;
@@ -146,6 +163,7 @@ export function determineQuoteTier(
     overallScore: number;
     desiredEngagement?: ArchitectureEngagementPreference;
     analysisConfidence?: ArchitectureAnalysisConfidence;
+    regulatoryScope?: ArchitectureRegulatoryScope;
   },
 ): ArchitectureQuoteTier {
   if (input.desiredEngagement === "review-call-only") {
@@ -154,7 +172,8 @@ export function determineQuoteTier(
 
   if (
     input.desiredEngagement === "ongoing-quarterly-reviews" ||
-    input.desiredEngagement === "architect-on-call"
+    input.desiredEngagement === "architect-on-call" ||
+    (input.regulatoryScope && input.regulatoryScope !== "none")
   ) {
     return "implementation-partner";
   }
@@ -246,17 +265,13 @@ export function calculateConsultationQuoteUSD(
   overallScore: number,
   context?: ArchitectureQuoteContext,
 ) {
-  const capByBand = scoreCapByBand(overallScore);
   const positiveFindings = findings.filter((finding) => finding.pointsDeducted > 0);
 
   if (context?.desiredEngagement === "review-call-only") {
     return 249;
   }
 
-  if (
-    context?.desiredEngagement === "ongoing-quarterly-reviews" ||
-    context?.desiredEngagement === "architect-on-call"
-  ) {
+  if (requiresCustomScope(context)) {
     return 249;
   }
 
@@ -265,6 +280,7 @@ export function calculateConsultationQuoteUSD(
   }
 
   if (!context) {
+    const capByBand = scoreCapByBand(overallScore);
     const repairTotal = findings.reduce((total, finding) => {
       if (finding.pointsDeducted <= 0) {
         return total;
@@ -290,13 +306,12 @@ export function calculateConsultationQuoteUSD(
   const estimatedRemediationUsd = baseHours * rate * complexity * criticality * confidence;
 
   if (confidence < 0.85) {
-    const diagnosticQuote = Math.max(249, roundToNearest(rate * 2, 25));
-    return Math.min(capByBand, diagnosticQuote);
+    return 249;
   }
 
   const baseline = roundToNearest(249 + estimatedRemediationUsd, 25);
   const withMinimum = Math.max(499, baseline);
-  return Math.min(capByBand, withMinimum);
+  return withMinimum;
 }
 
 export function categoryDeductionCaps() {

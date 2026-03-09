@@ -63,6 +63,7 @@ describe("architecture review schema", () => {
       paragraphInput:
         "Users call an edge endpoint, traffic routes to app services, and data persists to managed storage.",
       diagramFormat: "png",
+      archiveForFollowup: false,
       title: "Production architecture",
       owner: "Platform Team",
       lastUpdated: "2026-03-07",

@@ -589,6 +589,7 @@ export async function processArchitectureReviewJob(jobId: string): Promise<Archi
         ocrCharacterCount: ocrText.length,
         mode: "rules-only",
         workloadCriticality: metadata.workloadCriticality,
+        regulatoryScope: metadata.regulatoryScope,
         desiredEngagement: metadata.desiredEngagement,
       },
       analysisConfidenceOverride:
@@ -657,7 +658,7 @@ export async function processArchitectureReviewJob(jobId: string): Promise<Archi
               submissionContext,
             }),
             leadStage: "New Review",
-            workdriveUploadStatus: "pending",
+            workdriveUploadStatus: metadata.archiveForFollowup ? "pending" : "not_requested",
             emailDeliveryMode: "pending",
             zohoSyncNeedsUpdate: true,
           },
@@ -680,14 +681,21 @@ export async function processArchitectureReviewJob(jobId: string): Promise<Archi
       }
     }
 
-    const archiveResult = await archiveArchitectureReviewToWorkDrive({
-      diagramFileName: job.diagramFileName,
-      diagramBytes,
-      diagramMimeType: isPng ? "image/png" : "image/svg+xml",
-      report,
-      userName,
-      paragraphInput: metadata.paragraphInput,
-    });
+    const archiveResult = metadata.archiveForFollowup
+      ? await archiveArchitectureReviewToWorkDrive({
+          diagramFileName: job.diagramFileName,
+          diagramBytes,
+          diagramMimeType: isPng ? "image/png" : "image/svg+xml",
+          report,
+          userName,
+          paragraphInput: metadata.paragraphInput,
+        })
+      : {
+          status: "not_requested",
+          diagramFileId: null,
+          reportFileId: null,
+          error: null,
+        };
 
     const workdriveStatus = archiveResult.error ? `${archiveResult.status}:${archiveResult.error}` : archiveResult.status;
 

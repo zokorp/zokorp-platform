@@ -105,6 +105,7 @@ const architectureSvgDimensionsSchema = z.object({
 
 export const architectureReviewMetadataSchema = z.object({
   diagramFormat: architectureDiagramFormatSchema.optional(),
+  archiveForFollowup: z.boolean().optional(),
   title: z.string().trim().max(160).optional(),
   owner: z.string().trim().max(160).optional(),
   lastUpdated: z.string().trim().max(60).optional(),
