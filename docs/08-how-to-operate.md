@@ -172,9 +172,16 @@
   - run manually with `workflow_dispatch` from the `main` branch only
 - GitHub environment:
   - `production`
-- Required secret in that environment:
+- Preferred secret in that environment:
+  - `PRODUCTION_DIRECT_DATABASE_URL`
+- Fallback secret:
   - `PRODUCTION_DATABASE_URL`
+- Secret format requirement:
+  - must be a full Postgres connection string beginning with `postgres://` or `postgresql://`
+  - for Supabase, prefer the direct connection string for migrations when both direct and pooled URLs are available
 - What the workflow does:
+  - resolves `PRODUCTION_DIRECT_DATABASE_URL` first, then falls back to `PRODUCTION_DATABASE_URL`
+  - validates the URL format before Prisma runs
   - checks out `main`
   - runs `npm ci`
   - runs `npm run prisma:migrate:deploy`
