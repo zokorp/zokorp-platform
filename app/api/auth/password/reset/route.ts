@@ -1,12 +1,11 @@
-import { Role } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { expectedAdminRole } from "@/lib/admin-access";
 import { isPasswordAuthEnabled } from "@/lib/auth-config";
 import { db } from "@/lib/db";
 import { hashPassword, hashOpaqueToken, validatePasswordStrength } from "@/lib/password-auth";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
-import { parseAdminEmails } from "@/lib/security";
 import { ensureUserAuthSchemaReady } from "@/lib/user-auth-schema";
 
 const resetSchema = z.object({
@@ -86,8 +85,6 @@ export async function POST(request: Request) {
     const now = new Date();
     const normalizedEmail = userAuth.user.email?.trim().toLowerCase() ?? null;
     const shouldAutoVerify = Boolean(normalizedEmail && !userAuth.user.emailVerified);
-    const shouldPromoteToAdmin =
-      Boolean(normalizedEmail) && parseAdminEmails(process.env.ZOKORP_ADMIN_EMAILS).has(normalizedEmail!);
     const verificationIdentifier = normalizedEmail ? `verify-email:${normalizedEmail}` : null;
 
     await db.$transaction(async (tx) => {
@@ -108,7 +105,10 @@ export async function POST(request: Request) {
           where: { id: userAuth.userId },
           data: {
             emailVerified: now,
-            ...(shouldPromoteToAdmin ? { role: Role.ADMIN } : {}),
+            role: expectedAdminRole({
+              email: normalizedEmail,
+              emailVerified: now,
+            }),
           },
         });
       }

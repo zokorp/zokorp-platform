@@ -65,7 +65,7 @@ export async function POST(request: Request) {
 
     const creditTier = validatorTierForProfile(parsedForm.data.validationProfile);
 
-    await requireEntitlement({
+    const entitlementAccess = await requireEntitlement({
       userId: user.id,
       productSlug: "zokorp-validator",
       minUses: 1,
@@ -190,6 +190,7 @@ export async function POST(request: Request) {
           rulepackId: result.report.rulepack.id,
           redactions: result.meta?.redactions ?? null,
           controlCalibrationTotal: result.report.controlCalibration?.totalControls ?? null,
+          adminBypass: entitlementAccess.adminBypass,
         },
       },
     });
@@ -202,6 +203,7 @@ export async function POST(request: Request) {
       reviewedWorkbookFileName: result.reviewedWorkbookFileName,
       reviewedWorkbookMimeType: result.reviewedWorkbookMimeType,
       remainingUses: remainingUsesForProfile,
+      adminBypass: entitlementAccess.adminBypass,
     });
   } catch (error) {
     if (error instanceof Error) {

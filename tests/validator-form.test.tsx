@@ -203,4 +203,60 @@ describe("ValidatorForm", () => {
       expect(screen.getByText(/RAW VALIDATOR OUTPUT/i)).toBeTruthy();
     });
   });
+
+  it("allows an admin test run with zero purchased credits", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        output: "",
+        adminBypass: true,
+      }),
+    });
+
+    render(
+      <ValidatorForm
+        adminBypass
+        validationTargets={[
+          {
+            id: "target-1",
+            profile: "FTR",
+            track: "ftr",
+            sourceRow: 1,
+            label: "AWS FTR Checklist",
+          },
+        ]}
+        profileCredits={{ FTR: 0, SDP: 0, SRP: 0, COMPETENCY: 0 }}
+      />,
+    );
+
+    expect(screen.getByText(/admin test bypass active/i)).toBeTruthy();
+    expect(screen.queryByText(/no credits available/i)).toBeNull();
+
+    const fileInput = screen.getByLabelText(/upload checklist/i);
+    const file = new File(["sample"], "checklist.xlsx", {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
+    Object.defineProperty(fileInput, "files", {
+      value: [file],
+      writable: false,
+    });
+    fireEvent.change(fileInput);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /process file/i }).hasAttribute("disabled")).toBe(false);
+    });
+
+    const form = screen.getByRole("button", { name: /process file/i }).closest("form");
+    if (!form) {
+      throw new Error("Expected validator form.");
+    }
+
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+  });
 });

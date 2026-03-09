@@ -27,6 +27,7 @@ type ValidatorResponse = {
   reviewedWorkbookFileName?: string;
   reviewedWorkbookMimeType?: string;
   remainingUses?: number;
+  adminBypass?: boolean;
   error?: string;
 };
 
@@ -35,6 +36,7 @@ type ValidatorFormProps = {
   authUnavailable?: boolean;
   validationTargets?: ValidationTargetOption[];
   profileCredits?: Record<ValidationProfile, number>;
+  adminBypass?: boolean;
 };
 
 const profileOptions: Array<{
@@ -80,6 +82,7 @@ export function ValidatorForm({
   authUnavailable = false,
   validationTargets = [],
   profileCredits = { FTR: 0, SDP: 0, SRP: 0, COMPETENCY: 0 },
+  adminBypass = false,
 }: ValidatorFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<ValidatorResponse | null>(null);
@@ -104,6 +107,7 @@ export function ValidatorForm({
   }, [validationTargets]);
 
   const activeTargets = targetsByProfile[selectedProfile];
+  const adminModeActive = adminBypass || result?.adminBypass === true;
 
   const filteredTargets = useMemo(() => {
     if (!targetSearch.trim()) {
@@ -131,12 +135,12 @@ export function ValidatorForm({
 
   const selectedProfileCredits = profileCredits[selectedProfile] ?? 0;
   const submitDisabledReason =
-    selectedProfileCredits > 0
+    adminModeActive || selectedProfileCredits > 0
       ? undefined
       : "No credits available for this review type. Purchase that tier, then retry.";
 
   const canSubmitNow =
-    selectedProfileCredits > 0 &&
+    (adminModeActive || selectedProfileCredits > 0) &&
     Boolean(selectedTargetId) &&
     filteredTargets.length > 0 &&
     Boolean(selectedFileName) &&
@@ -145,7 +149,7 @@ export function ValidatorForm({
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (selectedProfileCredits <= 0) {
+    if (!adminModeActive && selectedProfileCredits <= 0) {
       setResult({
         output: "",
         error: submitDisabledReason ?? "Purchase a credit first, then run the validator.",
@@ -177,7 +181,12 @@ export function ValidatorForm({
       }
 
       if (!response.ok && response.status === 402) {
-        setResult({ output: "", error: "Purchase a credit first, then run the validator." });
+        setResult({
+          output: "",
+          error: adminModeActive
+            ? "Admin testing override is not active on the server yet."
+            : "Purchase a credit first, then run the validator.",
+        });
         return;
       }
 
@@ -286,7 +295,9 @@ export function ValidatorForm({
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary">Selected credits: {selectedProfileCredits}</Badge>
+              <Badge variant={adminModeActive ? "success" : "secondary"}>
+                {adminModeActive ? "Admin test bypass active" : `Selected credits: ${selectedProfileCredits}`}
+              </Badge>
               <Badge variant="outline">FTR {profileCredits.FTR}</Badge>
               <Badge variant="outline">SDP {profileCredits.SDP}</Badge>
               <Badge variant="outline">SRP {profileCredits.SRP}</Badge>
@@ -295,7 +306,9 @@ export function ValidatorForm({
           </div>
           <p className="text-xs leading-5 text-slate-500">
             Sensitive values like emails, phone numbers, and long account-like numbers are redacted before scoring output.
-            Each run uses 1 credit from the selected profile wallet.
+            {adminModeActive
+              ? " Admin test mode is active for this allowlisted verified account, so live runs do not consume credits."
+              : " Each run uses 1 credit from the selected profile wallet."}
           </p>
         </CardHeader>
 
@@ -430,7 +443,16 @@ export function ValidatorForm({
               </label>
             </div>
 
-            {selectedProfileCredits <= 0 ? (
+            {adminModeActive ? (
+              <Alert tone="info">
+                <AlertTitle>Admin testing override active</AlertTitle>
+                <AlertDescription>
+                  This allowlisted verified admin account can run the validator in live mode without purchasing or consuming credits.
+                </AlertDescription>
+              </Alert>
+            ) : null}
+
+            {selectedProfileCredits <= 0 && !adminModeActive ? (
               <Alert tone="warning">
                 <AlertTitle>No credits available</AlertTitle>
                 <AlertDescription>
@@ -478,6 +500,7 @@ export function ValidatorForm({
 
               <div className="flex flex-wrap gap-2">
                 <Badge variant="brand">Score {report.score}%</Badge>
+                {result?.adminBypass ? <Badge variant="info">Admin test run</Badge> : null}
                 {typeof remainingUses === "number" ? (
                   <Badge variant="secondary">Remaining uses: {remainingUses}</Badge>
                 ) : null}

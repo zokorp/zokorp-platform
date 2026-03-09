@@ -157,6 +157,7 @@ These values are needed only when CRM sync and WorkDrive archival are enabled.
 - `ZOKORP_ADMIN_EMAILS`
   - Secret: no.
   - Purpose: comma-separated admin email allowlist.
+  - Behavior: only verified allowlisted accounts receive admin workspace access; the same allowlist is also the source of truth for any explicit admin testing overrides on paid tools.
 - `SMOKE_BASE_URL`
   - Secret: no.
   - Purpose: override target for route smoke checks.
