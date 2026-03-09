@@ -35,9 +35,11 @@ describe("architecture review email content", () => {
     expect(content.subject).toContain("score");
     expect(content.text).toContain("Engagement options:");
     expect(content.text).toContain("Quote basis:");
+    expect(content.text).toContain("serviceLine=Security control mapping");
     expect(content.html).toContain("Engagement Options");
     expect(content.html).toContain("Advisory Review");
     expect(content.html).toContain("Implementation Partner");
+    expect(content.html).toContain("Service line: Security control mapping");
     expect(content.html).toContain("Top Deductions");
   });
 });

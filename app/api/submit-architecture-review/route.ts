@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 
-import { requireUser } from "@/lib/auth";
 import {
   createArchitectureReviewJob,
   processArchitectureReviewJob,
@@ -11,6 +10,7 @@ import { isSafeSvgBytes } from "@/lib/architecture-review/server";
 import { submitArchitectureReviewMetadataSchema } from "@/lib/architecture-review/types";
 import { db } from "@/lib/db";
 import { isSchemaDriftError } from "@/lib/db-errors";
+import { isFreeToolAccessError, requireVerifiedFreeToolAccess } from "@/lib/free-tool-access";
 import { normalizeIdempotencyKey, readIdempotencyEntry, writeIdempotencyEntry } from "@/lib/idempotency-cache";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { maxUploadBytes } from "@/lib/security";
@@ -172,10 +172,11 @@ export async function POST(request: Request) {
   let limiterContext: RateLimitResult | undefined;
 
   try {
-    const user = await requireUser();
-    if (!user.email) {
-      return jsonResponse(requestId, { error: "Account email is required." }, 400);
-    }
+    const access = await requireVerifiedFreeToolAccess({
+      toolName: "Architecture Diagram Reviewer",
+    });
+    const user = access.user;
+    const userEmail = access.email;
 
     const incomingIdempotencyKey = normalizeIdempotencyKey(request.headers.get("x-idempotency-key"));
     const idempotencyCacheKey = incomingIdempotencyKey
@@ -230,7 +231,7 @@ export async function POST(request: Request) {
 
     const createdJob = await createArchitectureReviewJob({
       userId: user.id,
-      userEmail: user.email,
+      userEmail,
       metadata,
       diagramFileName: diagram.filename,
       diagramMimeType: diagram.mimeType,
@@ -254,6 +255,10 @@ export async function POST(request: Request) {
 
     return jsonResponse(requestId, body, 202, limiterContext);
   } catch (error) {
+    if (isFreeToolAccessError(error)) {
+      return jsonResponse(requestId, { error: error.message }, error.status, limiterContext);
+    }
+
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
       return jsonResponse(requestId, { error: "Unauthorized" }, 401, limiterContext);
     }

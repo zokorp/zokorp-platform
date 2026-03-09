@@ -84,29 +84,47 @@ type SpeechWindow = Window & {
 };
 
 const PHASE_LABELS: Record<ArchitectureReviewPhase, string> = {
-  "upload-validate": "Validating upload",
-  "diagram-precheck": "Running diagram precheck",
-  ocr: "Extracting OCR evidence",
-  rules: "Computing deterministic scoring",
-  "llm-refine": "Running local model refinement",
-  "package-email": "Packaging report email",
-  "send-fallback": "Sending email or fallback draft",
+  "upload-validate": "Validating submission",
+  "diagram-precheck": "Checking architecture signals",
+  ocr: "Collecting diagram evidence",
+  rules: "Scoring deterministic findings",
+  "llm-refine": "Finalizing report",
+  "package-email": "Building delivery package",
+  "send-fallback": "Delivering results",
   completed: "Completed",
 };
 
 const PHASE_DESCRIPTIONS: Record<ArchitectureReviewPhase, string> = {
   "upload-validate": "Checking file type, size, and whether the upload looks like architecture content.",
-  "diagram-precheck": "Screening the diagram and narrative for structure before deeper review work starts.",
-  ocr: "Extracting text and component hints from the uploaded diagram.",
+  "diagram-precheck": "Screening the diagram and narrative for obvious non-architecture or low-signal input.",
+  ocr: "Using browser-extracted text and structure signals from the uploaded diagram.",
   rules: "Applying deterministic scoring for reliability, security, and operational readiness.",
-  "llm-refine": "Refining the written output with the local model while keeping the scoring deterministic.",
-  "package-email": "Packaging the report for email delivery.",
+  "llm-refine": "Finalizing the report package. New reviews no longer use a separate local-model phase.",
+  "package-email": "Preparing the email-ready report, quote context, and delivery metadata.",
   "send-fallback": "Attempting delivery and preparing fallback options if email automation fails.",
   completed: "The review package is complete.",
 };
 
 const NON_ARCH_PRECHECK_TERMS = ["tradeline", "credit", "debt", "account number", "loan", "statement", "apr"];
 const ARCH_PRECHECK_TERMS = ["architecture", "service", "api", "gateway", "database", "vpc", "subnet", "ingress"];
+const INPUT_CHECKLIST = [
+  "Directional request or data flow",
+  "Named services, data stores, and trust boundaries",
+  "Security, recovery, or operations notes where they exist",
+  "One paragraph describing how the system works end to end",
+];
+const QUOTE_METHOD_ITEMS = [
+  "$249 advisory baseline for the initial review call",
+  "Each scored finding maps to a deterministic service line and fix-effort driver",
+  "Confidence and score bands bound the core quote before package ranges are shown",
+  "Low-confidence submissions stay diagnostic-first instead of inventing a large delivery scope",
+];
+const DELIVERY_PACKAGE_ITEMS = [
+  "Overall score and analysis-confidence band",
+  "Top deductions, optional recommendations, and service-line context",
+  "Recommended next package: advisory review, remediation sprint, or implementation partner",
+  "Fallback email actions if automated delivery is unavailable",
+];
 
 function trackAnalyticsEvent(name: string, params?: Record<string, string | number>) {
   if (typeof window === "undefined") {
@@ -720,13 +738,132 @@ export function ArchitectureDiagramReviewerForm({
       </div>
 
       <div className="space-y-4 p-5 md:p-6">
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Card tone="muted" className="rounded-2xl border border-slate-200 p-4">
+            <CardHeader className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Best Input</p>
+              <h4 className="font-display text-xl font-semibold text-slate-900">What improves the review</h4>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm leading-6 text-slate-600">
+              <ul className="space-y-2">
+                {INPUT_CHECKLIST.map((item) => (
+                  <li key={item} className="flex gap-2">
+                    <span className="mt-[0.45rem] h-1.5 w-1.5 rounded-full bg-sky-500" aria-hidden="true" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+
+          <Card tone="muted" className="rounded-2xl border border-slate-200 p-4">
+            <CardHeader className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Quote Logic</p>
+              <h4 className="font-display text-xl font-semibold text-slate-900">How pricing is assembled</h4>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm leading-6 text-slate-600">
+              <ul className="space-y-2">
+                {QUOTE_METHOD_ITEMS.map((item) => (
+                  <li key={item} className="flex gap-2">
+                    <span className="mt-[0.45rem] h-1.5 w-1.5 rounded-full bg-sky-500" aria-hidden="true" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+
+          <Card tone="muted" className="rounded-2xl border border-slate-200 p-4">
+            <CardHeader className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Delivery</p>
+              <h4 className="font-display text-xl font-semibold text-slate-900">What the email includes</h4>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm leading-6 text-slate-600">
+              <ul className="space-y-2">
+                {DELIVERY_PACKAGE_ITEMS.map((item) => (
+                  <li key={item} className="flex gap-2">
+                    <span className="mt-[0.45rem] h-1.5 w-1.5 rounded-full bg-sky-500" aria-hidden="true" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/software/architecture-diagram-reviewer/benchmarks"
+                className="inline-flex text-sm font-semibold text-sky-700 transition hover:text-sky-800"
+              >
+                Review benchmark patterns
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+
         <form onSubmit={onSubmit} className="space-y-4">
+          <div className="rounded-xl border border-slate-200 bg-slate-50/85 p-4 md:p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Core Input</p>
+            <p className="mt-2 text-sm text-slate-600">
+              Upload the real diagram first. The sample generator stays available below if you need a quick SVG to test the workflow.
+            </p>
+            <div className="mt-3 grid gap-4 md:grid-cols-2">
+              <label className="space-y-2">
+                <span className={fieldLabelClassName}>Cloud Provider</span>
+                <select
+                  name="provider"
+                  value={provider}
+                  onChange={(event) => setProvider(event.target.value as ArchitectureProvider)}
+                  className={fieldClassName}
+                  required
+                >
+                  <option value="aws">AWS</option>
+                  <option value="azure">Azure</option>
+                  <option value="gcp">GCP</option>
+                </select>
+              </label>
+
+              <label className="space-y-2">
+                <span className={fieldLabelClassName}>Diagram File</span>
+                <input
+                  name="diagram"
+                  type="file"
+                  accept="image/png,image/svg+xml,.png,.svg"
+                  required
+                  onChange={(event) => {
+                    const nextFile = event.target.files?.[0] ?? null;
+                    if (nextFile) {
+                      clearGeneratedDiagramPreview();
+                    }
+                    setSelectedFile(nextFile);
+                  }}
+                  className={fieldClassName}
+                />
+                <p className="text-xs text-slate-500">Only `image/png` and `image/svg+xml` files are accepted.</p>
+                {selectedFile ? (
+                  <p className="text-xs font-medium text-slate-700">Current file: {selectedFile.name}</p>
+                ) : null}
+              </label>
+            </div>
+
+            <label className="mt-4 block space-y-2">
+              <span className={fieldLabelClassName}>Architecture Description (required)</span>
+              <textarea
+                name="description"
+                value={paragraph}
+                onChange={(event) => setParagraph(event.target.value)}
+                minLength={1}
+                maxLength={2000}
+                required
+                placeholder="Describe request/data flow, trust boundaries, and operational expectations in one paragraph."
+                className={`${fieldClassName} min-h-32`}
+              />
+              <p className="text-xs text-slate-500">{paragraph.trim().length}/2000 characters</p>
+            </label>
+          </div>
+
           <div className="rounded-xl border border-slate-200 bg-white p-4 md:p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
               Generate Sample Diagram (Optional)
             </p>
             <p className="mt-2 text-sm text-slate-600">
-              Type or dictate an architecture narrative, then generate a provider-specific SVG that auto-attaches to this form.
+              Type or dictate an architecture narrative, then generate a provider-specific SVG that auto-attaches to this form. Use this for test submissions, not as a substitute for a real production diagram.
             </p>
 
             <label className="mt-3 block space-y-2">
@@ -824,63 +961,6 @@ export function ArchitectureDiagramReviewerForm({
                 {generationError}
               </div>
             ) : null}
-          </div>
-
-          <div className="rounded-xl border border-slate-200 bg-slate-50/85 p-4 md:p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Core Input</p>
-            <div className="mt-3 grid gap-4 md:grid-cols-2">
-              <label className="space-y-2">
-                <span className={fieldLabelClassName}>Cloud Provider</span>
-                <select
-                  name="provider"
-                  value={provider}
-                  onChange={(event) => setProvider(event.target.value as ArchitectureProvider)}
-                  className={fieldClassName}
-                  required
-                >
-                  <option value="aws">AWS</option>
-                  <option value="azure">Azure</option>
-                  <option value="gcp">GCP</option>
-                </select>
-              </label>
-
-              <label className="space-y-2">
-                <span className={fieldLabelClassName}>Diagram File</span>
-                <input
-                  name="diagram"
-                  type="file"
-                  accept="image/png,image/svg+xml,.png,.svg"
-                  required
-                  onChange={(event) => {
-                    const nextFile = event.target.files?.[0] ?? null;
-                    if (nextFile) {
-                      clearGeneratedDiagramPreview();
-                    }
-                    setSelectedFile(nextFile);
-                  }}
-                  className={fieldClassName}
-                />
-                <p className="text-xs text-slate-500">Only `image/png` and `image/svg+xml` files are accepted.</p>
-                {selectedFile ? (
-                  <p className="text-xs font-medium text-slate-700">Current file: {selectedFile.name}</p>
-                ) : null}
-              </label>
-            </div>
-
-            <label className="mt-4 block space-y-2">
-              <span className={fieldLabelClassName}>Architecture Description (required)</span>
-              <textarea
-                name="description"
-                value={paragraph}
-                onChange={(event) => setParagraph(event.target.value)}
-                minLength={1}
-                maxLength={2000}
-                required
-                placeholder="Describe request/data flow, trust boundaries, and operational expectations in one paragraph."
-                className={`${fieldClassName} min-h-32`}
-              />
-              <p className="text-xs text-slate-500">{paragraph.trim().length}/2000 characters</p>
-            </label>
           </div>
 
           <details className="rounded-xl border border-slate-200 bg-white p-4 md:p-5">
@@ -1022,7 +1102,9 @@ export function ArchitectureDiagramReviewerForm({
             >
               {status === "running" ? "Reviewing..." : "Run Review"}
             </Button>
-            <p className="text-xs text-slate-500">Results are delivered by email only and are not shown in this page.</p>
+            <p className="text-xs text-slate-500">
+              Full findings and quote context are delivered by email only. This page stays limited to processing status and any fallback actions.
+            </p>
           </div>
         </form>
 
@@ -1047,7 +1129,7 @@ export function ArchitectureDiagramReviewerForm({
                   tone="info"
                   aria-label={`Architecture review progress ${clampPercent(progressPct)} percent`}
                 />
-                <p className="text-sm text-sky-900">Timeout budget ETA {formatEta(etaSeconds)}</p>
+                <p className="text-sm text-sky-900">Estimated remaining time {formatEta(etaSeconds)}</p>
               </CardContent>
             </Card>
           ) : status === "success" ? (

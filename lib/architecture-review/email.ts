@@ -1,4 +1,5 @@
 import type { ArchitectureQuoteTier, ArchitectureReviewReport } from "@/lib/architecture-review/types";
+import { getArchitectureReviewPricingCatalogEntry } from "@/lib/architecture-review/pricing-catalog";
 import { getSiteUrl } from "@/lib/site";
 
 function providerLabel(provider: ArchitectureReviewReport["provider"]) {
@@ -30,7 +31,8 @@ function quoteTierLabel(quoteTier: ArchitectureQuoteTier) {
 }
 
 function findingLine(index: number, finding: ArchitectureReviewReport["findings"][number]) {
-  return `${index + 1}. pointsDeducted=${finding.pointsDeducted} | message=${finding.message} | fix=${finding.fix} | ruleId=${finding.ruleId} | estFixCost=$${finding.fixCostUSD}`;
+  const serviceLine = getArchitectureReviewPricingCatalogEntry(finding.ruleId)?.serviceLine;
+  return `${index + 1}. pointsDeducted=${finding.pointsDeducted} | message=${finding.message} | fix=${finding.fix} | ruleId=${finding.ruleId}${serviceLine ? ` | serviceLine=${serviceLine}` : ""} | estFixCost=$${finding.fixCostUSD}`;
 }
 
 function toUsd(value: number) {
@@ -153,17 +155,21 @@ function buildHtmlEmail(report: ArchitectureReviewReport, ctaLinks: EmailCtaLink
     topDeductions.length > 0
       ? topDeductions
           .map(
-            (finding, index) => `
+            (finding, index) => {
+              const serviceLine = getArchitectureReviewPricingCatalogEntry(finding.ruleId)?.serviceLine;
+              return `
               <tr>
                 <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;color:#0f172a;font-size:13px;width:44px;">${index + 1}</td>
                 <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;color:#0f172a;font-size:13px;">
                   <div style="font-weight:700;">-${finding.pointsDeducted} points | ${escapeHtml(finding.ruleId)}</div>
                   <div style="margin-top:4px;">${escapeHtml(finding.message)}</div>
                   <div style="margin-top:4px;color:#334155;">Fix: ${escapeHtml(finding.fix)}</div>
+                  ${serviceLine ? `<div style="margin-top:4px;color:#334155;">Service line: ${escapeHtml(serviceLine)}</div>` : ""}
                   <div style="margin-top:4px;color:#64748b;">Estimated fix effort: ${toUsd(finding.fixCostUSD)}</div>
                 </td>
               </tr>
-            `,
+            `;
+            },
           )
           .join("")
       : `<tr><td colspan="2" style="padding:10px 12px;color:#0f172a;font-size:13px;">No mandatory deductions were found.</td></tr>`;
@@ -311,7 +317,7 @@ function buildHtmlEmail(report: ArchitectureReviewReport, ctaLinks: EmailCtaLink
                   ${packageHtmlRows}
                 </table>
                 <div style="margin-top:6px;font-size:12px;color:#64748b;line-height:1.45;">
-                  Quote method: $249 review call + deterministic remediation effort by category, with score-based cap.
+                  Quote method: $249 advisory baseline plus deterministic finding-based scope drivers, then confidence and score-band controls are applied. Top-finding fix estimates are scope drivers, not separate invoice lines.
                 </div>
 
                 <div style="margin-top:22px;font-size:18px;font-weight:700;color:#0f172a;">Optional Recommendations</div>
@@ -378,8 +384,9 @@ export function buildArchitectureReviewEmailContent(
     `- Request remediation plan: ${ctaLinks.requestRemediationPlanUrl}`,
     "",
     "Quote basis:",
-    "- $249 review call + per-finding remediation estimate.",
-    "- Category-specific fix-cost mapping and score-band quote cap are applied deterministically.",
+    "- $249 advisory baseline + deterministic per-finding scope drivers.",
+    "- Confidence and score-band caps can reduce the core quote below the raw sum of all fix estimates.",
+    "- serviceLine values identify the consulting work implied by each finding.",
   ];
 
   const subject = `[ZoKorp] ${providerLabel(report.provider)} architecture review score ${report.overallScore}/100`;

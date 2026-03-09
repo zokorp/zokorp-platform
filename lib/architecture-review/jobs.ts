@@ -26,21 +26,20 @@ const PROCESSING_PHASES: ArchitectureReviewPhase[] = [
   "diagram-precheck",
   "ocr",
   "rules",
-  "llm-refine",
   "package-email",
   "send-fallback",
   "completed",
 ];
 
 type DeviceClass = "mobile" | "tablet" | "desktop" | "unknown";
+type TimedArchitectureReviewPhase = Exclude<ArchitectureReviewPhase, "completed" | "llm-refine">;
 
-const PHASE_BASELINE_MS: Record<DeviceClass, Record<Exclude<ArchitectureReviewPhase, "completed">, number>> = {
+const PHASE_BASELINE_MS: Record<DeviceClass, Record<TimedArchitectureReviewPhase, number>> = {
   desktop: {
     "upload-validate": 1400,
     "diagram-precheck": 2000,
     ocr: 24000,
     rules: 3000,
-    "llm-refine": 6500,
     "package-email": 2600,
     "send-fallback": 3500,
   },
@@ -49,7 +48,6 @@ const PHASE_BASELINE_MS: Record<DeviceClass, Record<Exclude<ArchitectureReviewPh
     "diagram-precheck": 2200,
     ocr: 28000,
     rules: 3200,
-    "llm-refine": 7000,
     "package-email": 2800,
     "send-fallback": 3800,
   },
@@ -58,7 +56,6 @@ const PHASE_BASELINE_MS: Record<DeviceClass, Record<Exclude<ArchitectureReviewPh
     "diagram-precheck": 2600,
     ocr: 34000,
     rules: 3600,
-    "llm-refine": 7600,
     "package-email": 3200,
     "send-fallback": 4200,
   },
@@ -67,7 +64,6 @@ const PHASE_BASELINE_MS: Record<DeviceClass, Record<Exclude<ArchitectureReviewPh
     "diagram-precheck": 2400,
     ocr: 28000,
     rules: 3300,
-    "llm-refine": 7000,
     "package-email": 2800,
     "send-fallback": 3900,
   },
@@ -137,6 +133,12 @@ function phaseIndex(phase: ArchitectureReviewPhase | null | undefined) {
 
   const index = PROCESSING_PHASES.indexOf(phase);
   return index < 0 ? 0 : index;
+}
+
+function timedPhases() {
+  return PROCESSING_PHASES.filter(
+    (phase): phase is TimedArchitectureReviewPhase => phase !== "completed" && phase !== "llm-refine",
+  );
 }
 
 function emlSecret() {
@@ -216,9 +218,7 @@ function estimateEtaSeconds(input: {
 }) {
   const baseline = PHASE_BASELINE_MS[input.deviceClass];
   const currentIndex = phaseIndex(input.currentPhase);
-  const activePhases = PROCESSING_PHASES.filter((phase) => phase !== "completed") as Array<
-    Exclude<ArchitectureReviewPhase, "completed">
-  >;
+  const activePhases = timedPhases();
 
   const observedRatios: number[] = [];
   for (const phase of activePhases) {
@@ -235,9 +235,9 @@ function estimateEtaSeconds(input: {
 
   const currentTiming = input.timings[input.currentPhase];
   const currentExpected =
-    input.currentPhase === "completed"
+    input.currentPhase === "completed" || input.currentPhase === "llm-refine"
       ? 0
-      : baseline[input.currentPhase as Exclude<ArchitectureReviewPhase, "completed">] ?? 0;
+      : baseline[input.currentPhase] ?? 0;
 
   const currentElapsed = currentTiming?.startedAtISO ? Math.max(0, input.nowMs - new Date(currentTiming.startedAtISO).getTime()) : 0;
   const currentRemaining = Math.max(0, currentExpected * ratio - currentElapsed);
@@ -255,17 +255,15 @@ function estimateProgressPct(input: {
   deviceClass: DeviceClass;
   nowMs: number;
 }) {
-  const activePhases = PROCESSING_PHASES.filter((phase) => phase !== "completed") as Array<
-    Exclude<ArchitectureReviewPhase, "completed">
-  >;
+  const activePhases = timedPhases();
 
   if (input.currentPhase === "completed") {
     return 100;
   }
 
   const completedCount = activePhases.filter((phase) => input.timings[phase]?.completedAtISO).length;
-  const phase = input.currentPhase as Exclude<ArchitectureReviewPhase, "completed">;
-  const baseline = PHASE_BASELINE_MS[input.deviceClass][phase] ?? 1;
+  const phase = input.currentPhase;
+  const baseline = phase === "llm-refine" ? 1 : (PHASE_BASELINE_MS[input.deviceClass][phase] ?? 1);
   const startedAt = input.timings[phase]?.startedAtISO;
   const elapsed = startedAt ? Math.max(0, input.nowMs - new Date(startedAt).getTime()) : 0;
   const inPhaseProgress = Math.max(0, Math.min(1, elapsed / baseline));
@@ -600,8 +598,6 @@ export async function processArchitectureReviewJob(jobId: string): Promise<Archi
     });
 
     job = await updatePhase(job, "rules", "complete");
-    job = await updatePhase(job, "llm-refine", "start");
-    job = await updatePhase(job, "llm-refine", "complete");
     job = await updatePhase(job, "package-email", "start");
 
     const userName =

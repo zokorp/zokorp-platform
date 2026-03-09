@@ -32,6 +32,12 @@ describe("ArchitectureDiagramReviewerForm", () => {
   it("enforces PNG/SVG-only uploads", async () => {
     render(<ArchitectureDiagramReviewerForm />);
 
+    expect(screen.getByText(/what improves the review/i)).toBeTruthy();
+    expect(screen.getByText(/how pricing is assembled/i)).toBeTruthy();
+    expect(screen.getByRole("link", { name: /review benchmark patterns/i }).getAttribute("href")).toBe(
+      "/software/architecture-diagram-reviewer/benchmarks",
+    );
+
     const fileInput = screen.getByLabelText(/diagram file/i);
     const descriptionInput = screen.getByLabelText(/architecture description/i);
     const submitButton = screen.getByRole("button", { name: /run review/i });
@@ -328,7 +334,7 @@ describe("ArchitectureDiagramReviewerForm", () => {
     fireEvent.submit(form);
 
     await waitFor(() => {
-      expect(screen.getByText(/processing: extracting ocr evidence/i)).toBeTruthy();
+      expect(screen.getByText(/processing: collecting diagram evidence/i)).toBeTruthy();
     });
     expect(fetchMock).not.toHaveBeenCalled();
 
