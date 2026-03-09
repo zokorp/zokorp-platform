@@ -5,12 +5,12 @@
 - Mission start: 2026-03-08 17:17:44 CDT
 - Main checkout preserved untouched: `/Users/zohaibkhawaja/Documents/Codex/zokorp-platform`
 - Main checkout status at this slice start: clean on `main` and safe for isolated branching
-- Active worktree: `/Users/zohaibkhawaja/Documents/Codex/zokorp-worktrees/admin-superuser-access`
-- Active branch: `codex/admin-superuser-access`
-- Repo root: `/Users/zohaibkhawaja/Documents/Codex/zokorp-worktrees/admin-superuser-access`
+- Active worktree: `/Users/zohaibkhawaja/Documents/Codex/zokorp-worktrees/admin-lead-ops`
+- Active branch: `codex/admin-lead-ops`
+- Repo root: `/Users/zohaibkhawaja/Documents/Codex/zokorp-worktrees/admin-lead-ops`
 - Remote: `origin https://github.com/leggoboyo/zokorp-platform.git`
 - Existing open `codex/` PR for this mission: none found
-- Current slice: add a safe allowlisted admin/superuser path with admin lead visibility and paid-tool live testing overrides
+- Current slice: expand the admin lead directory into a human-first operational dashboard with QA/test suppression, ops-state filters, and CSV export
 
 ## Execution Entries
 
@@ -31,6 +31,7 @@
 | 2026-03-09 04:08:00 CDT | Verify the production rollout for the architecture-review privacy migration after the workflow hardening landed | done | Atlas confirmed PR #43 merged, the `Production Prisma Migrate` workflow succeeded on `main`, Prisma applied `0011_architecture_review_remove_raw_bytes`, schema verification confirmed `ArchitectureReviewJob.diagramBytes` is removed and WorkDrive tracking columns exist, and `/`, `/login`, `/register`, plus `/software/architecture-diagram-reviewer` still load with verified-account enforcement intact | Credentialed production rollout report from Atlas; no further local code changes were required for this verification step | None | None |
 | 2026-03-09 04:45:00 CDT | Standardize shared deterministic quote line items across AI Decider, Landing Zone Readiness, Cloud Cost Leak Finder, and the Architecture Diagram Reviewer | done | Added shared quote helpers in `lib/quote-line-items.ts` plus internal documentation in `docs/shared-diagnostic-quote-line-items.md`; updated AI Decider, Landing Zone Readiness, and Cloud Cost quote schemas/email rendering to use shared line items; added `consultationQuote` packaging to Architecture Review while preserving `consultationQuoteUSD` and `quoteTier` compatibility fields; updated backlog items `CRIT-011` through `CRIT-014` and `MED-008`; added regression coverage in `tests/quote-line-items.test.ts`, `tests/ai-decider-email.test.ts`, `tests/landing-zone-readiness-email.test.ts`, and existing architecture/landing-zone tests | `npm install`, `npm run typecheck`, `npm test -- quote-line-items ai-decider-email landing-zone-readiness-email architecture-review-email architecture-review-schema landing-zone-readiness-engine landing-zone-readiness-route cloud-cost-leak-finder-email ai-decider-engine`, `npm run lint`, `npm test`, and `npm run build` all passed in `/Users/zohaibkhawaja/Documents/Codex/zokorp-worktrees/shared-quote-line-items` | `https://github.com/leggoboyo/zokorp-platform/pull/44` | None |
 | 2026-03-09 05:07:25 CDT | Add a safe allowlisted admin/superuser path for `zkhawaja@zokorp.com`, including stale-role hardening, paid-tool admin test bypass, an admin lead directory, and visible admin workspace/account messaging | done | Added shared admin policy helpers in `lib/admin-access.ts`; tightened `lib/auth.ts` so allowlisted verified email is the source of truth rather than stale persisted `Role.ADMIN`; updated `lib/email-verification.ts` and `app/api/auth/password/reset/route.ts` to derive admin role from the allowlist consistently; updated `lib/entitlements.ts`, `app/api/tools/zokorp-validator/route.ts`, `app/software/[slug]/page.tsx`, `components/validator-form.tsx`, `app/account/page.tsx`, and `components/admin/admin-nav.tsx` so admin test access is explicit and does not consume credits; added `app/admin/leads/page.tsx`; added regression coverage in `tests/admin-access.test.ts`, `tests/entitlements-admin-bypass.test.ts`, and `tests/validator-form.test.tsx` | `npm install`, `npm run lint`, `npm run typecheck`, `npm test -- admin-access entitlements-admin-bypass validator-form`, `npm test`, `npm run build`, and `node scripts/production_smoke_check.mjs` all passed in `/Users/zohaibkhawaja/Documents/Codex/zokorp-worktrees/admin-superuser-access` | `https://github.com/leggoboyo/zokorp-platform/pull/45` | Production still needs `ZOKORP_ADMIN_EMAILS` to include the intended admin email before the live account receives the new privileges. |
+| 2026-03-09 14:18:48 CDT | Expand the admin lead directory into a human-first operational dashboard with QA/test suppression, ops-state filtering, recommended-engagement visibility, next-action guidance, and CSV export | done | Added shared lead aggregation and classification helpers in `lib/admin-leads.ts`; upgraded `app/admin/leads/page.tsx` to default to likely-human contacts while preserving flagged QA/test/internal records behind filters; added `app/admin/leads/export/route.ts`; surfaced email-delivery state, CRM sync state, recommended engagement, and next action on each lead card; added regression coverage in `tests/admin-leads.test.ts` and `tests/admin-leads-export-route.test.ts`; marked backlog items `CRIT-019`, `HIGH-016`, `MED-029`, and `MED-030` done | `npm install`, `npm run lint`, `npm run typecheck`, `npm test -- admin-leads admin-leads-export-route`, `npm test`, `npm run build`, and `node scripts/production_smoke_check.mjs` all passed in `/Users/zohaibkhawaja/Documents/Codex/zokorp-worktrees/admin-lead-ops` | `https://github.com/leggoboyo/zokorp-platform/pull/46` | None |
 
 ## Validation Summary
 
@@ -54,6 +55,7 @@
 - New direct-URL workflow-hardening PR: `https://github.com/leggoboyo/zokorp-platform/pull/43`
 - New shared quote-line-items PR: `https://github.com/leggoboyo/zokorp-platform/pull/44`
 - New admin superuser-access PR: `https://github.com/leggoboyo/zokorp-platform/pull/45`
+- New admin lead-ops PR: `https://github.com/leggoboyo/zokorp-platform/pull/46`
 
 ## Blocked Items Requiring Human Input
 

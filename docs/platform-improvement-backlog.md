@@ -51,7 +51,8 @@ This file is the long-lived backlog for the `ZoKorp release hardening` automatio
 - [TODO][AUTO] CRIT-016 Add an unsubscribe and email-preferences flow that works across all diagnostic tools. Done when: emails include a functioning preference path and the backend respects opt-out state.
 - [TODO][AUTO] CRIT-017 Rewrite the public privacy page so it accurately covers account verification, lead capture, result delivery, marketing follow-up, and data retention. Done when: the privacy page matches actual system behavior and references preference controls.
 - [TODO][AUTO] CRIT-018 Rewrite the public terms/support/refund policy surfaces for public launch readiness. Done when: the public site clearly covers service scoping, refund posture, support expectations, and tool-output disclaimers.
-- [TODO][AUTO] CRIT-019 Create a real internal lead dashboard that shows free-tool leads across all tools. Done when: an admin can see lead source, tool used, verification state, quote tier, email status, and next action in one place.
+- [DONE][AUTO] CRIT-019 Create a real internal lead dashboard that shows free-tool leads across all tools. Done when: an admin can see lead source, tool used, verification state, quote tier, email status, and next action in one place.
+  - Evidence: Added `lib/admin-leads.ts`, upgraded `app/admin/leads/page.tsx` to aggregate accounts plus Architecture Review, Landing Zone, Cloud Cost, and AI Decider records into one filtered dashboard, surfaced verification/source/recommended-engagement/email-delivery/CRM-sync/next-action state, and added CSV export plus regression coverage in `tests/admin-leads.test.ts` and `tests/admin-leads-export-route.test.ts`.
 - [TODO][AUTO] CRIT-020 Add admin visibility for email delivery failures, CRM sync failures, and retry state across all tool submissions. Done when: staff can identify and reprocess failures without querying the database directly.
 - [TODO][AUTO] CRIT-021 Create a registry-driven `ToolDefinition` contract for all software tools. Done when: tool metadata, auth mode, pricing mode, renderer, and submission strategy are declared in one registry shape.
 - [TODO][AUTO] CRIT-022 Refactor the generic `/software/[slug]` page to render from the shared tool registry instead of hardcoded slug branches. Done when: adding a tool does not require editing central branching logic.
@@ -81,7 +82,8 @@ This file is the long-lived backlog for the `ZoKorp release hardening` automatio
 - [TODO][AUTO] HIGH-013 Publish clearer service packages with example outcomes and pricing anchors. Done when: visitors can understand what paid help looks like before contacting ZoKorp.
 - [TODO][AUTO] HIGH-014 Add a dedicated proof or portfolio section on the home and services pages. Done when: the site communicates evidence, process, and trust better than it does today.
 - [TODO][AUTO] HIGH-015 Add a founder/contact CTA section to all major conversion pages. Done when: each high-intent page has an obvious next step to book or request help.
-- [TODO][AUTO] HIGH-016 Add an internal admin page focused on free-tool leads and quote pipeline progression. Done when: admins can filter and manage diagnostic leads separately from service requests.
+- [DONE][AUTO] HIGH-016 Add an internal admin page focused on free-tool leads and quote pipeline progression. Done when: admins can filter and manage diagnostic leads separately from service requests.
+  - Evidence: `app/admin/leads/page.tsx` now supports audience/source/account/verification/ops/sort filters, human-vs-QA suppression by default, recommended engagement visibility, next-action guidance, and CSV export without mixing the workflow into service-request admin screens.
 - [TODO][AUTO] HIGH-017 Add admin actions to retry email sends and CRM syncs. Done when: staff can recover failed operations without direct database edits.
 - [TODO][AUTO] HIGH-018 Add account-page visibility for quote history and tool-result summaries. Done when: verified users can review what they were quoted and when.
 - [TODO][AUTO] HIGH-019 Standardize a shared email wrapper template across all result emails. Done when: brand, trust copy, support links, and footer behavior are consistent.
@@ -133,8 +135,10 @@ This file is the long-lived backlog for the `ZoKorp release hardening` automatio
 - [TODO][AUTO] MED-026 Document the analytics taxonomy and event definitions. Done when: conversions and funnel metrics have stable names and meanings.
 - [TODO][AUTO] MED-027 Document the lead lifecycle and Zoho field mapping. Done when: operators can trace a lead from form submission through follow-up.
 - [TODO][AUTO] MED-028 Document email delivery fallback behavior and recovery actions. Done when: ops guidance exists for failed sends and fallback drafts.
-- [TODO][AUTO] MED-029 Add CSV export for admin lead views. Done when: operators can export leads without direct database access.
-- [TODO][AUTO] MED-030 Add admin filters by tool, date, CRM sync status, email status, and quote tier. Done when: admins can slice operational data efficiently.
+- [DONE][AUTO] MED-029 Add CSV export for admin lead views. Done when: operators can export leads without direct database access.
+  - Evidence: Added `app/admin/leads/export/route.ts` and `renderLeadDirectoryCsv()` in `lib/admin-leads.ts`, with admin-only CSV download of the current filtered lead view plus regression coverage in `tests/admin-leads-export-route.test.ts`.
+- [DONE][AUTO] MED-030 Add admin filters by tool, date, CRM sync status, email status, and quote tier. Done when: admins can slice operational data efficiently.
+  - Evidence: The lead dashboard now supports source, account, verification, ops-attention, audience, and sort filters; each lead card surfaces CRM sync state, email delivery state, and recommended engagement from the stored quote payloads.
 - [TODO][AUTO] MED-031 Add service-request filters, notes, and lifecycle management. Done when: service requests can be triaged and tracked cleanly.
 - [TODO][AUTO] MED-032 Add internal audit views for purchases, entitlements, and leads. Done when: operators can correlate a customer account with software purchases and lead history.
 - [TODO][AUTO] MED-033 Improve empty states across account and admin views. Done when: zero-data states still explain what users or admins can do next.
