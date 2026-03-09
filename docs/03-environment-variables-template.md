@@ -164,6 +164,15 @@ These values are needed only when CRM sync and WorkDrive archival are enabled.
   - Secret: no.
   - Purpose: smoke-check timeout override.
 
+## GitHub Actions deployment and migration secrets
+
+These are not app runtime env vars. They exist so manual GitHub workflows can operate safely against production.
+
+- `PRODUCTION_DATABASE_URL`
+  - Secret: yes.
+  - Scope: GitHub Actions `production` environment secret.
+  - Purpose: allows the manual production Prisma migration workflow to run `prisma migrate deploy` and perform read-only schema verification without relying on an interactive Vercel shell.
+
 ## Minimum local setup
 
 Use this set to boot the app and develop most UI flows:

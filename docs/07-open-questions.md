@@ -4,6 +4,7 @@
 
 - GitHub login/MFA is still required to verify repo settings, branch protections, PR automation posture, and any existing project-board workflows.
 - Vercel login/MFA is still required to verify production env vars, deployment targets, preview behavior, and custom-domain wiring.
+- GitHub `production` environment access is still required to set `PRODUCTION_DATABASE_URL` and manually run the production Prisma migration workflow.
 - Stripe login/MFA is still required to verify live-mode products, prices, tax settings, customer portal posture, and webhook configuration.
 - Zoho login/MFA is still required to verify CRM fields, refresh-token posture, and WorkDrive destination setup.
 - Email-provider and sending-domain access is still required to verify SMTP/Resend configuration plus SPF, DKIM, and DMARC posture.

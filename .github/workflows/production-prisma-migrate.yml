@@ -1,0 +1,95 @@
+name: Production Prisma Migrate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-prisma-migrate
+  cancel-in-progress: false
+
+jobs:
+  migrate-production:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Fail if production database secret is missing
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "Missing PRODUCTION_DATABASE_URL secret in the production environment."
+            exit 1
+          fi
+
+      - name: Guard branch
+        run: |
+          if [ "${GITHUB_REF_NAME}" != "main" ]; then
+            echo "This workflow must run from main. Current ref: ${GITHUB_REF_NAME}"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Deploy Prisma migrations
+        run: npm run prisma:migrate:deploy
+
+      - name: Verify production schema shape
+        run: |
+          node <<'NODE'
+          const { PrismaClient } = require("@prisma/client");
+
+          async function main() {
+            const prisma = new PrismaClient();
+            try {
+              const rows = await prisma.$queryRawUnsafe(`
+                select column_name
+                from information_schema.columns
+                where table_schema = 'public'
+                  and table_name = 'ArchitectureReviewJob'
+                order by ordinal_position
+              `);
+
+              const columnNames = new Set(rows.map((row) => String(row.column_name)));
+              const forbidden = ["diagramBytes"];
+              const required = [
+                "workdriveDiagramFileId",
+                "workdriveReportFileId",
+                "workdriveUploadStatus",
+              ];
+
+              const presentForbidden = forbidden.filter((name) => columnNames.has(name));
+              const missingRequired = required.filter((name) => !columnNames.has(name));
+
+              if (presentForbidden.length > 0) {
+                throw new Error(`Forbidden columns still present: ${presentForbidden.join(", ")}`);
+              }
+
+              if (missingRequired.length > 0) {
+                throw new Error(`Required columns missing: ${missingRequired.join(", ")}`);
+              }
+
+              console.log("Production schema verification passed for ArchitectureReviewJob.");
+            } finally {
+              await prisma.$disconnect();
+            }
+          }
+
+          main().catch((error) => {
+            console.error(error instanceof Error ? error.message : error);
+            process.exit(1);
+          });
+          NODE

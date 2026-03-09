@@ -164,3 +164,26 @@
   - `SUBMITTED`, `TRIAGED`, `PROPOSAL_SENT`, `SCHEDULED`, `IN_PROGRESS`, `BLOCKED`, `DELIVERED`, `CLOSED`
 - Migration:
   - `0004_service_requests_and_hub` creates `ServiceRequest` table and enums.
+
+## 16) Production Prisma migration workflow
+- GitHub Actions workflow:
+  - `.github/workflows/production-prisma-migrate.yml`
+- Trigger:
+  - run manually with `workflow_dispatch` from the `main` branch only
+- GitHub environment:
+  - `production`
+- Required secret in that environment:
+  - `PRODUCTION_DATABASE_URL`
+- What the workflow does:
+  - checks out `main`
+  - runs `npm ci`
+  - runs `npm run prisma:migrate:deploy`
+  - performs a read-only schema inspection against `information_schema.columns`
+- Current architecture-review verification:
+  - confirms `ArchitectureReviewJob.diagramBytes` is gone
+  - confirms `workdriveDiagramFileId`, `workdriveReportFileId`, and `workdriveUploadStatus` exist
+- When to use it:
+  - after Prisma migrations merge to `main`
+  - when Vercel does not provide a safe interactive production shell
+- Safety note:
+  - keep this workflow manual; do not auto-run production DB migrations on every push until deployment posture is more mature
