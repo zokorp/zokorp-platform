@@ -168,10 +168,17 @@ These values are needed only when CRM sync and WorkDrive archival are enabled.
 
 These are not app runtime env vars. They exist so manual GitHub workflows can operate safely against production.
 
+- `PRODUCTION_DIRECT_DATABASE_URL`
+  - Secret: yes.
+  - Scope: GitHub Actions `production` environment secret.
+  - Purpose: preferred direct Postgres connection string for production Prisma migrations.
+  - Format: must start with `postgres://` or `postgresql://`.
+  - Guidance: for Supabase, prefer the direct connection string over a pooled URL for migration workflows.
 - `PRODUCTION_DATABASE_URL`
   - Secret: yes.
   - Scope: GitHub Actions `production` environment secret.
-  - Purpose: allows the manual production Prisma migration workflow to run `prisma migrate deploy` and perform read-only schema verification without relying on an interactive Vercel shell.
+  - Purpose: fallback production Postgres connection string for the manual migration workflow if a dedicated direct URL secret is not set.
+  - Format: must start with `postgres://` or `postgresql://`.
 
 ## Minimum local setup
 
