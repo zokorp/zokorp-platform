@@ -66,6 +66,9 @@ describe("submit cloud cost leak finder route", () => {
     const response = await POST(
       new Request("http://localhost/api/submit-cloud-cost-leak-finder", {
         method: "POST",
+        headers: {
+          origin: "http://localhost",
+        },
         body: JSON.stringify({}),
       }),
     );
@@ -79,6 +82,9 @@ describe("submit cloud cost leak finder route", () => {
   it("stores the submission, sends email, and returns the concise success payload", async () => {
     const request = new Request("http://localhost/api/submit-cloud-cost-leak-finder", {
       method: "POST",
+      headers: {
+        origin: "http://localhost",
+      },
       body: JSON.stringify({
         email: "owner@acmecloud.com",
         fullName: "Jordan Rivera",
@@ -126,6 +132,9 @@ describe("submit cloud cost leak finder route", () => {
 
     const request = new Request("http://localhost/api/submit-cloud-cost-leak-finder", {
       method: "POST",
+      headers: {
+        origin: "http://localhost",
+      },
       body: JSON.stringify({
         email: "owner@acmecloud.com",
         fullName: "Jordan Rivera",
@@ -155,5 +164,35 @@ describe("submit cloud cost leak finder route", () => {
     expect(requireVerifiedFreeToolAccessMock).toHaveBeenCalledTimes(1);
     expect(createMock).not.toHaveBeenCalled();
     expect(sendToolResultEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects cross-site submissions before any auth or persistence work", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/submit-cloud-cost-leak-finder", {
+        method: "POST",
+        headers: {
+          origin: "https://evil.example",
+        },
+        body: JSON.stringify({
+          email: "owner@acmecloud.com",
+          fullName: "Jordan Rivera",
+          companyName: "Acme Cloud",
+          roleTitle: "CTO",
+          website: "acmecloud.com",
+          primaryCloud: "aws",
+          narrativeInput:
+            "We run a SaaS app on AWS with EC2, RDS, and dev, test, and prod environments. The bill keeps rising even though usage is mostly flat.",
+          billingSummaryInput: "EC2 $4200",
+          adaptiveAnswers: {},
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      error: "Cross-site requests are not allowed.",
+    });
+    expect(requireVerifiedFreeToolAccessMock).not.toHaveBeenCalled();
+    expect(createMock).not.toHaveBeenCalled();
   });
 });

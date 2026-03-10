@@ -15,6 +15,7 @@ import {
   type LandingZoneReadinessSubmissionResponse,
 } from "@/lib/landing-zone-readiness/types";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
+import { requireSameOrigin } from "@/lib/request-origin";
 import { upsertZohoLead } from "@/lib/zoho-crm";
 
 export const runtime = "nodejs";
@@ -151,6 +152,11 @@ export async function POST(request: Request) {
   const requestId = randomUUID();
 
   try {
+    const crossSiteResponse = requireSameOrigin(request);
+    if (crossSiteResponse) {
+      return crossSiteResponse;
+    }
+
     const limiter = await consumeRateLimit({
       key: `landing-zone-readiness:${getRequestFingerprint(request)}`,
       limit: FINGERPRINT_RATE_LIMIT,

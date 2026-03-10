@@ -4,6 +4,7 @@ import { z } from "zod";
 import { sendEmailVerificationEmail } from "@/lib/auth-email";
 import { db } from "@/lib/db";
 import { issueEmailVerificationToken } from "@/lib/email-verification";
+import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { isBusinessEmail } from "@/lib/security";
 import { getSiteOriginFromRequest } from "@/lib/site-origin";
@@ -16,6 +17,11 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
+    const crossSiteResponse = requireSameOrigin(request);
+    if (crossSiteResponse) {
+      return crossSiteResponse;
+    }
+
     const limiter = await consumeRateLimit({
       key: `auth:verify-email:${getRequestFingerprint(request)}`,
       limit: 10,

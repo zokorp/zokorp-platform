@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { issueEmailVerificationToken } from "@/lib/email-verification";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { hashPassword, validatePasswordStrength } from "@/lib/password-auth";
+import { requireSameOrigin } from "@/lib/request-origin";
 import { isBusinessEmail } from "@/lib/security";
 import { getSiteOriginFromRequest } from "@/lib/site-origin";
 import { ensureUserAuthSchemaReady } from "@/lib/user-auth-schema";
@@ -22,6 +23,11 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
+    const crossSiteResponse = requireSameOrigin(request);
+    if (crossSiteResponse) {
+      return crossSiteResponse;
+    }
+
     if (!isPasswordAuthEnabled()) {
       return NextResponse.json(
         { error: "Password account registration is currently disabled." },

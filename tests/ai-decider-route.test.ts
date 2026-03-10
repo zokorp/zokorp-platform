@@ -48,6 +48,7 @@ function makeRequest(body: Record<string, unknown>) {
     method: "POST",
     headers: {
       "content-type": "application/json",
+      origin: "http://localhost",
     },
     body: JSON.stringify(body),
   });
@@ -79,6 +80,35 @@ describe("submit ai decider route", () => {
     await expect(response.json()).resolves.toEqual({
       error: "Please complete the required fields and try again.",
     });
+  });
+
+  it("rejects cross-site submissions before any persistence work", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/submit-ai-decider", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "https://evil.example",
+        },
+        body: JSON.stringify({
+          email: "owner@acmeops.com",
+          fullName: "Jordan Rivera",
+          companyName: "Acme Ops",
+          roleTitle: "COO",
+          website: "acmeops.com",
+          narrativeInput:
+            "Our support team answers the same questions repeatedly across email and Slack. The best answers are spread across SharePoint, old docs, and a few senior reps. We want faster response times and more consistent answers for customers.",
+          answers: {},
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      error: "Cross-site requests are not allowed.",
+    });
+    expect(mocks.requireVerifiedFreeToolAccess).not.toHaveBeenCalled();
+    expect(mocks.submissionCreate).not.toHaveBeenCalled();
   });
 
   it("rejects unverified or unsigned access before storing or emailing results", async () => {

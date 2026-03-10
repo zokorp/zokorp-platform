@@ -15,6 +15,7 @@ import {
   type AiDeciderSubmissionResponse,
 } from "@/lib/ai-decider/types";
 import { isFreeToolAccessError, requireVerifiedFreeToolAccess } from "@/lib/free-tool-access";
+import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { upsertZohoLead } from "@/lib/zoho-crm";
 
@@ -41,6 +42,11 @@ export async function POST(request: Request) {
   const requestId = randomUUID();
 
   try {
+    const crossSiteResponse = requireSameOrigin(request);
+    if (crossSiteResponse) {
+      return crossSiteResponse;
+    }
+
     const limiter = await consumeRateLimit({
       key: `ai-decider:${getRequestFingerprint(request)}`,
       limit: RATE_LIMIT,

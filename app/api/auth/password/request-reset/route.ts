@@ -5,6 +5,7 @@ import { sendPasswordResetEmail } from "@/lib/auth-email";
 import { isPasswordAuthEnabled } from "@/lib/auth-config";
 import { db } from "@/lib/db";
 import { generateOpaqueToken, hashOpaqueToken } from "@/lib/password-auth";
+import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { isBusinessEmail } from "@/lib/security";
 import { ensureUserAuthSchemaReady } from "@/lib/user-auth-schema";
@@ -21,6 +22,11 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
+    const crossSiteResponse = requireSameOrigin(request);
+    if (crossSiteResponse) {
+      return crossSiteResponse;
+    }
+
     if (!isPasswordAuthEnabled()) {
       return NextResponse.json({ error: "Password reset is currently disabled." }, { status: 503 });
     }

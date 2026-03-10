@@ -83,6 +83,9 @@ describe("password auth management route guards", () => {
     const response = await registerPost(
       new Request("http://localhost/api/auth/register", {
         method: "POST",
+        headers: {
+          origin: "http://localhost",
+        },
         body: JSON.stringify({
           name: "Jordan Rivera",
           email: "jordan@acmecloud.com",
@@ -104,6 +107,9 @@ describe("password auth management route guards", () => {
     const response = await requestResetPost(
       new Request("http://localhost/api/auth/password/request-reset", {
         method: "POST",
+        headers: {
+          origin: "http://localhost",
+        },
         body: JSON.stringify({
           email: "jordan@acmecloud.com",
         }),
@@ -123,6 +129,9 @@ describe("password auth management route guards", () => {
     const response = await resetPost(
       new Request("http://localhost/api/auth/password/reset", {
         method: "POST",
+        headers: {
+          origin: "http://localhost",
+        },
         body: JSON.stringify({
           token: "token-value-token-value",
           password: "StrongEnough#123",
@@ -137,5 +146,29 @@ describe("password auth management route guards", () => {
     expect(consumeRateLimitMock).not.toHaveBeenCalled();
     expect(userAuthFindFirstMock).not.toHaveBeenCalled();
     expect(auditCreateMock).not.toHaveBeenCalled();
+  });
+
+  it("blocks cross-site registration attempts before any auth setup work", async () => {
+    const response = await registerPost(
+      new Request("http://localhost/api/auth/register", {
+        method: "POST",
+        headers: {
+          origin: "https://evil.example",
+        },
+        body: JSON.stringify({
+          name: "Jordan Rivera",
+          email: "jordan@acmecloud.com",
+          password: "StrongEnough#123",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      error: "Cross-site requests are not allowed.",
+    });
+    expect(consumeRateLimitMock).not.toHaveBeenCalled();
+    expect(userFindUniqueMock).not.toHaveBeenCalled();
+    expect(userCreateMock).not.toHaveBeenCalled();
   });
 });

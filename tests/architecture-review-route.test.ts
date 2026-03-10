@@ -76,6 +76,9 @@ function makeMultipartRequestWithMetadata(metadata: Record<string, unknown>, fil
 
   return new Request("http://localhost/api/submit-architecture-review", {
     method: "POST",
+    headers: {
+      origin: "http://localhost",
+    },
     body: formData,
   });
 }
@@ -132,6 +135,7 @@ describe("submit architecture review route", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
+          origin: "http://localhost",
         },
         body: JSON.stringify({ provider: "aws" }),
       }),
@@ -141,6 +145,37 @@ describe("submit architecture review route", () => {
     await expect(response.json()).resolves.toMatchObject({
       error: "Invalid review payload.",
     });
+    expect(mocks.createArchitectureReviewJob).not.toHaveBeenCalled();
+  });
+
+  it("rejects cross-site uploads before auth or queue work", async () => {
+    const formData = new FormData();
+    formData.append(
+      "metadata",
+      JSON.stringify({
+        provider: "aws",
+        paragraphInput: "Users enter through an edge layer, app services process requests, and data persists to a managed store.",
+        diagramFormat: "png",
+        clientPngOcrText: "edge app service data store",
+      }),
+    );
+    formData.append("diagram", makePngFile());
+
+    const response = await POST(
+      new Request("http://localhost/api/submit-architecture-review", {
+        method: "POST",
+        headers: {
+          origin: "https://evil.example",
+        },
+        body: formData,
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      error: "Cross-site requests are not allowed.",
+    });
+    expect(mocks.requireVerifiedFreeToolAccess).not.toHaveBeenCalled();
     expect(mocks.createArchitectureReviewJob).not.toHaveBeenCalled();
   });
 
