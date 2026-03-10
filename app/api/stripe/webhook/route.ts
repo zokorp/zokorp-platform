@@ -3,6 +3,7 @@ import Stripe from "stripe";
 
 import { effectiveCreditTierForPrice } from "@/lib/credit-tiers";
 import { db } from "@/lib/db";
+import { createInternalAuditLog, methodNotAllowedJson, NO_STORE_HEADERS } from "@/lib/internal-route";
 import { getStripeClient } from "@/lib/stripe";
 
 function activeFromSubscriptionStatus(status: Stripe.Subscription.Status): EntitlementStatus {
@@ -48,11 +49,25 @@ function shouldFulfillCheckoutSession(input: {
   return input.session.payment_status === "paid";
 }
 
+function textNoStore(body: string, init: ResponseInit = {}) {
+  const headers = new Headers(init.headers);
+  headers.set("Cache-Control", NO_STORE_HEADERS["Cache-Control"]);
+
+  return new Response(body, {
+    ...init,
+    headers,
+  });
+}
+
+export function GET() {
+  return methodNotAllowedJson();
+}
+
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
 
   if (!signature || !process.env.STRIPE_WEBHOOK_SECRET) {
-    return new Response("Missing webhook signature", { status: 400 });
+    return textNoStore("Missing webhook signature", { status: 400 });
   }
 
   const payload = await request.text();
@@ -67,7 +82,7 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     console.error("Webhook signature verification failed", error);
-    return new Response("Invalid signature", { status: 400 });
+    return textNoStore("Invalid signature", { status: 400 });
   }
 
   try {
@@ -81,6 +96,12 @@ export async function POST(request: Request) {
         const checkoutSessionId = session.id;
 
         if (!userId || !productId || !priceId || !checkoutSessionId) {
+          await createInternalAuditLog("billing.webhook_checkout_skipped", {
+            stripeEventId: event.id,
+            eventType: event.type,
+            reason: "missing_checkout_metadata",
+            stripeCheckoutSessionId: session.id,
+          });
           break;
         }
 
@@ -93,6 +114,12 @@ export async function POST(request: Request) {
         ]);
 
         if (!user || !price) {
+          await createInternalAuditLog("billing.webhook_checkout_skipped", {
+            stripeEventId: event.id,
+            eventType: event.type,
+            reason: "missing_db_record",
+            stripeCheckoutSessionId: session.id,
+          });
           break;
         }
 
@@ -103,6 +130,13 @@ export async function POST(request: Request) {
             eventType: event.type,
           })
         ) {
+          await createInternalAuditLog("billing.webhook_checkout_skipped", {
+            stripeEventId: event.id,
+            eventType: event.type,
+            reason: "payment_not_ready",
+            stripeCheckoutSessionId: session.id,
+            paymentStatus: session.payment_status ?? "unknown",
+          });
           break;
         }
 
@@ -238,7 +272,12 @@ export async function POST(request: Request) {
         } catch (error) {
           if (isDuplicateCheckoutFulfillmentError(error)) {
             // Duplicate delivery for the same Checkout Session.
-            return new Response("ok", { status: 200 });
+            await createInternalAuditLog("billing.webhook_checkout_duplicate", {
+              stripeEventId: event.id,
+              eventType: event.type,
+              stripeCheckoutSessionId: session.id,
+            });
+            return textNoStore("ok", { status: 200 });
           }
 
           throw error;
@@ -263,6 +302,14 @@ export async function POST(request: Request) {
           },
         });
 
+        await createInternalAuditLog("billing.subscription_sync_applied", {
+          stripeEventId: event.id,
+          eventType: event.type,
+          stripeSubscriptionId: subscription.id,
+          status: subscription.status,
+          validUntil: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+        });
+
         break;
       }
 
@@ -270,9 +317,14 @@ export async function POST(request: Request) {
         break;
     }
 
-    return new Response("ok", { status: 200 });
+    return textNoStore("ok", { status: 200 });
   } catch (error) {
+    await createInternalAuditLog("billing.webhook_failed", {
+      stripeEventId: event.id,
+      eventType: event.type,
+      error: error instanceof Error ? error.message : "Unknown webhook failure",
+    });
     console.error("Webhook processing failed", error);
-    return new Response("Webhook handler failed", { status: 500 });
+    return textNoStore("Webhook handler failed", { status: 500 });
   }
 }
