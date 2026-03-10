@@ -1,11 +1,15 @@
-import { NextResponse } from "next/server";
-
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { jsonNoStore, methodNotAllowedJson } from "@/lib/internal-route";
 import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { getSiteOriginFromRequest } from "@/lib/site-origin";
+import { ensureStripeCustomerForUser, StripeCustomerBindingError } from "@/lib/stripe-customer";
 import { getStripeClient } from "@/lib/stripe";
+
+export function GET() {
+  return methodNotAllowedJson();
+}
 
 export async function POST(request: Request) {
   try {
@@ -15,7 +19,7 @@ export async function POST(request: Request) {
     }
 
     if (!process.env.STRIPE_SECRET_KEY) {
-      return NextResponse.json(
+      return jsonNoStore(
         { error: "Billing portal setup is still in progress. Please try again shortly." },
         { status: 503 },
       );
@@ -29,7 +33,7 @@ export async function POST(request: Request) {
     });
 
     if (!limiter.allowed) {
-      return NextResponse.json(
+      return jsonNoStore(
         { error: "Too many billing portal requests. Please wait and retry." },
         {
           status: 429,
@@ -42,45 +46,42 @@ export async function POST(request: Request) {
 
     const stripe = getStripeClient();
     const origin = getSiteOriginFromRequest(request);
-    let customerId = user.stripeCustomerId;
-
-    if (!customerId) {
-      if (!user.email) {
-        return NextResponse.json({ error: "Account email is required for billing." }, { status: 400 });
-      }
-
-      const customer = await stripe.customers.create({
-        email: user.email,
-        name: user.name ?? undefined,
-        metadata: { userId: user.id },
-      });
-
-      customerId = customer.id;
-      await db.user.update({
-        where: { id: user.id },
-        data: { stripeCustomerId: customerId },
-      });
-    }
+    const customerId = await ensureStripeCustomerForUser(user, stripe);
 
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
       return_url: `${origin}/account`,
     });
 
-    return NextResponse.json({ url: session.url });
+    await db.auditLog.create({
+      data: {
+        userId: user.id,
+        action: "billing.portal_session_created",
+        metadataJson: {
+          stripePortalSessionId: session.id,
+          stripeCustomerId: customerId,
+        },
+      },
+    });
+
+    return jsonNoStore({ url: session.url });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return jsonNoStore({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (error instanceof StripeCustomerBindingError) {
+      return jsonNoStore({ error: error.message }, { status: error.status });
     }
 
     if (error instanceof Error && error.message === "STRIPE_SECRET_KEY is missing") {
-      return NextResponse.json(
+      return jsonNoStore(
         { error: "Billing portal setup is still in progress. Please try again shortly." },
         { status: 503 },
       );
     }
 
     console.error(error);
-    return NextResponse.json({ error: "Failed to create portal session" }, { status: 500 });
+    return jsonNoStore({ error: "Failed to create portal session" }, { status: 500 });
   }
 }

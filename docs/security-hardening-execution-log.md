@@ -110,3 +110,82 @@
 - Explicit residual risk after each slice:
   - PR #48 is waiting on GitHub Actions/Vercel completion before the already-enabled squash auto-merge can land.
   - The follow-up route compatibility fallback and partial env validation remain open security debt for the next slice.
+
+## 2026-03-09 23:26:17 CDT
+
+- Date/time: `2026-03-09 23:26:17 CDT`
+- Current branch/worktree: `codex/security-hardening` at `/Users/zohaibkhawaja/Documents/Codex/zokorp-worktrees/security-hardening`
+- Current action item(s):
+  - Record external verification evidence returned from the Atlas/manual follow-up.
+  - Add a secret-safe admin runtime readiness surface so operators can detect env drift and risky secret reuse from inside the app.
+  - Prepare the next audit slice for Stripe billing entrypoints.
+- Status:
+  - PR #48 merge status verification: `done`
+  - External verification evidence capture: `done`
+  - Runtime readiness slice: `done`
+  - Next candidate slice: billing authz and auditability
+- Findings or evidence:
+  - GitHub now shows PR `#48` as `MERGED`, so the internal-route hardening slice is already on the mainline.
+  - Atlas verification confirmed that GitHub Actions secrets exist for `ARCH_REVIEW_WORKER_SECRET`, `ARCH_REVIEW_FOLLOWUP_SECRET`, `ZOHO_SYNC_SECRET`, and the corresponding `*_URL` values.
+  - Atlas verification confirmed `STRIPE_WEBHOOK_SECRET` and internal-job secrets are present in the Vercel project env configuration, and preview/production deployments appear `Ready`.
+  - Atlas verification confirmed unauthenticated `GET` requests to `/api/architecture-review/worker`, `/api/architecture-review/followups`, and `/api/zoho/sync-leads` fail closed with `405` and generic JSON bodies.
+  - Atlas could not verify whether `ARCH_REVIEW_FOLLOWUP_SECRET` is distinct from `ZOHO_SYNC_SECRET` because both providers mask values; that remains the blocker for safely removing the follow-up route fallback.
+  - Atlas could not verify workflow URL values, runtime response headers, Stripe dashboard webhook bindings, or Zoho provider-side configuration without authenticated dashboard access.
+- Code changes made:
+  - Added `lib/runtime-readiness.ts` to compute a secret-safe runtime readiness report for auth, billing, internal jobs, integrations, and admin configuration.
+  - Added `app/admin/readiness/page.tsx` so allowlisted admins can review runtime drift and risky secret reuse without exposing env values.
+  - Added `tests/runtime-readiness.test.ts` covering auth-secret fallback, callback-origin drift, partial Stripe config, and scheduled-secret reuse.
+  - Updated `components/admin/admin-nav.tsx`, `app/account/page.tsx`, and `docs/08-how-to-operate.md` to expose and document the new admin readiness surface.
+- Validation results:
+  - `npm run lint`: passed
+  - `npm run typecheck`: passed
+  - `npm test`: passed (`55` files, `202` tests)
+  - `npm run build`: passed
+  - `node scripts/production_smoke_check.mjs`: not run because this slice only changed authenticated/admin routes and docs
+- PR link if applicable:
+  - Prior merged PR: `https://github.com/leggoboyo/zokorp-platform/pull/48`
+- Blockers requiring human action:
+  - Dashboard access is still required to verify Stripe live webhook endpoint/signing-secret binding, Zoho provider configuration, runtime response headers, and whether `ARCH_REVIEW_FOLLOWUP_SECRET` is distinct from `ZOHO_SYNC_SECRET`.
+- Explicit residual risk after each slice:
+  - The app can now detect equal follow-up and Zoho sync secrets only when it can read the runtime values locally; masked provider dashboards still prevent out-of-band verification.
+  - The follow-up route compatibility fallback still exists and must stay until distinct live secrets are verified.
+  - `lib/env.ts` is still a partial env contract and does not yet enforce the full production runtime surface.
+
+## 2026-03-09 23:33:59 CDT
+
+- Date/time: `2026-03-09 23:33:59 CDT`
+- Current branch/worktree: `codex/security-hardening` at `/Users/zohaibkhawaja/Documents/Codex/zokorp-worktrees/security-hardening`
+- Current action item(s):
+  - Harden Stripe checkout and billing-portal session creation against stale or poisoned stored customer bindings.
+  - Make billing session responses non-cacheable and explicitly method-restricted.
+  - Add regression coverage for billing customer-binding failures and legacy customer backfill behavior.
+- Status:
+  - Billing route audit: `done`
+  - Billing customer-binding hardening slice: `done`
+  - Next candidate slice: Stripe webhook observability and broader env-contract enforcement
+- Findings or evidence:
+  - `app/api/stripe/create-checkout-session/route.ts` and `app/api/stripe/create-portal-session/route.ts` previously trusted `user.stripeCustomerId` without verifying that the stored Stripe customer still belonged to the signed-in user.
+  - The billing portal route previously returned a live portal URL without writing an audit-log event.
+  - Both billing routes previously relied on framework-default `GET` handling and did not force `Cache-Control: no-store` on billing-session responses that contain sensitive one-time URLs.
+  - Older Stripe customers created without `metadata.userId` would have broken under a strict metadata-only check, so this slice preserves compatibility by allowing email-based verification once and backfilling `metadata.userId` when the customer email matches the signed-in user.
+- Code changes made:
+  - Added `lib/stripe-customer.ts` to resolve or create Stripe customers safely, reject explicit cross-user customer mismatches, and best-effort backfill `metadata.userId` for legacy customers whose email still matches the authenticated user.
+  - Updated `app/api/stripe/create-checkout-session/route.ts` and `app/api/stripe/create-portal-session/route.ts` to use the shared Stripe customer binding helper, return non-cacheable JSON, and reject `GET` with explicit `405` responses.
+  - Added `billing.portal_session_created`, `billing.customer_binding_backfilled`, and `billing.customer_binding_rejected` audit logging for privileged billing flows.
+  - Added route regression coverage in `tests/stripe-create-checkout-session-route.test.ts` and `tests/stripe-create-portal-session-route.test.ts`.
+  - Updated `docs/08-how-to-operate.md` with operator guidance for billing-profile verification failures.
+- Validation results:
+  - `npm run lint`: passed
+  - `npm run typecheck`: passed
+  - `npm test`: passed (`57` files, `207` tests)
+  - `npm run build`: passed
+  - `node scripts/production_smoke_check.mjs`: not run because this slice only changed authenticated/admin routes, API handlers, and docs
+- PR link if applicable:
+  - Prior merged PR: `https://github.com/leggoboyo/zokorp-platform/pull/48`
+- Blockers requiring human action:
+  - Stripe dashboard access is still required to verify the live webhook endpoint/signing-secret binding and to confirm whether any existing production customers still lack `metadata.userId`.
+  - The earlier provider-side blockers still apply for Zoho config, runtime response-header observation, and scheduled-job secret distinctness.
+- Explicit residual risk after each slice:
+  - Existing Stripe customers whose metadata and email both drift from the local user record will now fail closed until an operator repairs the binding.
+  - This slice improves checkout and portal authorization, but Stripe webhook subscription lifecycle events still need a dedicated auditability and operator-visibility review.
+  - The follow-up route compatibility fallback and the partial env contract remain open security debt outside this billing slice.

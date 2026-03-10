@@ -183,6 +183,11 @@ export default async function AccountPage() {
               </Link>
             ) : null}
             {isAdminAccount ? (
+              <Link href="/admin/readiness" className={buttonVariants({ variant: "secondary" })}>
+                Runtime readiness
+              </Link>
+            ) : null}
+            {isAdminAccount ? (
               <Link href="/admin/service-requests" className={buttonVariants({ variant: "secondary" })}>
                 Admin queue
               </Link>
