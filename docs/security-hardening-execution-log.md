@@ -254,3 +254,34 @@
 - Explicit residual risk after each slice:
   - The webhook path is now more observable, but the live Stripe dashboard and delivery history still need credentialed verification before billing incident readiness can be treated as complete.
   - Scheduled-job secret separation, broader env validation, and CSP tightening remain open security work outside this slice.
+
+## 2026-03-09 23:42:15 CDT
+
+- Date/time: `2026-03-09 23:42:15 CDT`
+- Current branch/worktree: `codex/security-webhook-visibility` at `/Users/zohaibkhawaja/Documents/Codex/zokorp-worktrees/security-hardening`
+- Current action item(s):
+  - Rebase the webhook observability slice onto the post-merge mainline truthfully after PR `#49` merged before the webhook commit landed.
+  - Revalidate the webhook slice on a clean branch rooted at current `origin/main`.
+  - Open a fresh follow-up PR for only the webhook delta.
+- Status:
+  - Clean-branch webhook cherry-pick: `done`
+  - Clean-branch validation refresh: `done`
+  - Follow-up PR creation: `in_progress`
+- Findings or evidence:
+  - GitHub merged PR `#49` at `770e710`, but that merge did not include the later webhook commit `8d7ac24`.
+  - A fresh branch from current `origin/main` was required to avoid falsely claiming the webhook hardening had already landed.
+  - Cherry-picking the webhook slice onto `codex/security-webhook-visibility` produced a clean branch head with the same validated tree.
+- Code changes made:
+  - Created branch `codex/security-webhook-visibility` from `origin/main`.
+  - Cherry-picked the validated webhook observability commit onto the new branch.
+- Validation results:
+  - Clean-branch `npm run lint`: passed
+  - Clean-branch `npm run typecheck`: passed
+  - Clean-branch `npm test`: passed (`58` files, `211` tests)
+  - Clean-branch `npm run build`: passed
+- PR link if applicable:
+  - Pending follow-up PR creation from `codex/security-webhook-visibility`
+- Blockers requiring human action:
+  - None for the branch split itself. The earlier provider-side Stripe verification blockers still apply.
+- Explicit residual risk after each slice:
+  - The webhook observability slice is validated locally but not yet merged to `main` until the new follow-up PR is created and lands.
