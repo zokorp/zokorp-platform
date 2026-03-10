@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { validatorTierForProfile } from "@/lib/credit-tiers";
 import { db } from "@/lib/db";
 import { decrementUsesAtomically, requireEntitlement } from "@/lib/entitlements";
+import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { maxUploadBytes, isAllowedFileType } from "@/lib/security";
 import { parseValidatorInput } from "@/lib/validator";
@@ -22,6 +23,11 @@ const formSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const crossSiteResponse = requireSameOrigin(request);
+    if (crossSiteResponse) {
+      return crossSiteResponse;
+    }
+
     const user = await requireUser();
     const limiter = await consumeRateLimit({
       key: `validator:${user.id}:${getRequestFingerprint(request)}`,

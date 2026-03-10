@@ -119,6 +119,7 @@ function makeRequest(body: string, contentType = "application/json") {
     method: "POST",
     headers: {
       "content-type": contentType,
+      origin: "https://app.zokorp.com",
       "x-forwarded-for": "203.0.113.10",
       "user-agent": "vitest",
     },
@@ -163,6 +164,26 @@ describe("submit landing zone readiness route", () => {
     });
     expect(mocks.submissionCreate).not.toHaveBeenCalled();
     expect(mocks.sendToolResultEmail).not.toHaveBeenCalled();
+  });
+
+  it("rejects cross-site submissions before any persistence work", async () => {
+    const response = await POST(
+      new Request("https://app.zokorp.com/api/submit-landing-zone-readiness", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "https://evil.example",
+        },
+        body: JSON.stringify(makeAnswers()),
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      error: "Cross-site requests are not allowed.",
+    });
+    expect(mocks.submissionCreate).not.toHaveBeenCalled();
+    expect(mocks.requireVerifiedFreeToolAccess).not.toHaveBeenCalled();
   });
 
   it("rejects personal email domains on the server", async () => {

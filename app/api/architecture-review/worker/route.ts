@@ -6,6 +6,10 @@ import { isSchemaDriftError } from "@/lib/db-errors";
 
 export const runtime = "nodejs";
 
+const NO_STORE_HEADERS = {
+  "Cache-Control": "no-store",
+};
+
 function safeSecretEqual(expected: string, provided: string) {
   const expectedBuffer = Buffer.from(expected);
   const providedBuffer = Buffer.from(provided);
@@ -40,11 +44,11 @@ async function runWorker(request: Request) {
   const receivedSecret = providedSecret(request);
 
   if (!configuredSecret) {
-    return NextResponse.json({ error: "Architecture review worker secret is not configured." }, { status: 503 });
+    return NextResponse.json({ error: "Architecture review worker secret is not configured." }, { status: 503, headers: NO_STORE_HEADERS });
   }
 
   if (!receivedSecret || !safeSecretEqual(configuredSecret, receivedSecret)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: NO_STORE_HEADERS });
   }
 
   try {
@@ -54,18 +58,18 @@ async function runWorker(request: Request) {
     return NextResponse.json({
       status: "ok",
       ...result,
-    });
+    }, { headers: NO_STORE_HEADERS });
   } catch (error) {
     if (isSchemaDriftError(error)) {
-      return NextResponse.json({ error: "Architecture review queue schema is unavailable." }, { status: 503 });
+      return NextResponse.json({ error: "Architecture review queue schema is unavailable." }, { status: 503, headers: NO_STORE_HEADERS });
     }
 
+    console.error("architecture review worker run failed", error);
     return NextResponse.json(
       {
         error: "Architecture review worker run failed.",
-        details: error instanceof Error ? error.message : "unknown_error",
       },
-      { status: 500 },
+      { status: 500, headers: NO_STORE_HEADERS },
     );
   }
 }
@@ -74,6 +78,18 @@ export async function POST(request: Request) {
   return runWorker(request);
 }
 
-export async function GET(request: Request) {
-  return runWorker(request);
+export async function GET(_request: Request) {
+  void _request;
+  return NextResponse.json(
+    {
+      error: "Method not allowed",
+    },
+    {
+      status: 405,
+      headers: {
+        ...NO_STORE_HEADERS,
+        Allow: "POST",
+      },
+    },
+  );
 }

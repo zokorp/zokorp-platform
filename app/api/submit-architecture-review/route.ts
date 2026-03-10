@@ -12,6 +12,7 @@ import { db } from "@/lib/db";
 import { isSchemaDriftError } from "@/lib/db-errors";
 import { isFreeToolAccessError, requireVerifiedFreeToolAccess } from "@/lib/free-tool-access";
 import { normalizeIdempotencyKey, readIdempotencyEntry, writeIdempotencyEntry } from "@/lib/idempotency-cache";
+import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { maxUploadBytes } from "@/lib/security";
 import { archiveArchitectureDiagramToWorkDrive, formatWorkDriveArchiveStatus } from "@/lib/zoho-workdrive";
@@ -181,6 +182,11 @@ export async function POST(request: Request) {
   let limiterContext: RateLimitResult | undefined;
 
   try {
+    const crossSiteResponse = requireSameOrigin(request);
+    if (crossSiteResponse) {
+      return crossSiteResponse;
+    }
+
     const access = await requireVerifiedFreeToolAccess({
       toolName: "Architecture Diagram Reviewer",
     });

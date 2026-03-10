@@ -23,6 +23,7 @@ import {
 import { db } from "@/lib/db";
 import { isSchemaDriftError } from "@/lib/db-errors";
 import { isFreeToolAccessError, requireVerifiedFreeToolAccess } from "@/lib/free-tool-access";
+import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { upsertZohoLead } from "@/lib/zoho-crm";
 
@@ -45,6 +46,11 @@ export async function POST(request: Request) {
   const requestId = randomUUID();
 
   try {
+    const crossSiteResponse = requireSameOrigin(request);
+    if (crossSiteResponse) {
+      return crossSiteResponse;
+    }
+
     const limiter = await consumeRateLimit({
       key: `cloud-cost-leak-finder:${getRequestFingerprint(request)}`,
       limit: RATE_LIMIT,

@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { getSiteOriginFromRequest } from "@/lib/site-origin";
 import { isCheckoutEnabledStripePriceId } from "@/lib/stripe-price-id";
@@ -16,6 +17,11 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const crossSiteResponse = requireSameOrigin(request);
+    if (crossSiteResponse) {
+      return crossSiteResponse;
+    }
+
     if (!process.env.STRIPE_SECRET_KEY) {
       return NextResponse.json(
         { error: "Billing setup is still in progress. Please try again shortly." },

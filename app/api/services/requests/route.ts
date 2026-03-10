@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { isSchemaDriftError } from "@/lib/db-errors";
+import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { generateServiceTrackingCode } from "@/lib/service-requests";
 
@@ -61,6 +62,11 @@ async function createServiceRequest(input: {
 
 export async function POST(request: Request) {
   try {
+    const crossSiteResponse = requireSameOrigin(request);
+    if (crossSiteResponse) {
+      return crossSiteResponse;
+    }
+
     const user = await requireUser();
 
     const limiter = await consumeRateLimit({
