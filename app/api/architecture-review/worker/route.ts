@@ -8,7 +8,6 @@ import {
 } from "@/lib/internal-route";
 
 export const runtime = "nodejs";
-
 function providedSecret(request: Request) {
   return (
     request.headers.get("x-arch-review-worker-secret") ??
