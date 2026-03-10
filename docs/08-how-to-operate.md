@@ -39,6 +39,12 @@
   - `customer.subscription.updated`
   - `customer.subscription.deleted`
 - Set `STRIPE_WEBHOOK_SECRET` from Stripe endpoint signing secret.
+- Operator visibility:
+  - Signed webhook skips and failures now emit internal audit-log events, including:
+    - `billing.webhook_checkout_skipped`
+    - `billing.subscription_sync_applied`
+    - `billing.webhook_failed`
+  - If Stripe billing state looks wrong, inspect those audit actions before retrying webhooks or changing entitlements manually.
 
 ## 6) Entitlement operations
 - One-time credit products:
