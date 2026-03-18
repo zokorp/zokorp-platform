@@ -27,6 +27,7 @@ Production-oriented Next.js App Router application for ZoKorp marketing, free di
 - Public subscription pricing stays hidden unless `PUBLIC_SUBSCRIPTION_PRICING_APPROVED=true`.
 - Public software and pricing pages fall back to a static core catalog when the DB-backed catalog is unavailable.
 - Billing, admin, and entitlement-protected routes enforce access server-side.
+- Public-schema database tables are RLS-enabled and default-closed; server-side Prisma remains the supported application data path, and production `DATABASE_URL` must keep using the backend owner or another `BYPASSRLS`-capable role until explicit application policies are introduced.
 
 ## Local setup
 1. Install dependencies with `npm install`.
