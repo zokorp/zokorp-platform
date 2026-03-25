@@ -1,0 +1,11 @@
+.github
+docs
+tests
+tmp
+.playwright-cli
+.venv
+.next
+coverage
+tsconfig.typecheck.tsbuildinfo
+DEEP_RESEARCH_PHASE3_PROMPT.md
+DEEP_RESEARCH_PHASE4_PROMPT.md
