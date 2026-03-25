@@ -121,8 +121,8 @@ Price IDs can exist before public display. Subscription prices should still stay
   - Production guidance: set this explicitly and keep it distinct from `ZOHO_SYNC_SECRET`. The route still accepts `ZOHO_SYNC_SECRET` as a temporary compatibility fallback today, but that fallback should not be relied on for long-term production posture.
 - `CRON_SECRET`
   - Secret: yes.
-  - Purpose: authenticates Vercel cron invocations for retention sweeps, architecture worker drains, and scheduled Zoho sync runs.
-  - Production guidance: Vercel cron sends this as `Authorization: Bearer <CRON_SECRET>`; keep it distinct from worker, follow-up, and provider webhook secrets.
+  - Purpose: authenticates Vercel cron invocations for retention sweeps and any future cron-compatible internal routes.
+  - Production guidance: on the current Hobby deployment, Vercel cron is used only for the daily retention sweep. Higher-frequency internal jobs remain scheduled through GitHub Actions. Vercel cron sends this as `Authorization: Bearer <CRON_SECRET>`; keep it distinct from worker, follow-up, and provider webhook secrets.
 - `ARCH_REVIEW_BOOK_CALL_URL`
   - Secret: no.
   - Purpose: operator-controlled CTA destination for booking.
