@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project overview
-ZoKorp Platform is a Next.js App Router application with Prisma/Postgres, NextAuth email magic-link auth, and Stripe billing.
+ZoKorp Platform is a Next.js App Router application with Prisma/Postgres, NextAuth credentials auth with business-email verification, and Stripe billing.
 
 ## Local setup
 1. Install dependencies:
@@ -37,7 +37,7 @@ ZoKorp Platform is a Next.js App Router application with Prisma/Postgres, NextAu
 - Insecure design: fail closed on entitlement checks.
 - Security misconfiguration: keep env vars explicit and minimum role defaults.
 - Vulnerable components: update dependencies regularly and review `npm audit` output.
-- Identification/auth failures: magic-link auth + session checks for protected routes.
+- Identification/auth failures: password credentials auth, business-email verification, and session checks for protected routes.
 - Software/data integrity: verify Stripe webhook signatures.
 - Logging/monitoring: record billing/tool actions in `AuditLog`.
 - SSRF/file upload: strict file type/size checks, in-memory processing, no direct path writes.

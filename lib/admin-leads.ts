@@ -184,24 +184,6 @@ function deriveLeadSignals(entry: {
   return signals;
 }
 
-function extractRecommendedEngagement(quote: unknown) {
-  if (!quote || typeof quote !== "object" || Array.isArray(quote)) {
-    return null;
-  }
-
-  const record = quote as Record<string, unknown>;
-
-  if (typeof record.quoteTier === "string" && record.quoteTier.trim()) {
-    return record.quoteTier.trim();
-  }
-
-  if (typeof record.engagementType === "string" && record.engagementType.trim()) {
-    return record.engagementType.trim();
-  }
-
-  return null;
-}
-
 function deriveArchitectureDeliveryState(input: { emailSentAt: Date | null; emailDeliveryMode: string | null }) {
   if (input.emailSentAt) {
     return "sent" as const;
@@ -687,7 +669,9 @@ function csvEscape(value: string | number | boolean | null) {
   }
 
   const raw = String(value);
-  return `"${raw.replaceAll("\"", "\"\"")}"`;
+  const neutralized =
+    /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
+  return `"${neutralized.replaceAll("\"", "\"\"")}"`;
 }
 
 export function renderLeadDirectoryCsv(entries: LeadDirectoryEntry[]) {

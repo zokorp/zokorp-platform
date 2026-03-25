@@ -177,10 +177,13 @@ These values are needed only when CRM sync and WorkDrive archival are enabled.
 - `ZOHO_WORKDRIVE_CLIENT_SECRET`
   - Secret: yes.
   - Purpose: WorkDrive API access.
+- `ZOHO_WORKDRIVE_API_ORIGIN`
 - `ZOHO_WORKDRIVE_BASE_API_URI`
 - `ZOHO_WORKDRIVE_ACCOUNTS_DOMAIN`
   - Secret: no.
   - Purpose: WorkDrive endpoint overrides.
+  - Recommended value: `ZOHO_WORKDRIVE_API_ORIGIN=https://workdrive.zoho.com`.
+  - Compatibility note: legacy values like `ZOHO_WORKDRIVE_BASE_API_URI=zohoapis.com` do not point at a reachable WorkDrive upload host; use a full WorkDrive host or the explicit origin variable instead.
 
 ## Admin and operator config
 

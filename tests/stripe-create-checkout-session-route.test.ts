@@ -99,6 +99,7 @@ describe("create checkout session route", () => {
       product: {
         slug: "zokorp-validator",
         active: true,
+        accessModel: "METERED",
       },
     });
     auditCreateMock.mockResolvedValue({});
@@ -235,5 +236,42 @@ describe("create checkout session route", () => {
         }),
       }),
     );
+  });
+
+  it("blocks hidden subscription pricing on the server when public subscription pricing is not approved", async () => {
+    delete process.env.PUBLIC_SUBSCRIPTION_PRICING_APPROVED;
+    priceFindUniqueMock.mockResolvedValueOnce({
+      id: "price_db_sub_123",
+      stripePriceId: "price_sub_123",
+      productId: "product_sub_123",
+      creditsGranted: 1,
+      kind: "SUBSCRIPTION",
+      active: true,
+      product: {
+        slug: "zokorp-validator",
+        active: true,
+        accessModel: "SUBSCRIPTION",
+      },
+    });
+
+    const response = await POST(
+      new Request("https://app.zokorp.com/api/stripe/create-checkout-session", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "https://app.zokorp.com",
+        },
+        body: JSON.stringify({
+          priceId: "price_sub_123",
+          productSlug: "zokorp-validator",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({
+      error: "Price not available",
+    });
+    expect(checkoutSessionCreateMock).not.toHaveBeenCalled();
   });
 });

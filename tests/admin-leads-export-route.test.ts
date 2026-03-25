@@ -31,6 +31,7 @@ describe("admin leads export route", () => {
     const response = await GET(new Request("http://localhost/admin/leads/export"));
 
     expect(response.status).toBe(401);
+    expect(response.headers.get("cache-control")).toBe("no-store");
   });
 
   it("returns a CSV attachment for admins", async () => {

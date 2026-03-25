@@ -13,8 +13,34 @@ function getAccountsDomain() {
   return process.env.ZOHO_WORKDRIVE_ACCOUNTS_DOMAIN ?? process.env.ZOHO_ACCOUNTS_DOMAIN ?? "https://accounts.zoho.com";
 }
 
-function getBaseApiUri() {
-  return process.env.ZOHO_WORKDRIVE_BASE_API_URI ?? "zohoapis.com";
+function normalizeOrigin(value: string) {
+  return value.replace(/\/+$/, "");
+}
+
+export function resolveWorkDriveUploadOrigin() {
+  const explicitOrigin = process.env.ZOHO_WORKDRIVE_API_ORIGIN?.trim();
+  if (explicitOrigin) {
+    return explicitOrigin.startsWith("http://") || explicitOrigin.startsWith("https://")
+      ? normalizeOrigin(explicitOrigin)
+      : normalizeOrigin(`https://${explicitOrigin}`);
+  }
+
+  const legacyValue = process.env.ZOHO_WORKDRIVE_BASE_API_URI?.trim();
+  if (!legacyValue) {
+    return "https://workdrive.zoho.com";
+  }
+
+  if (legacyValue.startsWith("http://") || legacyValue.startsWith("https://")) {
+    return normalizeOrigin(legacyValue);
+  }
+
+  if (legacyValue.startsWith("workdrive.")) {
+    return normalizeOrigin(`https://${legacyValue}`);
+  }
+
+  // Legacy values like `zohoapis.com` are not valid WorkDrive upload hosts.
+  // Fall back to Zoho's documented WorkDrive origin unless an explicit host is supplied.
+  return "https://workdrive.zoho.com";
 }
 
 function getWorkDriveFolderId() {
@@ -97,7 +123,7 @@ async function uploadFile(input: {
   mimeType: string;
   bytes: Uint8Array;
 }) {
-  const endpoint = `https://workdrive.${getBaseApiUri()}/api/v1/upload`;
+  const endpoint = `${resolveWorkDriveUploadOrigin()}/api/v1/upload`;
   const form = new FormData();
   form.append("filename", input.filename);
   form.append("parent_id", input.folderId);

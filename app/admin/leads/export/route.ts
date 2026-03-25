@@ -8,7 +8,12 @@ export async function GET(request: Request) {
     await requireAdmin();
   } catch (error) {
     if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
-      return new Response("Unauthorized", { status: error.message === "UNAUTHORIZED" ? 401 : 403 });
+      return new Response("Unauthorized", {
+        status: error.message === "UNAUTHORIZED" ? 401 : 403,
+        headers: {
+          "Cache-Control": "no-store",
+        },
+      });
     }
 
     throw error;

@@ -2,11 +2,9 @@ import { createHash, createCipheriv, randomBytes } from "node:crypto";
 
 import { db } from "@/lib/db";
 import {
-  normalizeToolConsent,
   retentionPolicy,
   type ArchiveRecord,
   type LeadEventAggregate,
-  type ToolConsent,
   type ToolEventSource,
 } from "@/lib/tool-consent";
 
@@ -112,21 +110,44 @@ export async function recordLeadEvent(input: {
   userId?: string | null;
   aggregate: LeadEventAggregate;
 }) {
+  const payload = {
+    leadId: input.leadId,
+    userId: input.userId ?? null,
+    source: input.aggregate.source,
+    deliveryState: input.aggregate.deliveryState,
+    crmSyncState: input.aggregate.crmSyncState,
+    saveForFollowUp: input.aggregate.saveForFollowUp,
+    allowCrmFollowUp: input.aggregate.allowCrmFollowUp,
+    scoreBand: input.aggregate.scoreBand ?? null,
+    estimateBand: input.aggregate.estimateBand ?? null,
+    recommendedEngagement: input.aggregate.recommendedEngagement ?? null,
+    sourceRecordKey: input.aggregate.sourceRecordKey ?? null,
+    createdAt: input.aggregate.createdAt ?? new Date(),
+  };
+
+  if (payload.sourceRecordKey) {
+    return db.leadEvent.upsert({
+      where: {
+        sourceRecordKey: payload.sourceRecordKey,
+      },
+      create: payload,
+      update: {
+        leadId: payload.leadId,
+        userId: payload.userId,
+        source: payload.source,
+        deliveryState: payload.deliveryState,
+        crmSyncState: payload.crmSyncState,
+        saveForFollowUp: payload.saveForFollowUp,
+        allowCrmFollowUp: payload.allowCrmFollowUp,
+        scoreBand: payload.scoreBand,
+        estimateBand: payload.estimateBand,
+        recommendedEngagement: payload.recommendedEngagement,
+      },
+    });
+  }
+
   return db.leadEvent.create({
-    data: {
-      leadId: input.leadId,
-      userId: input.userId ?? null,
-      source: input.aggregate.source,
-      deliveryState: input.aggregate.deliveryState,
-      crmSyncState: input.aggregate.crmSyncState,
-      saveForFollowUp: input.aggregate.saveForFollowUp,
-      allowCrmFollowUp: input.aggregate.allowCrmFollowUp,
-      scoreBand: input.aggregate.scoreBand ?? null,
-      estimateBand: input.aggregate.estimateBand ?? null,
-      recommendedEngagement: input.aggregate.recommendedEngagement ?? null,
-      sourceRecordKey: input.aggregate.sourceRecordKey ?? null,
-      createdAt: input.aggregate.createdAt ?? new Date(),
-    },
+    data: payload,
   });
 }
 

@@ -82,6 +82,8 @@ async function sendWithSmtp(input: SendEmailInput): Promise<SendEmailResult> {
   const user = process.env.EMAIL_SERVER_USER;
   const pass = process.env.EMAIL_SERVER_PASSWORD;
   const from = process.env.EMAIL_FROM;
+  const handshakeTimeoutMs = Number.parseInt(process.env.EMAIL_SERVER_TIMEOUT_MS ?? "30000", 10);
+  const socketTimeoutMs = Number.parseInt(process.env.EMAIL_SERVER_SOCKET_TIMEOUT_MS ?? "120000", 10);
 
   if (!host || !port || !user || !pass || !from) {
     return {
@@ -100,9 +102,12 @@ async function sendWithSmtp(input: SendEmailInput): Promise<SendEmailResult> {
         user,
         pass,
       },
-      connectionTimeout: 10_000,
-      greetingTimeout: 10_000,
-      socketTimeout: 15_000,
+      // Architecture review emails are materially larger than auth or lightweight tool emails.
+      // Give the SMTP provider enough time to complete the TLS handshake and message upload
+      // before falling back to download/email-draft mode.
+      connectionTimeout: Number.isFinite(handshakeTimeoutMs) ? handshakeTimeoutMs : 30_000,
+      greetingTimeout: Number.isFinite(handshakeTimeoutMs) ? handshakeTimeoutMs : 30_000,
+      socketTimeout: Number.isFinite(socketTimeoutMs) ? socketTimeoutMs : 120_000,
       tls: {
         minVersion: "TLSv1.2",
       },
@@ -130,10 +135,17 @@ async function sendWithSmtp(input: SendEmailInput): Promise<SendEmailResult> {
       provider: "smtp",
     };
   } catch (error) {
+    const errorMessage =
+      error instanceof Error
+        ? [error.name, (error as { code?: string }).code, (error as { command?: string }).command, error.message]
+            .filter(Boolean)
+            .join(":")
+        : "SMTP_UNKNOWN_ERROR";
+
     return {
       ok: false,
       provider: "smtp",
-      error: error instanceof Error ? error.message : "SMTP_UNKNOWN_ERROR",
+      error: errorMessage,
     };
   }
 }
