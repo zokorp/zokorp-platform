@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { verifyArchitectureReviewCtaToken } from "@/lib/architecture-review/cta-token";
+import { buildCalendlyBookingUrl } from "@/lib/calendly";
 import { db } from "@/lib/db";
 import { isSchemaDriftError } from "@/lib/db-errors";
-import { recordLeadInteraction, upsertLead } from "@/lib/privacy-leads";
+import { buildEstimateReferenceCode, recordLeadInteraction, upsertLead } from "@/lib/privacy-leads";
 
 export const runtime = "nodejs";
 
@@ -11,9 +12,19 @@ function ctaSecret() {
   return process.env.ARCH_REVIEW_CTA_SECRET ?? process.env.ARCH_REVIEW_EML_SECRET ?? process.env.NEXTAUTH_SECRET ?? "";
 }
 
-function destinationForType(ctaType: "book-call" | "remediation-plan") {
+function destinationForType(
+  ctaType: "book-call" | "remediation-plan",
+  estimateReferenceCode?: string | null,
+) {
   if (ctaType === "book-call") {
-    return process.env.ARCH_REVIEW_BOOK_CALL_URL ?? `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://zokorp-web.vercel.app"}/services#service-request`;
+    const destination =
+      process.env.ARCH_REVIEW_BOOK_CALL_URL ??
+      `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://zokorp-web.vercel.app"}/services#service-request`;
+
+    return buildCalendlyBookingUrl({
+      baseUrl: destination,
+      estimateReferenceCode,
+    });
   }
 
   return (
@@ -33,6 +44,7 @@ export async function GET(request: Request) {
 
   try {
     const payload = verifyArchitectureReviewCtaToken(token, secret);
+    let estimateReferenceCode: string | null = null;
 
     try {
       const updatedLeadLog = await db.leadLog.update({
@@ -58,12 +70,18 @@ export async function GET(request: Request) {
         name: updatedLeadLog.userName,
       });
 
+      estimateReferenceCode = buildEstimateReferenceCode({
+        source: "architecture-review",
+        email: updatedLeadLog.userEmail,
+      });
+
       await recordLeadInteraction({
         leadId: lead.id,
         userId: updatedLeadLog.userId,
         source: "architecture-review",
         action: "cta_clicked",
         provider: payload.ctaType === "book-call" ? "calendly" : null,
+        estimateReferenceCode,
       });
     } catch (error) {
       if (!isSchemaDriftError(error)) {
@@ -71,7 +89,7 @@ export async function GET(request: Request) {
       }
     }
 
-    return NextResponse.redirect(destinationForType(payload.ctaType), { status: 302 });
+    return NextResponse.redirect(destinationForType(payload.ctaType, estimateReferenceCode), { status: 302 });
   } catch {
     return NextResponse.redirect(destinationForType("book-call"), { status: 302 });
   }

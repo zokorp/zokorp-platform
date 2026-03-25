@@ -100,6 +100,7 @@ describe("runtime readiness report", () => {
       ARCH_REVIEW_WORKER_SECRET: "worker-secret",
       ARCH_REVIEW_FOLLOWUP_SECRET: "followup-secret",
       ZOHO_SYNC_SECRET: "zoho-secret",
+      CALENDLY_SYNC_SECRET: "calendly-secret",
       RESEND_API_KEY: "re_123",
       RESEND_FROM_EMAIL: "hello@zokorp.com",
       ZOHO_CRM_ACCESS_TOKEN: "crm-token",
@@ -111,6 +112,7 @@ describe("runtime readiness report", () => {
     expect(findCheck(report, "auth-secret")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "stripe-core")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "scheduled-secret-separation")).toMatchObject({ level: "pass" });
+    expect(findCheck(report, "calendly-sync-secret")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "zoho-workdrive")).toMatchObject({ level: "pass" });
     expect(report.totals.fail).toBe(0);
   });

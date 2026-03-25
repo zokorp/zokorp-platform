@@ -129,10 +129,25 @@ Price IDs can exist before public display. Subscription prices should still stay
 - `ARCH_REVIEW_REMEDIATION_PLAN_URL`
   - Secret: no.
   - Purpose: operator-controlled remediation CTA destination.
+- `CALENDLY_SYNC_SECRET`
+  - Secret: yes.
+  - Purpose: authenticates the internal booked-call ingest route used by the GitHub Actions Calendly poller.
+  - Production guidance: keep this distinct from `CRON_SECRET`, `ARCH_REVIEW_WORKER_SECRET`, and `CALENDLY_WEBHOOK_SIGNING_KEY`.
 - `CALENDLY_WEBHOOK_SIGNING_KEY`
   - Secret: yes.
   - Purpose: verifies signed Calendly webhook deliveries for booked-call automation.
-  - Production guidance: set this only if Calendly webhook automation is enabled and keep it distinct from `CRON_SECRET`.
+  - Production guidance: this is optional on the current free-plan posture. Set it only if Calendly webhook automation is enabled on a paid Calendly subscription, and keep it distinct from `CRON_SECRET` and `CALENDLY_SYNC_SECRET`.
+
+### GitHub Actions-only secrets for free Calendly polling
+
+These are not application runtime env vars; they live in GitHub Actions secrets.
+
+- `CALENDLY_PERSONAL_ACCESS_TOKEN`
+  - Secret: yes.
+  - Purpose: authenticates the scheduled GitHub Actions poller against the Calendly API for free-plan booked-call sync.
+- `CALENDLY_SYNC_INGEST_URL`
+  - Secret: yes.
+  - Purpose: target URL for the internal booked-call ingest route, typically `https://app.zokorp.com/api/internal/calendly/booked-call`.
 
 ## Zoho CRM and WorkDrive
 

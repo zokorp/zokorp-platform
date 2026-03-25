@@ -1,5 +1,3 @@
-import { Prisma, ServiceRequestStatus, ServiceRequestType } from "@prisma/client";
-
 import {
   calendlyBookedAt,
   calendlyExternalEventId,
@@ -7,49 +5,10 @@ import {
   parseCalendlyWebhookPayload,
   verifyCalendlyWebhookSignature,
 } from "@/lib/calendly";
-import { db } from "@/lib/db";
+import { ingestArchitectureBookedCall } from "@/lib/calendly-bookings";
 import { jsonNoStore, methodNotAllowedJson } from "@/lib/internal-route";
-import { recordLeadInteraction, upsertLead } from "@/lib/privacy-leads";
-import { createServiceRequest } from "@/lib/service-requests";
 
 export const runtime = "nodejs";
-
-async function ensureServiceRequestForBookedCall(input: {
-  interactionId: string;
-  userId: string;
-  bookedAtIso: string | null;
-  estimateReferenceCode: string | null;
-}) {
-  const request = await createServiceRequest({
-    userId: input.userId,
-    type: ServiceRequestType.CONSULTATION,
-    title: "Architecture Review Follow-up",
-    summary: [
-      "Calendly booking confirmed for architecture review follow-up.",
-      input.bookedAtIso ? `Booked time: ${input.bookedAtIso}` : null,
-      input.estimateReferenceCode ? `Estimate reference: ${input.estimateReferenceCode}` : null,
-      "Provider: Calendly",
-    ]
-      .filter(Boolean)
-      .join(" "),
-  });
-
-  await db.serviceRequest.update({
-    where: { id: request.id },
-    data: {
-      status: ServiceRequestStatus.SCHEDULED,
-    },
-  });
-
-  await db.leadInteraction.update({
-    where: { id: input.interactionId },
-    data: {
-      serviceRequestId: request.id,
-    },
-  });
-
-  return request;
-}
 
 export async function POST(request: Request) {
   const signingKey = process.env.CALENDLY_WEBHOOK_SIGNING_KEY ?? "";
@@ -102,98 +61,16 @@ export async function POST(request: Request) {
     `calendly:${email}:${calendlyBookedAt(payload) ?? "unknown"}`;
   const bookedAtIso = calendlyBookedAt(payload);
   const estimateReferenceCode = payload.payload?.tracking?.utm_content?.trim() || null;
-
-  const user = await db.user.findUnique({
-    where: { email },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-    },
-  });
-
-  const lead = await upsertLead({
-    userId: user?.id ?? null,
+  const result = await ingestArchitectureBookedCall({
     email,
-    name: payload.payload?.name ?? user?.name ?? null,
+    name: payload.payload?.name ?? null,
+    externalEventId,
+    bookedAtIso,
+    estimateReferenceCode,
+    provider: "calendly",
   });
 
-  let interaction = await db.leadInteraction.findUnique({
-    where: {
-      externalEventId,
-    },
-    select: {
-      id: true,
-      serviceRequestId: true,
-    },
-  });
-
-  if (!interaction) {
-    try {
-      const created = await recordLeadInteraction({
-        leadId: lead.id,
-        userId: user?.id ?? null,
-        source: "architecture-review",
-        action: "call_booked",
-        provider: "calendly",
-        externalEventId,
-        estimateReferenceCode,
-      });
-      interaction = {
-        id: created.id,
-        serviceRequestId: created.serviceRequestId,
-      };
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2002"
-      ) {
-        interaction = await db.leadInteraction.findUnique({
-          where: {
-            externalEventId,
-          },
-          select: {
-            id: true,
-            serviceRequestId: true,
-          },
-        });
-      } else {
-        throw error;
-      }
-    }
-  }
-
-  let serviceRequestId = interaction?.serviceRequestId ?? null;
-  if (user?.id && interaction && !serviceRequestId) {
-    const serviceRequest = await ensureServiceRequestForBookedCall({
-      interactionId: interaction.id,
-      userId: user.id,
-      bookedAtIso,
-      estimateReferenceCode,
-    });
-    serviceRequestId = serviceRequest.id;
-  }
-
-  await db.auditLog.create({
-    data: {
-      userId: user?.id ?? null,
-      action: "integration.calendly_call_booked",
-      metadataJson: {
-        email,
-        source: "architecture-review",
-        provider: "calendly",
-        externalEventId,
-        bookedAtIso,
-        estimateReferenceCode,
-        createdServiceRequest: Boolean(serviceRequestId),
-      },
-    },
-  });
-
-  return jsonNoStore({
-    status: "ok",
-    serviceRequestId,
-  });
+  return jsonNoStore(result);
 }
 
 export async function GET(_request: Request) {

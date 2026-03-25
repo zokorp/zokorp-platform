@@ -227,7 +227,10 @@
     - drains the architecture queue every 5 minutes via `ARCH_REVIEW_WORKER_URL` + `ARCH_REVIEW_WORKER_SECRET`
   - `.github/workflows/architecture-followups.yml`
     - sends architecture follow-ups daily via `ARCH_REVIEW_FOLLOWUP_URL` + `ARCH_REVIEW_FOLLOWUP_SECRET`
+  - `.github/workflows/calendly-booking-sync.yml`
+    - polls Calendly every 15 minutes with `CALENDLY_PERSONAL_ACCESS_TOKEN`, then posts matched booked-call events to `CALENDLY_SYNC_INGEST_URL` using `CALENDLY_SYNC_SECRET`
   - `.github/workflows/zoho-sync-leads.yml`
     - triggers Zoho sync via `ZOHO_SYNC_URL` + `ZOHO_SYNC_SECRET`
 - Operator note:
   - if Vercel production deployments fail with a cron-related error on the Hobby plan, inspect `vercel.json` first for any schedule more frequent than once per day
+  - the current free Calendly posture uses polling rather than webhook subscriptions because webhook subscriptions require a paid Calendly plan

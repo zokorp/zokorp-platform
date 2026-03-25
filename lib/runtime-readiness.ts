@@ -89,6 +89,7 @@ export function buildRuntimeReadinessReport(env: RuntimeEnv = process.env): Runt
   const archWorkerSecretConfigured = configured(env.ARCH_REVIEW_WORKER_SECRET);
   const followupSecretConfigured = configured(env.ARCH_REVIEW_FOLLOWUP_SECRET);
   const zohoSyncSecretConfigured = configured(env.ZOHO_SYNC_SECRET);
+  const calendlySyncSecretConfigured = configured(env.CALENDLY_SYNC_SECRET);
   const followupAndZohoSecretsEqual =
     followupSecretConfigured &&
     zohoSyncSecretConfigured &&
@@ -274,6 +275,20 @@ export function buildRuntimeReadinessReport(env: RuntimeEnv = process.env): Runt
               level: "warning",
               summary: "ZOHO_SYNC_SECRET is missing.",
               operatorAction: "Set the Zoho sync secret before relying on the scheduled lead-sync route.",
+            },
+        calendlySyncSecretConfigured
+          ? {
+              id: "calendly-sync-secret",
+              label: "Calendly sync ingest secret",
+              level: "pass",
+              summary: "CALENDLY_SYNC_SECRET is configured.",
+            }
+          : {
+              id: "calendly-sync-secret",
+              label: "Calendly sync ingest secret",
+              level: "warning",
+              summary: "CALENDLY_SYNC_SECRET is missing.",
+              operatorAction: "Set the Calendly sync secret before relying on the free-plan booked-call poller.",
             },
         followupAndZohoSecretsEqual
           ? {

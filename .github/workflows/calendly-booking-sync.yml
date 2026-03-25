@@ -1,0 +1,26 @@
+name: Sync Calendly Booked Calls
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  sync-booked-calls:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Poll Calendly and ingest booked calls
+        env:
+          CALENDLY_PERSONAL_ACCESS_TOKEN: ${{ secrets.CALENDLY_PERSONAL_ACCESS_TOKEN }}
+          CALENDLY_SYNC_INGEST_URL: ${{ secrets.CALENDLY_SYNC_INGEST_URL }}
+          CALENDLY_SYNC_SECRET: ${{ secrets.CALENDLY_SYNC_SECRET }}
+          CALENDLY_SYNC_LOOKBACK_HOURS: "72"
+        run: node scripts/sync_calendly_bookings.mjs

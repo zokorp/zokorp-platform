@@ -34,6 +34,8 @@ describe("architecture review CTA route", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-25T12:00:00.000Z"));
     process.env.ARCH_REVIEW_CTA_SECRET = "cta-secret";
     process.env.ARCH_REVIEW_BOOK_CALL_URL = "https://book.zokorp.com/architecture";
     mocks.leadLogUpdate.mockResolvedValue({
@@ -51,6 +53,8 @@ describe("architecture review CTA route", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
+
     if (originalCtaSecret === undefined) {
       delete process.env.ARCH_REVIEW_CTA_SECRET;
     } else {
@@ -78,7 +82,12 @@ describe("architecture review CTA route", () => {
     );
 
     expect(response.status).toBe(302);
-    expect(response.headers.get("location")).toBe("https://book.zokorp.com/architecture");
+    const redirectUrl = new URL(response.headers.get("location") ?? "");
+    expect(redirectUrl.origin + redirectUrl.pathname).toBe("https://book.zokorp.com/architecture");
+    expect(redirectUrl.searchParams.get("utm_source")).toBe("zokorp");
+    expect(redirectUrl.searchParams.get("utm_medium")).toBe("architecture-review-email");
+    expect(redirectUrl.searchParams.get("utm_campaign")).toBe("architecture-follow-up");
+    expect(redirectUrl.searchParams.get("utm_content")).toMatch(/^ZK-ARCH-20260325-[A-F0-9]{6}$/);
     expect(mocks.leadLogUpdate).toHaveBeenCalledTimes(1);
     expect(mocks.leadUpsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -101,6 +110,7 @@ describe("architecture review CTA route", () => {
           source: "architecture-review",
           action: "cta_clicked",
           provider: "calendly",
+          estimateReferenceCode: expect.stringMatching(/^ZK-ARCH-20260325-[A-F0-9]{6}$/),
         }),
       }),
     );

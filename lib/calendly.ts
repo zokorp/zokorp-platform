@@ -79,3 +79,23 @@ export function calendlyExternalEventId(payload: CalendlyWebhookPayload) {
     null
   );
 }
+
+export function buildCalendlyBookingUrl(input: {
+  baseUrl: string;
+  estimateReferenceCode?: string | null;
+}) {
+  try {
+    const url = new URL(input.baseUrl);
+    url.searchParams.set("utm_source", "zokorp");
+    url.searchParams.set("utm_medium", "architecture-review-email");
+    url.searchParams.set("utm_campaign", "architecture-follow-up");
+
+    if (input.estimateReferenceCode) {
+      url.searchParams.set("utm_content", input.estimateReferenceCode);
+    }
+
+    return url.toString();
+  } catch {
+    return input.baseUrl;
+  }
+}
