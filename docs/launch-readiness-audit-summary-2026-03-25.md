@@ -2,121 +2,135 @@
 
 Date: March 25, 2026  
 Primary production app: [https://app.zokorp.com](https://app.zokorp.com)  
-Public apex domain observed during audit: [https://zokorp.com](https://zokorp.com)  
-Public `www` domain observed during audit: [https://www.zokorp.com](https://www.zokorp.com)
+Current production deployment: `dpl_DhvHvU1EAc84o5UHpyKEVgKVeK5d`  
+Deployment inspector: [zokorp-web / DhvHvU1EAc84o5UHpyKEVgKVeK5d](https://vercel.com/leggoboyos-projects/zokorp-web/DhvHvU1EAc84o5UHpyKEVgKVeK5d)  
+Base git commit in workspace: `4602753`  
+Important traceability note: production was updated from the current audited working tree, so the live deployment includes local changes that are not yet committed.
 
 ## Verdict
 
-ZoKorp is **ready with named caveats** for founder-led testing, direct demos, and controlled traffic sent straight to `app.zokorp.com`.
+ZoKorp is **not ready** for broad public marketing yet.
 
-ZoKorp is **not ready for broad public marketing from the root domain** until the marketing-domain mismatch is resolved. The main product experience is now real, coherent, and production-capable, but `zokorp.com` and `www.zokorp.com` still point at an older Squarespace site that does not match the live platform.
+`app.zokorp.com` is now strong enough for founder-led demos, direct prospect links, and controlled soft-launch traffic. The main reasons broad public launch is still blocked are external and proof-related rather than code-quality related:
 
-## What Was Proven
+- `zokorp.com` and `www.zokorp.com` still serve the stale Squarespace surface instead of the audited platform.
+- One real browser-completed Stripe test checkout is still unproven in this pass.
+- One real `/services` to Calendly to internal-ingestion booking artifact is still unproven in this pass.
+- One live mailbox-driven auth lifecycle proof is still missing.
 
-- The production app deployment is live on Vercel and healthy.
-- Local validation passed:
-  - `npm run lint`
-  - `npm run typecheck -- --incremental false`
-  - `npm test`
-  - `npm run build`
-  - `npm run smoke:production`
-- The architecture-review funnel now works in production with inline job processing:
-  - submission succeeds
-  - result email is delivered
-  - estimate wording and booking-first CTA are correct
-- All three other free diagnostic tools were proven live:
-  - AI Decider
-  - Landing Zone Readiness Checker
-  - Cloud Cost Leak Finder
-- Privacy-first storage behavior is real for the free tools:
-  - minimal lead/event storage by default
-  - opt-in archive path
-  - consent-gated CRM sync
-  - retention infrastructure present
-- Billing is strongly proven server-side:
-  - checkout session creation
-  - billing portal session creation
-  - signed Stripe webhook fulfillment
-  - entitlement and credit creation
-  - validator consumption
-  - credit decrement and purchase-required enforcement
-- Service-request creation from the app is live and visible in the user account timeline.
-- Scheduled operations are alive:
-  - Vercel retention cron
-  - GitHub Actions architecture worker
-  - GitHub Actions Calendly sync
-  - GitHub Actions Zoho sync
+## What Was Fixed And Deployed
 
-## Hardening Applied During This Audit
+This pass was execution, not review-only. The following launch-relevant fixes were implemented, validated locally, and deployed to production:
 
-The audit was not passive. Several launch-relevant fixes were made while verifying live behavior:
+- `/services` now uses a first-party server-built Calendly URL with:
+  - `utm_source=zokorp`
+  - `utm_medium=services-page`
+  - `utm_campaign=architecture-follow-up`
+- `/services` copy now honestly says:
+  - the form creates a tracked service request immediately
+  - booked calls are synced later after Calendly confirmation and same-email account matching
+- `ServiceRequestPanel` now gets server-rendered auth state so signed-in users no longer hit a false first-paint signed-out wall.
+- `decrementUsesAtomically` now returns post-transaction remaining-use state.
+- The validator route now treats parse + validate + decrement as the essential success path and keeps audit/lookup work best-effort only.
+- Checkout-session and portal-session creation now stay successful even if later audit-log writes fail.
+- Validator route responses are consistently `Cache-Control: no-store`.
+- Authenticated non-admin admin-page access now resolves through a real forbidden boundary instead of a soft-rendered `200` placeholder.
+- `app/api/architecture-review-status` now returns `no-store` on every branch, including error branches.
+- Calendly webhook verification now rejects stale signed payloads with a 5-minute timestamp tolerance.
+- `.xlsx` ingestion is now preflighted before `ExcelJS` with ZIP structure checks and worksheet/row/cell limits.
+- Lead/operator visibility now surfaces WorkDrive archive failure states as needs-attention items.
+- Runtime readiness now includes `CRON_SECRET` coverage and an explicit external-scheduler section so GitHub Actions dependencies are not mistaken for app-runtime health.
 
-- Increased SMTP timeout handling so production email delivery stops failing under slow provider responses.
-- Corrected Zoho WorkDrive host handling so failures report truthfully instead of masquerading as generic network failures.
-- Removed architecture-job status polling side effects that could trigger duplicate background processing.
-- Made lead-event recording idempotent where source keys already exist.
-- Changed architecture review processing to complete inline during submission instead of relying on fragile serverless background ownership.
-- Added CSV formula-injection protection to admin lead exports.
-- Closed server-side access to hidden subscription pricing in checkout-session creation.
-- Expanded runtime readiness checks for secret fallback boundaries.
-- Added `Cache-Control: no-store` on unauthorized admin lead-export responses.
+## What Was Re-Verified Live After Deploy
+
+- Production deployment `dpl_DhvHvU1EAc84o5UHpyKEVgKVeK5d` is live on `app.zokorp.com`.
+- `npm run lint` passed.
+- `npm run typecheck -- --incremental false` passed.
+- `npm test` passed with `277 / 277` tests.
+- `npm run build` passed.
+- `SMOKE_BASE_URL=https://app.zokorp.com npm run smoke:production` passed after deploy.
+- `/services` now serves the tagged Calendly CTA live:
+  - `https://calendly.com/zkhawaja-zokorp/zokorp-architecture-review-follow-up?utm_source=zokorp&utm_medium=services-page&utm_campaign=architecture-follow-up`
+- `/services` now serves the corrected tracked-request / same-email sync copy live.
+- `GET /api/architecture-review-status?jobId=...` now returns `401` with `Cache-Control: no-store` when unauthenticated.
+- `zokorp.com` still redirects to `www.zokorp.com`, and `www.zokorp.com` still serves the stale Squarespace site.
 
 ## Biggest Remaining Blockers
 
-### 1. Public domain mismatch
+### 1. Public domain split-brain is still a real launch blocker
 
-`zokorp.com` redirects to `www.zokorp.com`, and `www.zokorp.com` still serves an older Squarespace site. That means:
+The live app is ready at `app.zokorp.com`, but public root-domain traffic still lands on the old Squarespace site.
 
-- public visitors do not land on the audited product
-- copy and brand position are inconsistent
-- CTA behavior is split between two different systems
-- broad marketing spend would amplify the wrong site
+Current verified state:
 
-This is the main launch blocker.
+- `https://zokorp.com` -> `301` -> `https://www.zokorp.com/`
+- `https://www.zokorp.com` -> `200` from Squarespace
+- Squarespace HTML still contains `/our-services`, `/contact-us`, and `AWS AI/ML Engineer and Consultant`
+- Vercel still reports both apex and `www` as not configured properly
 
-### 2. WorkDrive archival is provider-blocked
+This blocks broad marketing because public traffic still reaches the wrong site.
 
-The code now reports the WorkDrive condition truthfully, but the provider is currently returning `402 PAYMENT_REQUIRED` for the archive-upload path. The platform is no longer hiding the problem, but the external provider configuration is not fully operational for that optional archival path.
+### 2. Live mailbox-driven auth proof is still incomplete
 
-### 3. A literal browser-completed Stripe test checkout was not performed
+The code, tests, and route structure support credentials auth with business-email verification and password reset, but this pass did not complete a fresh live browser + mailbox proof for:
 
-Server-side billing behavior is strongly proven through signed webhook replay and live entitlement consumption. That is enough to trust the core integration, but the exact hosted browser checkout completion path was not exercised in this audit.
+- register
+- verify email
+- login
+- logout
+- password reset
+- session reuse
+- founder admin login
 
-### 4. Real booked-call ingestion remains operationally unproven
+This needs inbox/browser access that was not safely available from CLI alone.
 
-The Calendly sync workflow is alive and healthy, but there was no matching recent real booking during the audit window. The system is ready to ingest bookings, but a live booked-call artifact was not available to prove the final operational step.
+### 3. Browser-completed Stripe test checkout is still unproven in this pass
+
+The billing and validator server-side correctness issues are fixed and covered by regression tests, but the literal hosted Stripe Checkout browser path still needs one fresh test-mode completion after this deploy.
+
+### 4. Real booked-call ingestion from the fixed `/services` CTA is still unproven in this pass
+
+The CTA is now tagged correctly and deployed live. What is still missing is one real founder-controlled booking artifact proving:
+
+- `/services` CTA click
+- Calendly booking creation
+- booking sync ingestion
+- resulting `LeadInteraction`
+- resulting `ServiceRequest` when same-email matching applies
+
+### 5. WorkDrive archival is now visible and honest, but the provider path is still unresolved
+
+The founder/operator visibility problem is fixed, but the provider capability problem itself still needs a Zoho/WorkDrive account decision or fix. This is now a transparent caveat instead of a silent-confidence problem.
 
 ## Recommended Launch Stance
 
 ### Safe now
 
-- Founder demos
-- Sharing direct links to `app.zokorp.com`
-- Sending direct prospects to `/services` or specific tool pages on `app.zokorp.com`
-- Controlled private beta or soft launch
+- Founder demos on `https://app.zokorp.com`
+- Direct outbound links sent to `https://app.zokorp.com`
+- Controlled invite-only soft launch to the app subdomain
+- Public sharing of free tools and services pages when the link goes directly to `app.zokorp.com`
 
 ### Do not do yet
 
-- Broad public marketing using `zokorp.com`
-- SEO/content promotion of the apex or `www` domain
-- Paid acquisition to the root domain
+- Broad marketing to `zokorp.com`
+- Broad marketing to `www.zokorp.com`
+- Public paid-validator promotion before one real Stripe test checkout is completed
+- Claiming fully proven booked-call ingestion before one real Calendly booking is observed
 
-## Immediate Next Steps
+## Shortest Path To Safe Public Marketing
 
-1. Cut `zokorp.com` and `www.zokorp.com` over to the Vercel platform, or intentionally redirect them into the live platform.
-2. Decide whether WorkDrive archival should be:
-   - enabled by upgrading/fixing the provider account, or
-   - treated as a deferred follow-up feature with copy narrowed accordingly.
-3. Run one real Stripe test-mode checkout in the browser for absolute confidence.
-4. Run one real Calendly booking through the founder-owned booking page and verify that the sync creates the expected internal records.
+1. Cut `zokorp.com` and `www.zokorp.com` to Vercel and redirect both to `https://app.zokorp.com`, preserving path and query.
+2. Run one live auth/browser proof with mailbox access using:
+   - `consulting@zokorp.com`
+   - `zkhawaja@zokorp.com`
+3. Run one Stripe test-mode browser checkout and verify fulfillment.
+4. Run one real `/services` Calendly booking and verify the internal ingestion artifact.
 
-## Audit Artifacts Created
+## Audit Artifacts Created In This Pass
 
-- Audit user account was created and used for end-to-end flow proof.
-- Two service requests were created as audit artifacts:
-  - `SR-260325-6SEC9`
-  - `SR-260325-WQP7Y`
-- One signed webhook fulfillment artifact was created using a synthetic Stripe test session id:
-  - `cs_test_audit_1774471262286`
+- Production deployment:
+  - `dpl_DhvHvU1EAc84o5UHpyKEVgKVeK5d`
+- No new customer-facing production data records were intentionally created during the code-hardening + redeploy pass itself.
 
-These are harmless but should be understood as audit-created records if you review production data.
+Earlier same-day audit artifacts may still exist in production from pre-hardening verification work. Those are documented separately in the evidence matrix and operator handoff notes.

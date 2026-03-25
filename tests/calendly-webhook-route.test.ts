@@ -38,8 +38,7 @@ vi.mock("@/lib/db", () => ({
 
 import { POST } from "@/app/api/webhooks/calendly/route";
 
-function signedWebhookRequest(body: string, signingKey: string) {
-  const timestamp = String(Math.floor(Date.now() / 1000));
+function signedWebhookRequest(body: string, signingKey: string, timestamp = String(Math.floor(Date.now() / 1000))) {
   const signature = createHmac("sha256", signingKey)
     .update(`${timestamp}.${body}`)
     .digest("hex");
@@ -192,6 +191,29 @@ describe("Calendly webhook route", () => {
     await expect(response.json()).resolves.toEqual({
       status: "ignored",
       reason: "unsupported_event",
+    });
+  });
+
+  it("rejects stale webhook signatures before ingesting the payload", async () => {
+    const staleTimestamp = String(Math.floor(Date.now() / 1000) - 301);
+    const body = JSON.stringify({
+      event: "invitee.created",
+      payload: {
+        email: "architect@zokorp.com",
+        uri: "https://api.calendly.com/invitees/stale123",
+        scheduled_event: {
+          start_time: "2026-03-25T16:00:00.000Z",
+        },
+      },
+    });
+
+    const response = await POST(signedWebhookRequest(body, "calendly-signing-key", staleTimestamp));
+
+    expect(response.status).toBe(401);
+    expect(mocks.leadInteractionCreate).not.toHaveBeenCalled();
+    expect(mocks.serviceRequestCreate).not.toHaveBeenCalled();
+    await expect(response.json()).resolves.toEqual({
+      error: "Unauthorized",
     });
   });
 });

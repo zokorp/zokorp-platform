@@ -2,14 +2,18 @@ import Link from "next/link";
 
 import { ServiceRequestPanel } from "@/components/service-request-panel";
 import { buttonVariants } from "@/components/ui/button";
+import { buildCalendlyBookingUrl } from "@/lib/calendly";
+import { auth } from "@/lib/auth";
+import { buildPageMetadata, getSiteUrl } from "@/lib/site";
 import { cn } from "@/lib/utils";
-import { buildPageMetadata } from "@/lib/site";
 
 export const metadata = buildPageMetadata({
   title: "Services",
   description: "Request AWS consultation, readiness support, or software-backed delivery work from ZoKorp.",
   path: "/services",
 });
+
+export const dynamic = "force-dynamic";
 
 const serviceTracks = [
   {
@@ -72,7 +76,7 @@ const serviceFaq = [
   {
     question: "How are engagements tracked?",
     answer:
-      "Every request receives a tracking code and lifecycle status. You can view updates from your account page.",
+      "Service requests are created with a tracking code and lifecycle status as soon as you submit the form. Booked calls are synced into the account and ops timeline after Calendly confirms the booking and the same email matches an account.",
   },
   {
     question: "Can service work connect to software products?",
@@ -86,8 +90,12 @@ const serviceFaq = [
   },
 ];
 
-export default function ServicesPage() {
-  const architectureBookingUrl = process.env.ARCH_REVIEW_BOOK_CALL_URL ?? "#service-request";
+export default async function ServicesPage() {
+  const session = await auth();
+  const architectureBookingUrl = buildCalendlyBookingUrl({
+    baseUrl: process.env.ARCH_REVIEW_BOOK_CALL_URL ?? `${getSiteUrl()}/services#service-request`,
+    utmMedium: "services-page",
+  });
 
   return (
     <div className="space-y-10">
@@ -148,7 +156,7 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      <ServiceRequestPanel />
+      <ServiceRequestPanel signedIn={Boolean(session?.user?.email)} currentEmail={session?.user?.email ?? null} />
 
       <section className="grid gap-4 md:grid-cols-[1.2fr_1fr]">
         <article className="surface lift-card rounded-2xl p-6">

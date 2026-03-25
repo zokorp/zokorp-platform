@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
 import { syncArchitectureRuleCatalogAction } from "@/app/admin/actions";
 import { AdminNav } from "@/components/admin/admin-nav";
@@ -13,7 +12,7 @@ import {
   ARCHITECTURE_RULE_CATALOG_FILTERS,
   getArchitectureRuleCatalogDirectory,
 } from "@/lib/architecture-review/rule-catalog";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdminPageAccess } from "@/lib/admin-page-access";
 
 export const dynamic = "force-dynamic";
 
@@ -77,30 +76,7 @@ export default async function AdminArchitectureCatalogPage({
   searchParams?: Promise<Partial<Record<"filter" | "q", string | undefined>>>;
 }) {
   const query = (await searchParams) ?? {};
-
-  try {
-    await requireAdmin();
-  } catch (error) {
-    if (error instanceof Error && error.message === "UNAUTHORIZED") {
-      redirect("/login?callbackUrl=/admin/architecture-catalog");
-    }
-
-    return (
-      <Card className="rounded-[calc(var(--radius-xl)+0.25rem)] p-6">
-        <CardHeader>
-          <h1 className="font-display text-3xl font-semibold text-slate-900">Admin access required</h1>
-        </CardHeader>
-        <CardContent>
-          <Alert tone="warning">
-            <AlertTitle>Restricted page</AlertTitle>
-            <AlertDescription>
-              This page is restricted to ZoKorp admin accounts listed in <span className="font-mono">ZOKORP_ADMIN_EMAILS</span>.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
-    );
-  }
+  await requireAdminPageAccess("/admin/architecture-catalog");
 
   const directory = await getArchitectureRuleCatalogDirectory({
     filter: query.filter,

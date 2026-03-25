@@ -67,6 +67,23 @@ describe("runtime readiness report", () => {
     });
   });
 
+  it("warns when CRON_SECRET is missing and keeps GitHub Actions schedulers manual", () => {
+    const report = buildRuntimeReadinessReport({
+      NEXTAUTH_SECRET: "nextauth-secret",
+      NEXTAUTH_URL: "https://app.zokorp.com",
+      NEXT_PUBLIC_SITE_URL: "https://app.zokorp.com",
+      AUTH_PASSWORD_ENABLED: "false",
+      ARCH_REVIEW_WORKER_SECRET: "worker-secret",
+    });
+
+    expect(findCheck(report, "cron-secret")).toMatchObject({
+      level: "warning",
+    });
+    expect(findCheck(report, "github-actions-schedulers")).toMatchObject({
+      level: "warning",
+    });
+  });
+
   it("fails when NEXTAUTH_URL and NEXT_PUBLIC_SITE_URL do not align", () => {
     const report = buildRuntimeReadinessReport({
       NEXTAUTH_SECRET: "nextauth-secret",
@@ -117,6 +134,7 @@ describe("runtime readiness report", () => {
       STRIPE_PRICE_ID_PLATFORM_MONTHLY: "price_monthly",
       STRIPE_PRICE_ID_PLATFORM_ANNUAL: "price_annual",
       ARCH_REVIEW_WORKER_SECRET: "worker-secret",
+      CRON_SECRET: "cron-secret",
       ARCHIVE_ENCRYPTION_SECRET: "archive-secret",
       ARCH_REVIEW_EML_SECRET: "eml-secret",
       ARCH_REVIEW_CTA_SECRET: "cta-secret",
@@ -133,12 +151,14 @@ describe("runtime readiness report", () => {
 
     expect(findCheck(report, "auth-secret")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "stripe-core")).toMatchObject({ level: "pass" });
+    expect(findCheck(report, "cron-secret")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "archive-encryption-secret")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "arch-review-eml-secret")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "arch-review-cta-secret")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "scheduled-secret-separation")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "calendly-sync-secret")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "zoho-workdrive")).toMatchObject({ level: "pass" });
+    expect(findCheck(report, "github-actions-schedulers")).toMatchObject({ level: "warning" });
     expect(report.totals.fail).toBe(0);
   });
 });

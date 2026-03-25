@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
 import { AdminNav } from "@/components/admin/admin-nav";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -10,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import {
   buildLeadDirectoryQueryString,
+  classifyWorkDriveUploadStatus,
   getLeadDirectory,
   LEAD_ACCOUNT_FILTERS,
   LEAD_AUDIENCE_FILTERS,
@@ -24,7 +24,7 @@ import {
   type LeadDirectoryEntry,
   type LeadDirectoryFilters,
 } from "@/lib/admin-leads";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdminPageAccess } from "@/lib/admin-page-access";
 
 export const dynamic = "force-dynamic";
 
@@ -107,6 +107,50 @@ function crmLabel(state: LeadCrmState) {
   return "CRM unknown";
 }
 
+function workdriveBadgeVariant(status: string | null) {
+  const state = classifyWorkDriveUploadStatus(status);
+
+  if (state === "failed") {
+    return "danger" as const;
+  }
+
+  if (state === "pending" || state === "skipped") {
+    return "warning" as const;
+  }
+
+  if (state === "uploaded") {
+    return "success" as const;
+  }
+
+  return "secondary" as const;
+}
+
+function workdriveLabel(status: string | null) {
+  const state = classifyWorkDriveUploadStatus(status);
+
+  if (state === "uploaded") {
+    return "Archive uploaded";
+  }
+
+  if (state === "pending") {
+    return "Archive pending";
+  }
+
+  if (state === "failed") {
+    return "Archive failed";
+  }
+
+  if (state === "skipped") {
+    return "Archive skipped";
+  }
+
+  if (state === "not_requested") {
+    return "Archive not requested";
+  }
+
+  return "Archive unknown";
+}
+
 function exportHref(filters: LeadDirectoryFilters) {
   const queryString = buildLeadDirectoryQueryString(filters);
   return queryString ? `/admin/leads/export?${queryString}` : "/admin/leads/export";
@@ -122,30 +166,7 @@ export default async function AdminLeadsPage({
   searchParams?: Promise<Partial<Record<keyof LeadDirectoryFilters | "q", string | undefined>>>;
 }) {
   const query = (await searchParams) ?? {};
-
-  try {
-    await requireAdmin();
-  } catch (error) {
-    if (error instanceof Error && error.message === "UNAUTHORIZED") {
-      redirect("/login?callbackUrl=/admin/leads");
-    }
-
-    return (
-      <Card className="rounded-[calc(var(--radius-xl)+0.25rem)] p-6">
-        <CardHeader>
-          <h1 className="font-display text-3xl font-semibold text-slate-900">Admin access required</h1>
-        </CardHeader>
-        <CardContent>
-          <Alert tone="warning">
-            <AlertTitle>Restricted page</AlertTitle>
-            <AlertDescription>
-              This page is restricted to ZoKorp admin accounts listed in <span className="font-mono">ZOKORP_ADMIN_EMAILS</span>.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
-    );
-  }
+  await requireAdminPageAccess("/admin/leads");
 
   const directory = await getLeadDirectory(query);
 
@@ -313,6 +334,7 @@ export default async function AdminLeadsPage({
                     <div className="flex flex-wrap gap-2">
                       <Badge variant={deliveryBadgeVariant(entry.emailDeliveryState)}>{deliveryLabel(entry.emailDeliveryState)}</Badge>
                       <Badge variant={crmBadgeVariant(entry.crmSyncState)}>{crmLabel(entry.crmSyncState)}</Badge>
+                      <Badge variant={workdriveBadgeVariant(entry.workdriveUploadStatus)}>{workdriveLabel(entry.workdriveUploadStatus)}</Badge>
                       {entry.recommendedEngagement ? <Badge variant="brand">{entry.recommendedEngagement}</Badge> : null}
                       {entry.leadStage ? <Badge variant="secondary">{entry.leadStage}</Badge> : null}
                     </div>
@@ -346,6 +368,10 @@ export default async function AdminLeadsPage({
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Account state</p>
                       <p>{entry.hasAccount ? (entry.emailVerified ? "Verified account" : "Account not verified") : "Lead only"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">WorkDrive archive</p>
+                      <p>{entry.workdriveUploadStatus ?? "unknown"}</p>
                     </div>
                   </div>
                 </div>

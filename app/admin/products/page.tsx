@@ -1,16 +1,14 @@
 import { AccessModel } from "@prisma/client";
-import { redirect } from "next/navigation";
 
 import { createProductAction, toggleProductActiveAction } from "@/app/admin/actions";
 import { AdminNav } from "@/components/admin/admin-nav";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdminPageAccess } from "@/lib/admin-page-access";
 import { db } from "@/lib/db";
 import { cn } from "@/lib/utils";
 
@@ -30,29 +28,7 @@ function accessBadgeVariant(accessModel: AccessModel): "success" | "warning" | "
 }
 
 export default async function AdminProductsPage() {
-  try {
-    await requireAdmin();
-  } catch (error) {
-    if (error instanceof Error && error.message === "UNAUTHORIZED") {
-      redirect("/login?callbackUrl=/admin/products");
-    }
-
-    return (
-      <Card className="rounded-[calc(var(--radius-xl)+0.25rem)] p-6">
-        <CardHeader>
-          <h1 className="font-display text-3xl font-semibold text-slate-900">Admin access required</h1>
-        </CardHeader>
-        <CardContent>
-          <Alert tone="warning">
-            <AlertTitle>Restricted page</AlertTitle>
-            <AlertDescription>
-              This page is restricted to ZoKorp admin accounts listed in <span className="font-mono">ZOKORP_ADMIN_EMAILS</span>.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
-    );
-  }
+  await requireAdminPageAccess("/admin/products");
 
   const products = await db.product.findMany({
     include: {

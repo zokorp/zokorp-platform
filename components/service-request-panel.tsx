@@ -34,10 +34,12 @@ type SubmissionResponse = {
 
 type ServiceRequestPanelProps = {
   signedIn?: boolean;
+  currentEmail?: string | null;
 };
 
-export function ServiceRequestPanel({ signedIn = false }: ServiceRequestPanelProps) {
+export function ServiceRequestPanel({ signedIn = false, currentEmail = null }: ServiceRequestPanelProps) {
   const [isSignedIn, setIsSignedIn] = useState(signedIn);
+  const [signedInEmail, setSignedInEmail] = useState<string | null>(currentEmail);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [trackingCode, setTrackingCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +60,9 @@ export function ServiceRequestPanel({ signedIn = false }: ServiceRequestPanelPro
 
         const data = (await response.json()) as { user?: { email?: string } };
         if (isMounted) {
-          setIsSignedIn(Boolean(data.user?.email));
+          const nextEmail = data.user?.email ?? null;
+          setIsSignedIn(Boolean(nextEmail));
+          setSignedInEmail(nextEmail);
         }
       } catch {
         // Keep static fallback state if session endpoint is unavailable.
@@ -140,16 +144,22 @@ export function ServiceRequestPanel({ signedIn = false }: ServiceRequestPanelPro
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Service Hub</p>
           <h2 className="font-display mt-1 text-3xl font-semibold text-slate-900">Request consultation or delivery</h2>
         </div>
-        <Badge variant="secondary">
-          Tracked in account
-        </Badge>
+        <Badge variant="secondary">Tracked in account</Badge>
       </div>
 
       <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-        Submit what you need and ZoKorp will triage, schedule, and update status in your account timeline.
+        Submit this form to create a tracked service request immediately. Booked calls are synced into the account and
+        ops timeline after Calendly confirms the booking and the same email matches an account.
       </p>
 
-      {!isSignedIn ? (
+      {isSignedIn ? (
+        <Alert tone="success" className="mt-5">
+          <p>
+            Signed in as <span className="font-semibold">{signedInEmail ?? "your account"}</span>. This form creates a
+            tracked service request as soon as you submit it.
+          </p>
+        </Alert>
+      ) : (
         <Alert tone="info" className="mt-5">
           <p>Sign in to submit a request and track milestones from your account.</p>
           <Link
@@ -159,7 +169,7 @@ export function ServiceRequestPanel({ signedIn = false }: ServiceRequestPanelPro
             Sign in
           </Link>
         </Alert>
-      ) : null}
+      )}
 
       <form onSubmit={onSubmit} className="mt-5 grid gap-4 md:grid-cols-2">
         <label className="space-y-1">

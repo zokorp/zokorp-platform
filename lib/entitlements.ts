@@ -16,6 +16,7 @@ async function syncEntitlementRemainingUses(tx: Prisma.TransactionClient, userId
     },
   });
 
+  const remainingUses = aggregated._sum.remainingUses ?? 0;
   await tx.entitlement.updateMany({
     where: {
       userId,
@@ -23,9 +24,11 @@ async function syncEntitlementRemainingUses(tx: Prisma.TransactionClient, userId
       status: EntitlementStatus.ACTIVE,
     },
     data: {
-      remainingUses: aggregated._sum.remainingUses ?? 0,
+      remainingUses,
     },
   });
+
+  return remainingUses;
 }
 
 export async function requireEntitlement(input: {
@@ -130,15 +133,15 @@ export async function decrementUsesAtomically(input: {
   uses?: number;
   creditTier?: CreditTier;
   allowGeneralCreditFallback?: boolean;
-}) {
+}): Promise<{ remainingUses: number | null }> {
   const uses = input.uses ?? 1;
   const adminBypass = await hasAdminEntitlementBypass(input.userId);
 
   if (adminBypass) {
-    return;
+    return { remainingUses: null };
   }
 
-  await db.$transaction(async (tx) => {
+  return db.$transaction(async (tx) => {
     const product = await tx.product.findUnique({
       where: { slug: input.productSlug },
       select: { id: true, accessModel: true },
@@ -148,8 +151,23 @@ export async function decrementUsesAtomically(input: {
       throw new Error("PRODUCT_NOT_FOUND");
     }
 
+    const entitlement = await tx.entitlement.findFirst({
+      where: {
+        userId: input.userId,
+        productId: product.id,
+        status: EntitlementStatus.ACTIVE,
+      },
+      select: {
+        remainingUses: true,
+      },
+    });
+
+    if (!entitlement) {
+      throw new Error("ENTITLEMENT_REQUIRED");
+    }
+
     if (product.accessModel !== AccessModel.ONE_TIME_CREDIT) {
-      return;
+      return { remainingUses: entitlement.remainingUses };
     }
 
     if (input.creditTier) {
@@ -178,7 +196,8 @@ export async function decrementUsesAtomically(input: {
           throw new Error("INSUFFICIENT_USES");
         }
 
-        await syncEntitlementRemainingUses(tx, input.userId, product.id);
+        const remainingUses = await syncEntitlementRemainingUses(tx, input.userId, product.id);
+        return { remainingUses };
       } catch (error) {
         if (!isSchemaDriftError(error)) {
           throw error;
@@ -199,8 +218,11 @@ export async function decrementUsesAtomically(input: {
         if (legacyUpdated.count === 0) {
           throw new Error("INSUFFICIENT_USES");
         }
+
+        return {
+          remainingUses: entitlement.remainingUses - uses,
+        };
       }
-      return;
     }
 
     const updated = await tx.entitlement.updateMany({
@@ -218,5 +240,9 @@ export async function decrementUsesAtomically(input: {
     if (updated.count === 0) {
       throw new Error("INSUFFICIENT_USES");
     }
+
+    return {
+      remainingUses: entitlement.remainingUses - uses,
+    };
   });
 }

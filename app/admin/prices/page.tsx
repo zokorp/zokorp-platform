@@ -1,5 +1,4 @@
 import { PriceKind } from "@prisma/client";
-import { redirect } from "next/navigation";
 
 import { createPriceAction, togglePriceActiveAction } from "@/app/admin/actions";
 import { AdminNav } from "@/components/admin/admin-nav";
@@ -9,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdminPageAccess } from "@/lib/admin-page-access";
 import { db } from "@/lib/db";
 import { isCheckoutEnabledStripePriceId } from "@/lib/stripe-price-id";
 import { cn } from "@/lib/utils";
@@ -17,29 +16,7 @@ import { cn } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function AdminPricesPage() {
-  try {
-    await requireAdmin();
-  } catch (error) {
-    if (error instanceof Error && error.message === "UNAUTHORIZED") {
-      redirect("/login?callbackUrl=/admin/prices");
-    }
-
-    return (
-      <Card className="rounded-[calc(var(--radius-xl)+0.25rem)] p-6">
-        <CardHeader>
-          <h1 className="font-display text-3xl font-semibold text-slate-900">Admin access required</h1>
-        </CardHeader>
-        <CardContent>
-          <Alert tone="warning">
-            <AlertTitle>Restricted page</AlertTitle>
-            <AlertDescription>
-              This page is restricted to ZoKorp admin accounts listed in <span className="font-mono">ZOKORP_ADMIN_EMAILS</span>.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
-    );
-  }
+  await requireAdminPageAccess("/admin/prices");
 
   const [prices, products] = await Promise.all([
     db.price.findMany({

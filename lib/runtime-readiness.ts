@@ -87,6 +87,7 @@ export function buildRuntimeReadinessReport(env: RuntimeEnv = process.env): Runt
   ];
   const configuredPriceIds = priceIds.filter(configured).length;
   const archWorkerSecretConfigured = configured(env.ARCH_REVIEW_WORKER_SECRET);
+  const cronSecretConfigured = configured(env.CRON_SECRET);
   const archiveEncryptionSecretConfigured = configured(env.ARCHIVE_ENCRYPTION_SECRET);
   const archReviewEmlSecretConfigured = configured(env.ARCH_REVIEW_EML_SECRET);
   const archReviewCtaSecretConfigured = configured(env.ARCH_REVIEW_CTA_SECRET);
@@ -248,6 +249,20 @@ export function buildRuntimeReadinessReport(env: RuntimeEnv = process.env): Runt
               level: "warning",
               summary: "ARCH_REVIEW_WORKER_SECRET is missing.",
               operatorAction: "Set the worker secret before relying on the scheduled queue drain.",
+            },
+        cronSecretConfigured
+          ? {
+              id: "cron-secret",
+              label: "Cron route secret",
+              level: "pass",
+              summary: "CRON_SECRET is configured for internal scheduled routes.",
+            }
+          : {
+              id: "cron-secret",
+              label: "Cron route secret",
+              level: "warning",
+              summary: "CRON_SECRET is missing.",
+              operatorAction: "Set CRON_SECRET before relying on Vercel cron or any internal scheduled route protection.",
             },
         archiveEncryptionSecretConfigured
           ? {
@@ -454,8 +469,27 @@ export function buildRuntimeReadinessReport(env: RuntimeEnv = process.env): Runt
                 label: "Zoho WorkDrive archival",
                 level: "warning",
                 summary: "WorkDrive archival is not configured.",
-                operatorAction: "Configure WorkDrive only if architecture-review archival is expected in this environment.",
-              },
+              operatorAction: "Configure WorkDrive only if architecture-review archival is expected in this environment.",
+            },
+      ],
+    },
+    {
+      id: "external-schedulers",
+      label: "External Schedulers",
+      checks: [
+        {
+          id: "github-actions-schedulers",
+          label: "GitHub Actions scheduler dependencies",
+          level: "warning",
+          summary: "High-frequency jobs are operator-managed in GitHub Actions and cannot be verified from app runtime config alone.",
+          details: [
+            "Drain Architecture Review Queue -> ARCH_REVIEW_WORKER_URL + ARCH_REVIEW_WORKER_SECRET",
+            "Architecture review follow-ups -> ARCH_REVIEW_FOLLOWUP_URL + ARCH_REVIEW_FOLLOWUP_SECRET",
+            "Calendly booking sync -> CALENDLY_PERSONAL_ACCESS_TOKEN + CALENDLY_SYNC_INGEST_URL + CALENDLY_SYNC_SECRET",
+            "Zoho lead sync -> ZOHO_SYNC_URL + ZOHO_SYNC_SECRET",
+          ],
+          operatorAction: "Verify repo-level secrets and recent successful workflow runs in GitHub Actions before declaring scheduler health.",
+        },
       ],
     },
     {

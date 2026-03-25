@@ -103,18 +103,22 @@ export async function POST(request: Request) {
       allow_promotion_codes: true,
     });
 
-    await db.auditLog.create({
-      data: {
-        userId: user.id,
-        action: "billing.checkout_session_created",
-        metadataJson: {
-          stripeCheckoutSessionId: session.id,
-          stripePriceId: price.stripePriceId,
-          productSlug: price.product.slug,
-          mode: session.mode,
+    try {
+      await db.auditLog.create({
+        data: {
+          userId: user.id,
+          action: "billing.checkout_session_created",
+          metadataJson: {
+            stripeCheckoutSessionId: session.id,
+            stripePriceId: price.stripePriceId,
+            productSlug: price.product.slug,
+            mode: session.mode,
+          },
         },
-      },
-    });
+      });
+    } catch (error) {
+      console.error("Failed to write checkout session audit log", error);
+    }
 
     return jsonNoStore({ url: session.url });
   } catch (error) {

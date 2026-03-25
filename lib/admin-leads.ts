@@ -23,6 +23,7 @@ export type LeadSort = (typeof LEAD_SORTS)[number];
 
 export type LeadDeliveryState = "unknown" | "pending" | "sent" | "failed" | "fallback";
 export type LeadCrmState = "unknown" | "pending" | "synced" | "failed" | "not_configured" | "skipped";
+export type LeadWorkDriveState = "unknown" | "not_requested" | "pending" | "uploaded" | "failed" | "skipped";
 
 export type LeadDirectoryFilters = {
   q: string;
@@ -58,6 +59,7 @@ type MutableLeadDirectoryEntry = {
   submissionCount: number;
   emailDeliveryState: LeadDeliveryState;
   crmSyncState: LeadCrmState;
+  workdriveUploadStatus: string | null;
   recommendedEngagement: string | null;
   leadStage: string | null;
   nextAction: string;
@@ -216,7 +218,60 @@ function deriveArchitectureCrmState(input: {
   return "unknown" as const;
 }
 
-function nextActionForEntry(entry: Pick<MutableLeadDirectoryEntry, "signals" | "emailVerified" | "emailDeliveryState" | "crmSyncState" | "hasAccount" | "recommendedEngagement">) {
+export function classifyWorkDriveUploadStatus(status: string | null): LeadWorkDriveState {
+  const normalized = status?.trim().toLowerCase();
+  if (!normalized) {
+    return "unknown";
+  }
+
+  const baseStatus = normalized.split(":", 1)[0];
+  if (baseStatus === "not_requested") {
+    return "not_requested";
+  }
+
+  if (baseStatus === "pending") {
+    return "pending";
+  }
+
+  if (baseStatus === "uploaded" || baseStatus === "archived" || baseStatus === "legacy_raw_upload_present") {
+    return "uploaded";
+  }
+
+  if (baseStatus === "failed") {
+    return "failed";
+  }
+
+  if (baseStatus === "skipped") {
+    return "skipped";
+  }
+
+  return "unknown";
+}
+
+export function workdriveNeedsAttention(status: string | null) {
+  const state = classifyWorkDriveUploadStatus(status);
+  return state === "pending" || state === "failed" || state === "skipped";
+}
+
+function mergeWorkDriveStatus(current: string | null, incoming: string | null) {
+  const priorities: Record<LeadWorkDriveState, number> = {
+    unknown: 0,
+    not_requested: 1,
+    uploaded: 2,
+    pending: 3,
+    skipped: 4,
+    failed: 5,
+  };
+
+  return priorities[classifyWorkDriveUploadStatus(incoming)] > priorities[classifyWorkDriveUploadStatus(current)] ? incoming : current;
+}
+
+function nextActionForEntry(
+  entry: Pick<
+    MutableLeadDirectoryEntry,
+    "signals" | "emailVerified" | "emailDeliveryState" | "crmSyncState" | "workdriveUploadStatus" | "hasAccount" | "recommendedEngagement"
+  >,
+) {
   if (entry.signals.has("test-domain") || entry.signals.has("test-email") || entry.signals.has("automation-token")) {
     return "Ignore by default unless you are reviewing QA traffic.";
   }
@@ -227,6 +282,14 @@ function nextActionForEntry(entry: Pick<MutableLeadDirectoryEntry, "signals" | "
 
   if (entry.crmSyncState === "failed") {
     return "Retry CRM sync or inspect the Zoho error path.";
+  }
+
+  if (classifyWorkDriveUploadStatus(entry.workdriveUploadStatus) === "pending") {
+    return "Monitor WorkDrive archival completion for this saved architecture review.";
+  }
+
+  if (workdriveNeedsAttention(entry.workdriveUploadStatus)) {
+    return "Retry or manually follow up on the WorkDrive archive path for this saved architecture review.";
   }
 
   if (!entry.hasAccount) {
@@ -261,6 +324,7 @@ function upsertLeadEntry(
     isAdmin?: boolean;
     emailDeliveryState?: LeadDeliveryState;
     crmSyncState?: LeadCrmState;
+    workdriveUploadStatus?: string | null;
     recommendedEngagement?: string | null;
     leadStage?: string | null;
   },
@@ -291,6 +355,7 @@ function upsertLeadEntry(
       submissionCount: input.source === "account" ? 0 : 1,
       emailDeliveryState: input.emailDeliveryState ?? "unknown",
       crmSyncState: input.crmSyncState ?? "unknown",
+      workdriveUploadStatus: input.workdriveUploadStatus ?? null,
       recommendedEngagement: input.recommendedEngagement ?? null,
       leadStage: input.leadStage ?? null,
       nextAction: "",
@@ -331,6 +396,7 @@ function upsertLeadEntry(
 
   existing.emailDeliveryState = mergeDeliveryState(existing.emailDeliveryState, input.emailDeliveryState ?? "unknown");
   existing.crmSyncState = mergeCrmState(existing.crmSyncState, input.crmSyncState ?? "unknown");
+  existing.workdriveUploadStatus = mergeWorkDriveStatus(existing.workdriveUploadStatus, input.workdriveUploadStatus ?? null);
   existing.signals = deriveLeadSignals(existing);
   existing.nextAction = nextActionForEntry(existing);
 }
@@ -432,7 +498,8 @@ function matchesFilters(entry: LeadDirectoryEntry, filters: LeadDirectoryFilters
     entry.emailDeliveryState === "fallback" ||
     entry.emailDeliveryState === "pending" ||
     entry.crmSyncState === "failed" ||
-    entry.crmSyncState === "pending";
+    entry.crmSyncState === "pending" ||
+    workdriveNeedsAttention(entry.workdriveUploadStatus);
 
   if (filters.ops === "needs-attention" && !needsAttention) {
     return false;
@@ -541,6 +608,7 @@ export async function getLeadDirectory(rawFilters: Partial<Record<string, string
         syncedToZohoAt: true,
         zohoSyncNeedsUpdate: true,
         zohoSyncError: true,
+        workdriveUploadStatus: true,
       },
     }),
   ]);
@@ -632,6 +700,7 @@ export async function getLeadDirectory(rawFilters: Partial<Record<string, string
         zohoSyncError: lead.zohoSyncError,
         zohoSyncNeedsUpdate: lead.zohoSyncNeedsUpdate,
       }),
+      workdriveUploadStatus: lead.workdriveUploadStatus ?? null,
     });
   }
 
@@ -656,7 +725,8 @@ export async function getLeadDirectory(rawFilters: Partial<Record<string, string
           entry.emailDeliveryState === "fallback" ||
           entry.emailDeliveryState === "pending" ||
           entry.crmSyncState === "failed" ||
-          entry.crmSyncState === "pending",
+          entry.crmSyncState === "pending" ||
+          workdriveNeedsAttention(entry.workdriveUploadStatus),
       ).length,
     },
     filters,
@@ -692,6 +762,7 @@ export function renderLeadDirectoryCsv(entries: LeadDirectoryEntry[]) {
     "lead_stage",
     "email_delivery_state",
     "crm_sync_state",
+    "workdrive_upload_status",
     "next_action",
     "first_seen_at",
     "latest_at",
@@ -715,6 +786,7 @@ export function renderLeadDirectoryCsv(entries: LeadDirectoryEntry[]) {
       entry.leadStage,
       entry.emailDeliveryState,
       entry.crmSyncState,
+      entry.workdriveUploadStatus,
       entry.nextAction,
       entry.firstSeenAt.toISOString(),
       entry.latestAt.toISOString(),

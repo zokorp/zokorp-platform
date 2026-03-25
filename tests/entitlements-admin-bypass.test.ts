@@ -9,10 +9,20 @@ const {
   productFindUniqueMock,
   entitlementFindUniqueMock,
   transactionMock,
+  txProductFindUniqueMock,
+  txCreditBalanceUpdateManyMock,
+  txCreditBalanceAggregateMock,
+  txEntitlementUpdateManyMock,
+  txEntitlementFindFirstMock,
 } = vi.hoisted(() => ({
   productFindUniqueMock: vi.fn(),
   entitlementFindUniqueMock: vi.fn(),
   transactionMock: vi.fn(),
+  txProductFindUniqueMock: vi.fn(),
+  txCreditBalanceUpdateManyMock: vi.fn(),
+  txCreditBalanceAggregateMock: vi.fn(),
+  txEntitlementUpdateManyMock: vi.fn(),
+  txEntitlementFindFirstMock: vi.fn(),
 }));
 
 vi.mock("@/lib/admin-access", () => ({
@@ -36,6 +46,21 @@ import { decrementUsesAtomically, requireEntitlement } from "@/lib/entitlements"
 describe("entitlement admin bypass", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    transactionMock.mockImplementation(async (callback) =>
+      callback({
+        product: {
+          findUnique: txProductFindUniqueMock,
+        },
+        creditBalance: {
+          updateMany: txCreditBalanceUpdateManyMock,
+          aggregate: txCreditBalanceAggregateMock,
+        },
+        entitlement: {
+          updateMany: txEntitlementUpdateManyMock,
+          findFirst: txEntitlementFindFirstMock,
+        },
+      }),
+    );
   });
 
   it("allows an admin bypass on active paid products without loading entitlements", async () => {
@@ -88,5 +113,40 @@ describe("entitlement admin bypass", () => {
     });
 
     expect(transactionMock).not.toHaveBeenCalled();
+  });
+
+  it("returns the post-decrement remaining uses from the same transaction", async () => {
+    hasAdminEntitlementBypassMock.mockResolvedValue(false);
+    txProductFindUniqueMock.mockResolvedValue({
+      id: "prod_validator",
+      accessModel: AccessModel.ONE_TIME_CREDIT,
+    });
+    txEntitlementFindFirstMock.mockResolvedValue({
+      remainingUses: 8,
+    });
+    txCreditBalanceUpdateManyMock.mockResolvedValue({ count: 1 });
+    txCreditBalanceAggregateMock.mockResolvedValue({
+      _sum: {
+        remainingUses: 7,
+      },
+    });
+
+    const result = await decrementUsesAtomically({
+      userId: "user_123",
+      productSlug: "zokorp-validator",
+      uses: 1,
+      creditTier: CreditTier.FTR,
+      allowGeneralCreditFallback: true,
+    });
+
+    expect(result).toEqual({ remainingUses: 7 });
+    expect(txCreditBalanceAggregateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          userId: "user_123",
+          productId: "prod_validator",
+        }),
+      }),
+    );
   });
 });

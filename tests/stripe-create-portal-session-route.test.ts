@@ -151,4 +151,34 @@ describe("create portal session route", () => {
       }),
     );
   });
+
+  it("returns the portal URL even when audit logging fails after Stripe succeeds", async () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    auditCreateMock.mockRejectedValueOnce(new Error("audit unavailable"));
+
+    const response = await POST(
+      new Request("https://app.zokorp.com/api/stripe/create-portal-session", {
+        method: "POST",
+        headers: {
+          origin: "https://app.zokorp.com",
+        },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    await expect(response.json()).resolves.toEqual({
+      url: "https://billing.stripe.com/p/session_123",
+    });
+    expect(billingPortalSessionCreateMock).toHaveBeenCalled();
+    expect(auditCreateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "billing.portal_session_created",
+        }),
+      }),
+    );
+
+    consoleErrorSpy.mockRestore();
+  });
 });

@@ -6,109 +6,83 @@ Date: March 25, 2026
 
 | Track | Command / Proof | Observed Result | Status |
 | --- | --- | --- | --- |
-| Git baseline | `git rev-parse HEAD && git rev-parse origin/main` | Both resolved to `58064a397c09c9ef4aba837bcda10039df51c726` | Pass |
-| Production deployment identity | `npx vercel inspect app.zokorp.com` | Deployment `dpl_HMf5o97Ghubnr8uFkQXUf28rHx5C`, project `zokorp-web`, target `production`, alias `https://app.zokorp.com` | Pass |
+| Git baseline | `git rev-parse --short HEAD` | `4602753` | Pass |
+| Working tree state | `git status --short` | Audit changes present locally and deployed to production from working tree | Pass with traceability caveat |
+| Production deployment identity | `npx vercel inspect app.zokorp.com` | Deployment `dpl_DhvHvU1EAc84o5UHpyKEVgKVeK5d`, target `production`, alias `https://app.zokorp.com` | Pass |
 | Local lint | `npm run lint` | Passed | Pass |
 | Local typecheck | `npm run typecheck -- --incremental false` | Passed | Pass |
-| Local tests | `npm test` | `258 passed / 258 tests` | Pass |
+| Local tests | `npm test` | `277 passed / 277 tests` | Pass |
 | Local build | `npm run build` | Passed | Pass |
-| Production smoke | `npm run smoke:production` | Passed against `https://zokorp-web.vercel.app` | Pass |
+| Production smoke | `SMOKE_BASE_URL=https://app.zokorp.com npm run smoke:production` | Passed at `2026-03-25T21:35:34.500Z` | Pass |
 
-## Domains and Routing
-
-| Track | Command / Proof | Observed Result | Status |
-| --- | --- | --- | --- |
-| Apex redirect | `curl -sSI https://zokorp.com` | `301` to `https://www.zokorp.com/`, served by Squarespace | Caveat |
-| Public `www` site | `curl -sSI https://www.zokorp.com` | `200`, served by Squarespace | Caveat |
-| App root | `curl -sSI https://app.zokorp.com` | `200`, served by Vercel with security headers | Pass |
-| Stale marketing proof | `curl -s https://www.zokorp.com | rg -n "our-services|contact-us|AWS AI/ML Engineer"` | Found old Squarespace routes and legacy copy | Fail for broad public marketing |
-| Services page proof | `curl -s https://app.zokorp.com/services` | Live page includes `Build with confidence, not guesswork`, `Book architecture follow-up`, and correct booking-first FAQ | Pass |
-
-## Auth and Account Lifecycle
+## Domains And Routing
 
 | Track | Command / Proof | Observed Result | Status |
 | --- | --- | --- | --- |
-| Credentials auth session | `GET /api/auth/csrf` then `POST /api/auth/callback/credentials` with cookie jar | Valid session established | Pass |
-| Session proof | `GET /api/auth/session` | Returned authenticated session for audit user | Pass |
-| Account access | `GET /account` with session | `200` with account page content | Pass |
-| Billing page reachability | `GET /account/billing` with session | `200` | Pass |
-| Unauthorized admin access | `GET /admin/readiness`, `/admin/leads`, `/admin/service-requests` as non-admin | Restricted content rendered, no data leak | Pass with caveat |
-| Same-origin enforcement | Wrong `Origin` against service requests and checkout endpoints | `403` | Pass |
+| Apex redirect | `curl -sSI https://zokorp.com` | `301` to `https://www.zokorp.com/`, served by Squarespace | Fail for public launch |
+| Public `www` site | `curl -sSI https://www.zokorp.com` | `200`, served by Squarespace | Fail for public launch |
+| Stale marketing proof | `curl -s https://www.zokorp.com \| rg -n "our-services\|contact-us\|AWS AI/ML Engineer"` | Old Squarespace routes and legacy copy still live | Fail |
+| App root | `curl -sSI https://app.zokorp.com` | `200`, served by Vercel | Pass |
+| Vercel apex instructions | `npx vercel domains inspect zokorp.com` | Recommended record: `A zokorp.com 76.76.21.21` | Caveat |
+| Vercel `www` instructions | `npx vercel domains inspect www.zokorp.com` | Recommended record: `A www.zokorp.com 76.76.21.21` | Caveat |
+| Services CTA after deploy | `curl -s https://app.zokorp.com/services \| rg -o 'https://calendly[^" ]+' -m 1` | Tagged CTA includes `utm_medium=services-page` and `utm_campaign=architecture-follow-up` | Pass |
+| Services copy honesty after deploy | `curl -s https://app.zokorp.com/services \| rg -o 'Submit this form to create a tracked service request immediately\.[^<]+' -m 1` | Live copy now matches real runtime behavior | Pass |
 
-## Free Diagnostics
+## Auth, Admin, And Protected Routes
+
+| Track | Command / Proof | Observed Result | Status |
+| --- | --- | --- | --- |
+| Architecture review status cache behavior | `curl -si 'https://app.zokorp.com/api/architecture-review-status?jobId=cmn6hsc500003lb04kehewmt3'` | `401` with `Cache-Control: no-store` | Pass |
+| Admin forbidden behavior in code | `tests/admin-page-access.test.ts` | `UNAUTHORIZED` redirects to login; `FORBIDDEN` raises forbidden boundary | Pass |
+| Admin forbidden UI deployment | Production deploy `dpl_DhvHvU1EAc84o5UHpyKEVgKVeK5d` | `app/forbidden.tsx` shipped live | Pass |
+| Live browser auth lifecycle | Not completed in this pass | Register / verify / reset / admin login still need mailbox/browser proof | Caveat |
+
+## `/services` Funnel And Calendly Tracking
 
 | Track | Proof | Observed Result | Status |
 | --- | --- | --- | --- |
-| AI Decider live submission | Real production submission | Result emailed and minimal lead event recorded | Pass |
-| Landing Zone live submission | Real production submission | Result emailed | Pass |
-| Cloud Cost live submission | Real production submission with follow-up/CRM opt-in path | Result emailed, archive path used, CRM opt-in honored | Pass |
-| Architecture review live submission | Real production submission for job `cmn6hsc500003lb04kehewmt3` | Returned `status:"sent"`, `phase:"completed"`, `progressPct:100`, `deliveryMode:"sent"` in about 5.4s | Pass |
+| Tagged booking URL helper | `tests/calendly.test.ts` | Helper supports per-surface UTM overrides without breaking email CTA defaults | Pass |
+| `/services` server render state | `tests/services-page.test.tsx` | Page passes signed-in state to `ServiceRequestPanel` from the server | Pass |
+| Live `/services` CTA | Production HTML | Raw untagged Calendly URL removed; live CTA is now tagged | Pass |
+| Live `/services` copy | Production HTML | Copy now says tracked request immediately, booked-call sync later after same-email match | Pass |
+| Real booked-call ingestion artifact | Not completed in this pass | No new founder-controlled live booking artifact yet | Caveat |
 
-## Privacy and Retention
-
-| Track | Proof | Observed Result | Status |
-| --- | --- | --- | --- |
-| Minimal lead/event model | Live DB inspection of audit account | Lead + events present; no legacy free-tool submission rows used for default path | Pass |
-| Archive count | Live DB inspection | `archiveCount: 5` for opt-in paths only | Pass |
-| CRM consent gating | Live DB/event inspection | Cloud Cost opted-in path synced; default paths skipped | Pass |
-| Retention sweep protection | `curl -sSI https://app.zokorp.com/api/internal/cron/retention-sweep` | `401`, `Cache-Control: no-store` | Pass |
-| Privacy copy | `curl -s https://app.zokorp.com/privacy` with content inspection | Includes zero-retention default, 30-day archive, 15-minute fingerprint, CRM off by default, cleanup statements | Pass |
-
-## Architecture Funnel and Services
+## Billing And Paid Validation
 
 | Track | Proof | Observed Result | Status |
 | --- | --- | --- | --- |
-| Architecture estimate email | Founder screenshot review | Clean itemized estimate, one booking CTA, assumptions/exclusions, estimate reference, confidence displayed | Pass |
-| Services page | Founder screenshot review plus curl | Matches booking-first model and routes to external Calendly URL | Pass |
-| Service request creation | Authenticated POST to `/api/services/requests` | Created `SR-260325-6SEC9` and `SR-260325-WQP7Y`; visible in account timeline | Pass |
-| CTA click / booked-call tracking | No live matching booking during audit window | Framework is present, no final live booking artifact yet | Caveat |
+| Validator resilience | `tests/zokorp-validator-route.test.ts` | Successful validation survives post-run lookup/audit failure and stays `no-store` | Pass |
+| Checkout-session resilience | `tests/stripe-create-checkout-session-route.test.ts` | Session URL returns successfully even if audit write fails | Pass |
+| Portal-session resilience | `tests/stripe-create-portal-session-route.test.ts` | Portal URL returns successfully even if audit write fails | Pass |
+| Entitlement post-decrement state | `tests/entitlements-admin-bypass.test.ts` | Remaining-use state returned from the decrement transaction | Pass |
+| Browser-completed Stripe checkout | Not completed in this pass | Still needs one real test-mode browser proof after deploy | Caveat |
 
-## Billing and Paid Validation
-
-| Track | Proof | Observed Result | Status |
-| --- | --- | --- | --- |
-| Checkout session creation | Authenticated production POST to `/api/stripe/create-checkout-session` | Returned real Stripe Checkout URL | Pass |
-| Billing portal session creation | Authenticated production POST to `/api/stripe/create-portal-session` | Returned real Stripe Portal URL | Pass |
-| Webhook fulfillment | Signed synthetic `checkout.session.completed` sent to live `/api/stripe/webhook` | `200 ok`, fulfillment row created | Pass |
-| Entitlement creation | Live DB inspection | Validator entitlement created with one use | Pass |
-| Credit balance creation | Live DB inspection | `FTR` credit balance created with one use | Pass |
-| Paid validator run | Authenticated spreadsheet upload to `/api/tools/zokorp-validator` | Succeeded, score returned, `remainingUses: 0` | Pass |
-| Purchase enforcement | Second validator run | `402 Purchase required before running this tool.` | Pass |
-| Browser-completed hosted Stripe checkout | Not executed during this audit | Unproven browser step | Caveat |
-
-## Scheduled Jobs and Operator Readiness
+## Security And Resilience
 
 | Track | Proof | Observed Result | Status |
 | --- | --- | --- | --- |
-| Vercel cron route protection | `curl -sSI` against internal cron routes | `401` plus `no-store` headers | Pass |
-| Architecture worker schedule | GitHub Actions run list | Scheduled and manual runs succeeding on `main` | Pass |
-| Calendly sync schedule | GitHub Actions run list | Scheduled and manual runs succeeding on `main` | Pass |
-| Zoho sync schedule | Workflow file inspection | Present with schedule and dispatch path | Pass |
-| Production migrate workflow | GitHub Actions run `23559606576` | Success | Pass |
-| Manual replay path | `workflow_dispatch` present on critical jobs | Proven usable | Pass |
+| Calendly stale signature rejection | `tests/calendly-webhook-route.test.ts` | Stale webhook signatures are rejected before ingest | Pass |
+| XLSX ZIP preflight | `tests/workbook.test.ts` | Malformed ZIPs and oversized workbook structures are rejected before `ExcelJS` load | Pass |
+| Architecture review status no-store | Live `curl` + route test | All branches now non-cacheable | Pass |
+| CSP / header posture | `curl -si https://app.zokorp.com` | HSTS, XFO, referrer policy, CSP present; CSP still broader than ideal | Caveat |
 
-## Representative Workflow Runs
+## Operator Visibility And Readiness
 
-| Workflow | Run | Result |
+| Track | Proof | Observed Result | Status |
+| --- | --- | --- | --- |
+| WorkDrive archive ops attention | `tests/admin-leads.test.ts` | WorkDrive failure states now count as needs-attention and drive next-action text | Pass |
+| Runtime readiness `CRON_SECRET` coverage | `tests/runtime-readiness.test.ts` | `CRON_SECRET` now explicitly checked | Pass |
+| External scheduler honesty | `tests/runtime-readiness.test.ts` | GitHub Actions scheduler dependencies now stay manual/operator-verified in readiness output | Pass |
+| Recent Calendly sync workflow | [23565023825](https://github.com/leggoboyo/zokorp-platform/actions/runs/23565023825) | Success | Pass |
+| Recent architecture worker workflow | [23564887224](https://github.com/leggoboyo/zokorp-platform/actions/runs/23564887224) | Success | Pass |
+| Recent CI workflow | [23563701631](https://github.com/leggoboyo/zokorp-platform/actions/runs/23563701631) | Success | Pass |
+
+## Manual / Human-Only Proof Still Outstanding
+
+| Track | Why It Is Still Open | Status |
 | --- | --- | --- |
-| Sync Calendly Booked Calls | [23563222396](https://github.com/leggoboyo/zokorp-platform/actions/runs/23563222396) | Success |
-| Drain Architecture Review Queue | [23563220868](https://github.com/leggoboyo/zokorp-platform/actions/runs/23563220868) | Success |
-| Production Prisma Migrate | [23559606576](https://github.com/leggoboyo/zokorp-platform/actions/runs/23559606576) | Success |
-| CI | [23555860486](https://github.com/leggoboyo/zokorp-platform/actions/runs/23555860486) | Success |
-
-## Security and Runtime Hardening
-
-| Track | Proof | Observed Result | Status |
-| --- | --- | --- | --- |
-| Unauthorized admin export caching | `curl -sSI https://app.zokorp.com/admin/leads/export` | `401`, `Cache-Control: no-store` | Pass |
-| CSP / headers | `curl -sSI https://app.zokorp.com` | HSTS, XFO, referrer policy, CSP present | Pass with hardening caveat |
-| CSV formula injection mitigation | Code patch plus tests | Dangerous leading spreadsheet characters are prefixed before export | Pass |
-| Secret fallback surfacing | Runtime readiness code and tests | Better visibility, but fallback boundaries still deserve future tightening | Caveat |
-
-## Visual Proof Used
-
-- Founder-provided screenshot of the architecture-review estimate email
-- Founder-provided screenshot of the Cloud Cost Leak Finder estimate memo
-- Founder-provided screenshot of the live `/services` page
-
-These were used because local browser automation was partially limited by Playwright/browser sandbox issues on the audit machine. HTTP-level proof and direct production calls covered the functional side.
+| Domain cutover | Requires registrar / DNS / possibly Squarespace UI access | Open |
+| Full auth lifecycle proof | Requires mailbox/browser access for `consulting@zokorp.com` and `zkhawaja@zokorp.com` | Open |
+| Stripe hosted checkout proof | Requires browser test-mode purchase completion | Open |
+| Calendly booking ingestion proof | Requires one real founder-controlled booking and follow-up verification | Open |
+| WorkDrive capability diagnosis | Requires Zoho / WorkDrive account UI access | Open |

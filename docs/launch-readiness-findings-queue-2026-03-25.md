@@ -8,133 +8,136 @@ None.
 
 ## P1
 
-### P1-1: Root marketing domain still serves stale Squarespace site
+### P1-1: `zokorp.com` and `www.zokorp.com` still serve the stale public surface
 
 - Affected journey:
-  - any prospect starting from `zokorp.com` or `www.zokorp.com`
-- Proof:
-  - `https://zokorp.com` redirects to `https://www.zokorp.com/`
-  - `https://www.zokorp.com` serves Squarespace HTML
+  - any prospect who starts from the root domain
+- Verified proof:
+  - `https://zokorp.com` -> `301` -> `https://www.zokorp.com/`
+  - `https://www.zokorp.com` serves Squarespace
   - live HTML still contains `/our-services`, `/contact-us`, and legacy `AWS AI/ML Engineer and Consultant` copy
+  - Vercel still reports:
+    - `A zokorp.com 76.76.21.21`
+    - `A www.zokorp.com 76.76.21.21`
+    as the required DNS records
 - Business impact:
-  - broad marketing would send traffic to the wrong product story
-  - trust and conversion suffer because the public site and app say different things
-  - SEO and paid traffic would amplify outdated messaging
-- Blocks:
-  - public launch and broad marketing
+  - broad public traffic still lands on the wrong site
+  - messaging, trust, and CTA consistency stay split
+  - public launch remains blocked even though the app is live and healthy
 - Recommended action:
-  - cut `zokorp.com` and `www.zokorp.com` to Vercel or redirect them into the new platform
+  - cut apex and `www` to Vercel, then permanently redirect both to `https://app.zokorp.com`
 
-### P1-2: WorkDrive archival path is provider-blocked
+### P1-2: Live auth lifecycle proof is still incomplete
 
 - Affected journey:
-  - architecture-review follow-up when WorkDrive archival is requested
-- Proof:
-  - provider now reports truthful `402 PAYMENT_REQUIRED`
+  - register
+  - verify email
+  - login / logout
+  - password reset
+  - founder admin login
+- Verified proof:
+  - code paths and tests are healthy
+  - this pass did not complete a fresh mailbox/browser proof using:
+    - `consulting@zokorp.com`
+    - `zkhawaja@zokorp.com`
 - Business impact:
-  - optional archive/follow-up workflow is not fully operational
-  - founder could believe archives are safely landing in WorkDrive when the provider account is actually blocked
-- Blocks:
-  - full confidence in the optional archive path
+  - high confidence in code, but not the same thing as fresh live proof
+  - weakens the claim that auth is fully launch-proven today
 - Recommended action:
-  - either upgrade/fix Zoho WorkDrive account access or narrow operational expectations around that feature
+  - run one Atlas/browser pass that completes the full auth lifecycle and founder admin verification
+
+### P1-3: Browser-completed Stripe test checkout is still missing after the billing hardening deploy
+
+- Affected journey:
+  - paid validator purchase path
+- Verified proof:
+  - server-side correctness bugs are fixed
+  - regression tests pass
+  - one literal hosted Stripe Checkout completion was not run in this pass
+- Business impact:
+  - public paid promotion should not start until the browser path is proven once
+- Recommended action:
+  - complete one Stripe test-mode checkout end to end and confirm fulfillment
+
+### P1-4: Real booked-call ingestion from the fixed `/services` CTA is still unproven
+
+- Affected journey:
+  - `/services` CTA -> Calendly -> internal sync -> `LeadInteraction` / `ServiceRequest`
+- Verified proof:
+  - CTA tagging is fixed and deployed live
+  - copy is fixed and deployed live
+  - no new founder-controlled booking artifact was created during this pass
+- Business impact:
+  - booked-call automation is credible but not yet fully proven from the main public CTA
+- Recommended action:
+  - create one real founder-controlled booking from `/services` and verify the internal artifact
 
 ## P2
 
-### P2-1: Browser-completed Stripe test checkout not yet executed
+### P2-1: WorkDrive archival is operationally honest now, but the provider path still needs account work
 
 - Affected journey:
-  - literal hosted checkout browser path
-- Proof:
-  - server-side flow is proven with signed webhook replay and consumption, but no live browser checkout was completed in Stripe-hosted UI during the audit
+  - optional architecture-review archival / follow-up workflow
+- Verified proof:
+  - founder/operator visibility problem is fixed
+  - account/provider capability remains unresolved
 - Business impact:
-  - low operational risk, but weaker confidence in front-end hosted checkout polish than a literal test purchase would provide
-- Blocks:
-  - does not block founder testing
-  - may block "highest possible confidence" before public paid promotion
+  - optional archive workflow should not be treated as fully trusted until the Zoho / WorkDrive account is corrected
 - Recommended action:
-  - run one real Stripe test-mode browser checkout and observe fulfillment end to end
+  - verify the exact WorkDrive plan / activation blocker and either fix it or intentionally narrow the promise
 
-### P2-2: Real booked-call ingestion not yet observed with a matching live booking
+### P2-2: CSP remains broader than ideal
 
 - Affected journey:
-  - architecture review -> Calendly booking -> booked-call sync -> service request / lead interaction
-- Proof:
-  - scheduled sync workflow is alive and successful
-  - no matching recent booked call existed during audit window
+  - all browser-rendered pages
+- Verified proof:
+  - CSP still includes `script-src 'unsafe-inline'`
+  - `connect-src` still allows broad `https:`
 - Business impact:
-  - system appears ready, but the final event path has not been proven by a real booking artifact
-- Blocks:
-  - does not block founder demos
-  - should be proven before claiming fully automated booked-call ops
+  - acceptable for current launch work, but not the tightest browser security posture
 - Recommended action:
-  - create one real founder-controlled Calendly booking and verify ingestion
+  - continue CSP tightening after launch blockers are closed
 
-### P2-3: Unauthorized admin pages render restricted content with HTTP 200 instead of 403
+### P2-3: Live authenticated non-admin `403` semantics are code-fixed but not browser-proven
 
 - Affected journey:
-  - non-admin visits to admin URLs
-- Proof:
-  - restricted page content renders instead of a forbidden status
+  - authenticated non-admin visits to admin URLs
+- Verified proof:
+  - helper tests pass
+  - forbidden page is deployed
+  - no fresh live non-admin browser session was used to confirm the exact HTTP/browser outcome
 - Business impact:
-  - not a data leak, but it weakens semantic clarity for monitoring and can confuse expectation around true forbidden responses
-- Blocks:
-  - no
+  - low risk because the code path is explicit and covered
+  - still slightly weaker than direct live proof
 - Recommended action:
-  - return 403 for unauthorized admin page requests where feasible
-
-### P2-4: CSP can be tightened further
-
-- Affected journey:
-  - all browser-rendered app pages
-- Proof:
-  - current CSP still includes `script-src 'unsafe-inline'` and a broad `connect-src https:`
-- Business impact:
-  - current posture is acceptable for launch, but tighter CSP would reduce browser-side risk and future blast radius
-- Blocks:
-  - no
-- Recommended action:
-  - continue CSP hardening after launch blockers are cleared
+  - include this in the auth/admin Atlas verification pass
 
 ## P3
 
-### P3-1: Audit artifacts remain in production data
+### P3-1: Production now includes a live deployment from an audited working tree that is not yet committed
 
 - Affected journey:
-  - founder/admin data review
-- Proof:
-  - audit created service requests `SR-260325-6SEC9` and `SR-260325-WQP7Y`
-  - audit created synthetic Stripe fulfillment and test entitlement/credit activity
+  - engineering traceability / rollback clarity
+- Verified proof:
+  - `git rev-parse --short HEAD` is still `4602753`
+  - production deployment `dpl_DhvHvU1EAc84o5UHpyKEVgKVeK5d` reflects current local audit changes
 - Business impact:
-  - minor clutter in founder dashboards and production data
-- Blocks:
-  - no
+  - operationally fine today, but commit-level traceability is weaker until the current state is committed
 - Recommended action:
-  - keep them as known audit artifacts or clean them later with a deliberate data-maintenance pass
+  - commit the audited state before the next release cycle
 
-### P3-2: Local browser automation was partially limited during audit
+## Closed In This Pass
 
-- Affected journey:
-  - browser-level automation confidence
-- Proof:
-  - Playwright/browser sandbox issues limited live browser automation on the audit machine
-- Business impact:
-  - functional verification is still strong because live HTTP, workflow, and screenshot evidence covered the critical paths
-- Blocks:
-  - no
-- Recommended action:
-  - optional future pass on a less restricted browser-capable environment
+These started as real blockers or caveats and are now fixed in code, validated locally, and deployed:
 
-## Hardening Items Already Fixed During This Audit
-
-These were findings at the start of the audit but are no longer open:
-
-- architecture email delivery timeout behavior
-- misleading WorkDrive network error handling
-- architecture status polling causing extra processing
-- non-idempotent lead-event writes
-- architecture review depending on brittle background execution
-- CSV formula injection in admin lead exports
-- hidden subscription prices accessible at checkout-session creation
-- incomplete runtime readiness surfacing for secret fallback boundaries
-- cacheability on unauthorized admin lead export responses
+- `/services` raw Calendly CTA bypassing tracking
+- `/services` copy overstating immediate consultation tracking behavior
+- `/services` signed-in flicker / false first-paint wall
+- validator success turning into `500` after post-run bookkeeping failure
+- Stripe checkout/portal session success turning into `500` after audit-log failure
+- missing `no-store` coverage on architecture-review status error branches
+- admin page soft `200` restricted placeholders instead of a real forbidden boundary
+- missing Calendly webhook timestamp freshness check
+- lack of XLSX ZIP preflight and worksheet / row / cell caps
+- missing WorkDrive archive failure surfacing in the admin lead workspace
+- missing `CRON_SECRET` coverage and unclear GitHub Actions scheduler honesty in runtime readiness

@@ -157,6 +157,7 @@ describe("admin leads helper", () => {
         syncedToZohoAt: null,
         zohoSyncNeedsUpdate: true,
         zohoSyncError: null,
+        workdriveUploadStatus: null,
       },
     ]);
 
@@ -184,6 +185,7 @@ describe("admin leads helper", () => {
         submissionCount: 1,
         emailDeliveryState: "sent",
         crmSyncState: "synced",
+        workdriveUploadStatus: "uploaded",
         recommendedEngagement: "Savings Sprint",
         leadStage: null,
         nextAction: "Review and follow up if this contact is sales-qualified.",
@@ -196,6 +198,8 @@ describe("admin leads helper", () => {
     expect(csv).toContain("jane@human-company.com");
     expect(csv).toContain("Savings Sprint");
     expect(csv).toContain("Cloud Cost");
+    expect(csv).toContain("workdrive_upload_status");
+    expect(csv).toContain("uploaded");
   });
 
   it("neutralizes spreadsheet formulas in CSV exports", () => {
@@ -215,6 +219,7 @@ describe("admin leads helper", () => {
         submissionCount: 1,
         emailDeliveryState: "sent",
         crmSyncState: "skipped",
+        workdriveUploadStatus: null,
         recommendedEngagement: null,
         leadStage: null,
         nextAction: "Review.",
@@ -225,5 +230,33 @@ describe("admin leads helper", () => {
 
     expect(csv).toContain("\"'=HYPERLINK(\"\"https://evil.test\"\")\"");
     expect(csv).toContain("\"'+Injected Corp\"");
+  });
+
+  it("treats WorkDrive archive failures as ops attention with a visible next action", async () => {
+    userFindManyMock.mockResolvedValue([]);
+    leadFindManyMock.mockResolvedValue([]);
+    leadLogFindManyMock.mockResolvedValue([
+      {
+        userEmail: "saved-review@human-company.com",
+        userName: "Saved Review",
+        createdAt: new Date("2026-03-14T00:00:00.000Z"),
+        quoteTier: "remediation-sprint",
+        leadStage: "New Review",
+        emailDeliveryMode: "email",
+        emailSentAt: new Date("2026-03-14T01:00:00.000Z"),
+        syncedToZohoAt: new Date("2026-03-14T02:00:00.000Z"),
+        zohoSyncNeedsUpdate: false,
+        zohoSyncError: null,
+        workdriveUploadStatus: "failed:WORKDRIVE_ACCESS_TOKEN_NOT_AVAILABLE",
+      },
+    ]);
+
+    const result = await getLeadDirectory({ audience: "all", ops: "needs-attention" });
+
+    expect(result.entries).toHaveLength(1);
+    expect(result.entries[0]?.email).toBe("saved-review@human-company.com");
+    expect(result.entries[0]?.workdriveUploadStatus).toBe("failed:WORKDRIVE_ACCESS_TOKEN_NOT_AVAILABLE");
+    expect(result.entries[0]?.nextAction).toContain("WorkDrive archive path");
+    expect(result.stats.opsAttention).toBe(1);
   });
 });

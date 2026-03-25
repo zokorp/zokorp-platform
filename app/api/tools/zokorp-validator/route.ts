@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireUser } from "@/lib/auth";
 import { validatorTierForProfile } from "@/lib/credit-tiers";
 import { db } from "@/lib/db";
+import { jsonNoStore } from "@/lib/internal-route";
 import { decrementUsesAtomically, requireEntitlement } from "@/lib/entitlements";
 import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
@@ -11,7 +11,7 @@ import { maxUploadBytes, isAllowedFileType } from "@/lib/security";
 import { parseValidatorInput } from "@/lib/validator";
 import { getValidatorTargetOptions, resolveValidatorTargetContext } from "@/lib/validator-library";
 import { VALIDATION_PROFILES } from "@/lib/zokorp-validator-engine";
-import { CreditTier, EntitlementStatus, Prisma } from "@prisma/client";
+import { CreditTier, EntitlementStatus } from "@prisma/client";
 
 export const runtime = "nodejs";
 
@@ -25,6 +25,7 @@ export async function POST(request: Request) {
   try {
     const crossSiteResponse = requireSameOrigin(request);
     if (crossSiteResponse) {
+      crossSiteResponse.headers.set("Cache-Control", "no-store");
       return crossSiteResponse;
     }
 
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
     });
 
     if (!limiter.allowed) {
-      return NextResponse.json(
+      return jsonNoStore(
         { error: "Rate limit reached. Please wait before running another validation." },
         {
           status: 429,
@@ -59,11 +60,11 @@ export async function POST(request: Request) {
     });
 
     if (!(file instanceof File)) {
-      return NextResponse.json({ error: "File is required" }, { status: 400 });
+      return jsonNoStore({ error: "File is required" }, { status: 400 });
     }
 
     if (!parsedForm.success) {
-      return NextResponse.json(
+      return jsonNoStore(
         { error: "Validation profile is required." },
         { status: 400 },
       );
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
 
     const maxBytes = maxUploadBytes(Number(process.env.UPLOAD_MAX_MB ?? "10"));
     if (file.size > maxBytes) {
-      return NextResponse.json(
+      return jsonNoStore(
         { error: `File too large. Max allowed is ${process.env.UPLOAD_MAX_MB ?? 10}MB.` },
         { status: 413 },
       );
@@ -96,21 +97,21 @@ export async function POST(request: Request) {
     );
 
     if (parsedForm.data.validationTargetId && !selectedTarget) {
-      return NextResponse.json(
+      return jsonNoStore(
         { error: "Invalid checklist selection. Please choose a valid target and retry." },
         { status: 400 },
       );
     }
 
     if (!parsedForm.data.validationTargetId && targetOptions.length > 0 && !selectedTarget) {
-      return NextResponse.json(
+      return jsonNoStore(
         { error: "Checklist targets unavailable. Please retry in a moment." },
         { status: 503 },
       );
     }
 
     if (!isAllowedFileType(file.name, file.type, buffer)) {
-      return NextResponse.json(
+      return jsonNoStore(
         {
           error:
             "Unsupported file type. Please upload a PDF or Excel file (.xlsx).",
@@ -120,7 +121,7 @@ export async function POST(request: Request) {
     }
 
     if (buffer.length > maxBytes) {
-      return NextResponse.json(
+      return jsonNoStore(
         { error: `File too large. Max allowed is ${process.env.UPLOAD_MAX_MB ?? 10}MB.` },
         { status: 413 },
       );
@@ -135,7 +136,7 @@ export async function POST(request: Request) {
       additionalContext: parsedForm.data.additionalContext,
     });
 
-    await decrementUsesAtomically({
+    const decrementResult = await decrementUsesAtomically({
       userId: user.id,
       productSlug: "zokorp-validator",
       uses: 1,
@@ -143,65 +144,69 @@ export async function POST(request: Request) {
       allowGeneralCreditFallback: true,
     });
 
-    const entitlement = await db.entitlement.findFirst({
-      where: {
-        userId: user.id,
-        product: { slug: "zokorp-validator" },
-      },
-      select: {
-        productId: true,
-        remainingUses: true,
-      },
-    });
+    let remainingUsesForProfile = decrementResult.remainingUses ?? 0;
 
-    let remainingUsesForProfile = entitlement?.remainingUses ?? 0;
-    if (entitlement?.productId) {
-      try {
-        const balances = await db.creditBalance.findMany({
-          where: {
-            userId: user.id,
-            productId: entitlement.productId,
-            status: EntitlementStatus.ACTIVE,
-            tier: {
-              in: [creditTier, CreditTier.GENERAL],
+    try {
+      const entitlement = await db.entitlement.findFirst({
+        where: {
+          userId: user.id,
+          product: { slug: "zokorp-validator" },
+        },
+        select: {
+          productId: true,
+          remainingUses: true,
+        },
+      });
+
+      if (entitlement?.productId) {
+        try {
+          const balances = await db.creditBalance.findMany({
+            where: {
+              userId: user.id,
+              productId: entitlement.productId,
+              status: EntitlementStatus.ACTIVE,
+              tier: {
+                in: [creditTier, CreditTier.GENERAL],
+              },
             },
-          },
-          select: {
-            remainingUses: true,
-          },
-        });
-        remainingUsesForProfile = balances.reduce((total, item) => total + item.remainingUses, 0);
-      } catch (error) {
-        if (
-          !(error instanceof Prisma.PrismaClientKnownRequestError) ||
-          (error.code !== "P2021" && error.code !== "P2022")
-        ) {
-          throw error;
+            select: {
+              remainingUses: true,
+            },
+          });
+          remainingUsesForProfile = balances.reduce((total, item) => total + item.remainingUses, 0);
+        } catch (error) {
+          console.error("Failed to refresh validator remaining uses", error);
         }
       }
+    } catch (error) {
+      console.error("Failed to load validator entitlement after decrement", error);
     }
 
-    await db.auditLog.create({
-      data: {
-        userId: user.id,
-        action: "tool.zokorp_validator_run",
-        metadataJson: {
-          filename: file.name,
-          mimeType: file.type,
-          bytes: buffer.length,
-          profile: parsedForm.data.validationProfile,
-          targetId: selectedTarget?.id ?? null,
-          targetLabel: selectedTarget?.label ?? null,
-          score: result.report.score,
-          rulepackId: result.report.rulepack.id,
-          redactions: result.meta?.redactions ?? null,
-          controlCalibrationTotal: result.report.controlCalibration?.totalControls ?? null,
-          adminBypass: entitlementAccess.adminBypass,
+    try {
+      await db.auditLog.create({
+        data: {
+          userId: user.id,
+          action: "tool.zokorp_validator_run",
+          metadataJson: {
+            filename: file.name,
+            mimeType: file.type,
+            bytes: buffer.length,
+            profile: parsedForm.data.validationProfile,
+            targetId: selectedTarget?.id ?? null,
+            targetLabel: selectedTarget?.label ?? null,
+            score: result.report.score,
+            rulepackId: result.report.rulepack.id,
+            redactions: result.meta?.redactions ?? null,
+            controlCalibrationTotal: result.report.controlCalibration?.totalControls ?? null,
+            adminBypass: entitlementAccess.adminBypass,
+          },
         },
-      },
-    });
+      });
+    } catch (error) {
+      console.error("Failed to write validator audit log", error);
+    }
 
-    return NextResponse.json({
+    return jsonNoStore({
       output: result.output,
       meta: result.meta,
       report: result.report,
@@ -214,15 +219,15 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "UNAUTHORIZED") {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return jsonNoStore({ error: "Unauthorized" }, { status: 401 });
       }
 
       if (error.message === "ENTITLEMENT_REQUIRED" || error.message === "INSUFFICIENT_USES") {
-        return NextResponse.json({ error: "Purchase required before running this tool." }, { status: 402 });
+        return jsonNoStore({ error: "Purchase required before running this tool." }, { status: 402 });
       }
 
       if (error.message === "UNREADABLE_SPREADSHEET") {
-        return NextResponse.json(
+        return jsonNoStore(
           { error: "The spreadsheet could not be parsed. Please upload a valid .xlsx file." },
           { status: 400 },
         );
@@ -230,6 +235,6 @@ export async function POST(request: Request) {
     }
 
     console.error(error);
-    return NextResponse.json({ error: "Tool execution failed" }, { status: 500 });
+    return jsonNoStore({ error: "Tool execution failed" }, { status: 500 });
   }
 }

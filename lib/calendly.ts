@@ -1,5 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
+const CALENDLY_WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS = 300;
+
 export type CalendlyWebhookPayload = {
   event?: string;
   payload?: {
@@ -52,6 +54,16 @@ export function verifyCalendlyWebhookSignature(input: {
     return false;
   }
 
+  const timestampSeconds = Number(timestamp);
+  if (!Number.isFinite(timestampSeconds)) {
+    return false;
+  }
+
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  if (Math.abs(nowSeconds - timestampSeconds) > CALENDLY_WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS) {
+    return false;
+  }
+
   const expectedSignature = createHmac("sha256", input.signingKey)
     .update(`${timestamp}.${input.rawBody}`)
     .digest("hex");
@@ -83,12 +95,15 @@ export function calendlyExternalEventId(payload: CalendlyWebhookPayload) {
 export function buildCalendlyBookingUrl(input: {
   baseUrl: string;
   estimateReferenceCode?: string | null;
+  utmSource?: string | null;
+  utmMedium?: string | null;
+  utmCampaign?: string | null;
 }) {
   try {
     const url = new URL(input.baseUrl);
-    url.searchParams.set("utm_source", "zokorp");
-    url.searchParams.set("utm_medium", "architecture-review-email");
-    url.searchParams.set("utm_campaign", "architecture-follow-up");
+    url.searchParams.set("utm_source", input.utmSource?.trim() || "zokorp");
+    url.searchParams.set("utm_medium", input.utmMedium?.trim() || "architecture-review-email");
+    url.searchParams.set("utm_campaign", input.utmCampaign?.trim() || "architecture-follow-up");
 
     if (input.estimateReferenceCode) {
       url.searchParams.set("utm_content", input.estimateReferenceCode);

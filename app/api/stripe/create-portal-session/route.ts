@@ -53,16 +53,20 @@ export async function POST(request: Request) {
       return_url: `${origin}/account`,
     });
 
-    await db.auditLog.create({
-      data: {
-        userId: user.id,
-        action: "billing.portal_session_created",
-        metadataJson: {
-          stripePortalSessionId: session.id,
-          stripeCustomerId: customerId,
+    try {
+      await db.auditLog.create({
+        data: {
+          userId: user.id,
+          action: "billing.portal_session_created",
+          metadataJson: {
+            stripePortalSessionId: session.id,
+            stripeCustomerId: customerId,
+          },
         },
-      },
-    });
+      });
+    } catch (error) {
+      console.error("Failed to write portal session audit log", error);
+    }
 
     return jsonNoStore({ url: session.url });
   } catch (error) {

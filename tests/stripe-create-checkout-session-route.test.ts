@@ -274,4 +274,39 @@ describe("create checkout session route", () => {
     });
     expect(checkoutSessionCreateMock).not.toHaveBeenCalled();
   });
+
+  it("returns the checkout URL even when audit logging fails after Stripe succeeds", async () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    auditCreateMock.mockRejectedValueOnce(new Error("audit unavailable"));
+
+    const response = await POST(
+      new Request("https://app.zokorp.com/api/stripe/create-checkout-session", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "https://app.zokorp.com",
+        },
+        body: JSON.stringify({
+          priceId: "price_123",
+          productSlug: "zokorp-validator",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    await expect(response.json()).resolves.toEqual({
+      url: "https://checkout.stripe.com/c/pay_123",
+    });
+    expect(checkoutSessionCreateMock).toHaveBeenCalled();
+    expect(auditCreateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "billing.checkout_session_created",
+        }),
+      }),
+    );
+
+    consoleErrorSpy.mockRestore();
+  });
 });
