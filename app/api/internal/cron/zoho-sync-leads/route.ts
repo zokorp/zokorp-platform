@@ -10,23 +10,25 @@ export const runtime = "nodejs";
 
 function providedSecret(request: Request) {
   return (
-    request.headers.get("x-zoho-sync-secret") ??
-    request.headers.get("x-sync-secret") ??
+    request.headers.get("x-cron-secret") ??
     request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ??
     ""
   );
 }
 
-export async function POST(request: Request) {
-  const syncSecret = process.env.ZOHO_SYNC_SECRET;
+async function handleCronZohoSync(request: Request) {
+  const configuredSecret = process.env.CRON_SECRET ?? "";
   const receivedSecret = providedSecret(request);
 
-  if (!syncSecret) {
-    await createInternalAuditLog("internal.zoho_sync_leads.not_configured");
-    return jsonNoStore({ error: "Zoho sync secret is not configured." }, { status: 503 });
+  if (!configuredSecret) {
+    await createInternalAuditLog("internal.cron_zoho_sync_leads.not_configured");
+    return jsonNoStore(
+      { error: "Cron secret is not configured." },
+      { status: 503 },
+    );
   }
 
-  if (!receivedSecret || !safeSecretEqual(syncSecret, receivedSecret)) {
+  if (!receivedSecret || !safeSecretEqual(configuredSecret, receivedSecret)) {
     return jsonNoStore({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -50,7 +52,11 @@ export async function POST(request: Request) {
   return jsonNoStore({ error: result.error }, { status: 500 });
 }
 
-export async function GET(_request: Request) {
+export async function GET(request: Request) {
+  return handleCronZohoSync(request);
+}
+
+export async function POST(_request: Request) {
   void _request;
-  return methodNotAllowedJson("POST");
+  return methodNotAllowedJson("GET");
 }

@@ -10,6 +10,9 @@ import {
   type ToolEventSource,
 } from "@/lib/tool-consent";
 
+export const LEAD_INTERACTION_ACTIONS = ["cta_clicked", "call_booked"] as const;
+export type LeadInteractionAction = (typeof LEAD_INTERACTION_ACTIONS)[number];
+
 function stableStringify(value: unknown): string {
   if (Array.isArray(value)) {
     return `[${value.map((item) => stableStringify(item)).join(",")}]`;
@@ -123,6 +126,32 @@ export async function recordLeadEvent(input: {
       recommendedEngagement: input.aggregate.recommendedEngagement ?? null,
       sourceRecordKey: input.aggregate.sourceRecordKey ?? null,
       createdAt: input.aggregate.createdAt ?? new Date(),
+    },
+  });
+}
+
+export async function recordLeadInteraction(input: {
+  leadId: string;
+  userId?: string | null;
+  serviceRequestId?: string | null;
+  source: ToolEventSource;
+  action: LeadInteractionAction;
+  provider?: string | null;
+  externalEventId?: string | null;
+  estimateReferenceCode?: string | null;
+  createdAt?: Date;
+}) {
+  return db.leadInteraction.create({
+    data: {
+      leadId: input.leadId,
+      userId: input.userId ?? null,
+      serviceRequestId: input.serviceRequestId ?? null,
+      source: input.source,
+      action: input.action,
+      provider: input.provider ?? null,
+      externalEventId: input.externalEventId ?? null,
+      estimateReferenceCode: input.estimateReferenceCode ?? null,
+      createdAt: input.createdAt ?? new Date(),
     },
   });
 }

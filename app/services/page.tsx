@@ -15,9 +15,9 @@ const serviceTracks = [
   {
     title: "Architecture Implementation",
     summary:
-      "Free architecture reviews turn into a final implementation quote by email, then a booked follow-up if the work is a fit.",
+      "Free architecture reviews turn into an implementation estimate by email, then a booked follow-up if the work is a fit.",
     points: [
-      "Itemized implementation quote tied to detected architecture issues",
+      "Itemized implementation estimate tied to detected architecture issues",
       "Booking-first follow-up instead of a blind pay-now flow",
       "Focused solo execution for bounded architecture remediation work",
     ],
@@ -67,7 +67,7 @@ const serviceFaq = [
   {
     question: "How does the free architecture review connect to paid work?",
     answer:
-      "The review stays free. If the diagram points to work worth doing, the result email includes an itemized implementation quote and a booking link to discuss scope before any payment happens.",
+      "The review stays free. If the diagram points to work worth doing, the result email includes an itemized implementation estimate and a booking link to discuss scope before any payment happens.",
   },
   {
     question: "How are engagements tracked?",
@@ -95,7 +95,7 @@ export default function ServicesPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Services</p>
         <h1 className="font-display mt-2 text-balance text-4xl font-semibold">Build with confidence, not guesswork</h1>
         <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-200 md:text-base">
-          ZoKorp combines deterministic architecture review, itemized implementation quoting, and hands-on delivery for teams that need a practical next step instead of another vague advisory deck.
+          ZoKorp combines deterministic architecture review, itemized implementation estimating, and hands-on delivery for teams that need a practical next step instead of another vague advisory deck.
         </p>
         <div className="mt-6 flex flex-wrap gap-2">
           <a href={architectureBookingUrl} className={buttonVariants({ variant: "secondary" })}>

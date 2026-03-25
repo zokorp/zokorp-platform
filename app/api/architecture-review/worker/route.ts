@@ -1,5 +1,4 @@
-import { drainArchitectureReviewQueue } from "@/lib/architecture-review/jobs";
-import { isSchemaDriftError } from "@/lib/db-errors";
+import { runArchitectureReviewWorkerBatch } from "@/lib/architecture-review/worker-run";
 import {
   createInternalAuditLog,
   jsonNoStore,
@@ -43,50 +42,19 @@ async function runWorker(request: Request) {
     return jsonNoStore({ error: "Unauthorized" }, { status: 401 });
   }
 
-  try {
-    const result = await drainArchitectureReviewQueue({
-      limit,
-    });
-
-    await createInternalAuditLog("internal.architecture_review_worker.run", {
-      limit,
-      scanned: result.scanned,
-      processed: result.processed,
-      sent: result.sent,
-      fallback: result.fallback,
-      rejected: result.rejected,
-      failed: result.failed,
-      runningOrQueued: result.runningOrQueued,
-    });
-
-    return jsonNoStore({
-      status: "ok",
-      ...result,
-    });
-  } catch (error) {
-    if (isSchemaDriftError(error)) {
-      await createInternalAuditLog("internal.architecture_review_worker.schema_unavailable", {
-        limit,
-      });
-      return jsonNoStore(
-        { error: "Architecture review queue schema is unavailable." },
-        { status: 503 },
-      );
-    }
-
-    console.error("architecture review worker run failed", error);
-    await createInternalAuditLog("internal.architecture_review_worker.failed", {
-      limit,
-      errorName: error instanceof Error ? error.name : "unknown_error",
-    });
-
+  const result = await runArchitectureReviewWorkerBatch(limit);
+  if (result.status === "schema_unavailable") {
     return jsonNoStore(
-      {
-        error: "Architecture review worker run failed.",
-      },
-      { status: 500 },
+      { error: result.error },
+      { status: 503 },
     );
   }
+
+  if (result.status === "failed") {
+    return jsonNoStore({ error: result.error }, { status: 500 });
+  }
+
+  return jsonNoStore(result);
 }
 
 export async function POST(request: Request) {

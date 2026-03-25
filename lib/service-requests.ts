@@ -1,4 +1,6 @@
-import { ServiceRequestStatus, ServiceRequestType } from "@prisma/client";
+import { Prisma, ServiceRequestStatus, ServiceRequestType } from "@prisma/client";
+
+import { db } from "@/lib/db";
 
 export const SERVICE_REQUEST_TYPE_LABEL: Record<ServiceRequestType, string> = {
   CONSULTATION: "Consultation",
@@ -45,4 +47,43 @@ export function generateServiceTrackingCode(date = new Date()) {
   const d = String(date.getUTCDate()).padStart(2, "0");
 
   return `SR-${y}${m}${d}-${randomSuffix(5)}`;
+}
+
+export async function createServiceRequest(input: {
+  userId: string;
+  type: ServiceRequestType;
+  title: string;
+  summary: string;
+  preferredStart?: Date | null;
+  budgetRange?: string | null;
+}) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const trackingCode = generateServiceTrackingCode();
+
+    try {
+      return await db.serviceRequest.create({
+        data: {
+          userId: input.userId,
+          trackingCode,
+          type: input.type,
+          title: input.title,
+          summary: input.summary,
+          preferredStart: input.preferredStart ?? undefined,
+          budgetRange: input.budgetRange ?? undefined,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002" &&
+        typeof error.meta?.target !== "undefined"
+      ) {
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  throw new Error("SERVICE_TRACKING_CODE_EXHAUSTED");
 }

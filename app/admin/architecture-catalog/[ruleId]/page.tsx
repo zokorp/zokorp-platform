@@ -29,7 +29,35 @@ function formatDateTime(value: Date | null) {
   }).format(value);
 }
 
-function statusVariant(status: "UNREVIEWED" | "DRAFT" | "PUBLISHED" | "STALE") {
+function liveStateVariant(status: "PUBLISHED" | "DRAFT_PENDING" | "NEEDS_REVIEW" | "STALE") {
+  if (status === "PUBLISHED") {
+    return "success" as const;
+  }
+
+  if (status === "STALE") {
+    return "warning" as const;
+  }
+
+  if (status === "DRAFT_PENDING") {
+    return "info" as const;
+  }
+
+  return "secondary" as const;
+}
+
+function liveStateLabel(status: "PUBLISHED" | "DRAFT_PENDING" | "NEEDS_REVIEW" | "STALE") {
+  if (status === "DRAFT_PENDING") {
+    return "Draft Pending";
+  }
+
+  if (status === "NEEDS_REVIEW") {
+    return "Needs Review";
+  }
+
+  return status;
+}
+
+function revisionStatusVariant(status: "UNREVIEWED" | "DRAFT" | "PUBLISHED" | "STALE") {
   if (status === "PUBLISHED") {
     return "success" as const;
   }
@@ -89,11 +117,12 @@ export default async function AdminArchitectureCatalogDetailPage({
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Admin Workspace</p>
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="font-display text-4xl font-semibold text-slate-900">{detail.ruleId}</h1>
-              <Badge variant={statusVariant(detail.catalog.reviewStatus)}>{detail.catalog.reviewStatus}</Badge>
+              <Badge variant={liveStateVariant(detail.catalog.liveState)}>{liveStateLabel(detail.catalog.liveState)}</Badge>
               <Badge variant="secondary">{detail.codeEntry.category}</Badge>
+              {detail.catalog.hasDraftPending ? <Badge variant="info">Published live</Badge> : null}
             </div>
             <p className="max-w-3xl text-sm leading-6 text-slate-600">
-              Review the code-backed rule, draft private pricing or copy updates, and publish only when the live quote output should change.
+              Review the code-backed rule, draft private pricing or copy updates, and publish only when the live estimate output should change.
             </p>
           </div>
           <AdminNav current="architecture-catalog" />
@@ -179,6 +208,10 @@ export default async function AdminArchitectureCatalogDetailPage({
                 <p className="mt-1 text-slate-900">{detail.catalog.publishedVersion ?? "None"}</p>
               </div>
               <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Catalog state</p>
+                <p className="mt-1 text-slate-900">{liveStateLabel(detail.catalog.liveState)}</p>
+              </div>
+              <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Published at</p>
                 <p className="mt-1 text-slate-900">{formatDateTime(detail.catalog.publishedAt)}</p>
               </div>
@@ -225,12 +258,12 @@ export default async function AdminArchitectureCatalogDetailPage({
           <h2 className="font-display text-2xl font-semibold text-slate-900">Draft and publish</h2>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Alert tone="info">
-            <AlertTitle>Drafts stay private</AlertTitle>
-            <AlertDescription>
-              Saving a draft records your working copy and keeps the current live quote behavior unchanged. Publishing writes a new live revision for this rule.
-            </AlertDescription>
-          </Alert>
+            <Alert tone="info">
+              <AlertTitle>Drafts stay private</AlertTitle>
+              <AlertDescription>
+              Saving a draft records your working copy and keeps the current live estimate behavior unchanged. Publishing writes a new live revision for this rule.
+              </AlertDescription>
+            </Alert>
 
           <form className="space-y-4">
             <input type="hidden" name="ruleId" value={detail.ruleId} />
@@ -320,7 +353,7 @@ export default async function AdminArchitectureCatalogDetailPage({
                   className="rounded-3xl border border-border bg-background-elevated/85 px-4 py-4 shadow-[var(--shadow-soft)]"
                 >
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant={statusVariant(revision.status)}>{revision.status}</Badge>
+                    <Badge variant={revisionStatusVariant(revision.status)}>{revision.status}</Badge>
                     <Badge variant="secondary">v{revision.version}</Badge>
                     <Badge variant="info">{revision.pricingMode}</Badge>
                   </div>

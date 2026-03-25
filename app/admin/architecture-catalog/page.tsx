@@ -27,7 +27,7 @@ function formatDate(value: Date | null) {
   }).format(value);
 }
 
-function statusVariant(status: "UNREVIEWED" | "DRAFT" | "PUBLISHED" | "STALE") {
+function liveStateVariant(status: "PUBLISHED" | "DRAFT_PENDING" | "NEEDS_REVIEW" | "STALE") {
   if (status === "PUBLISHED") {
     return "success" as const;
   }
@@ -36,11 +36,23 @@ function statusVariant(status: "UNREVIEWED" | "DRAFT" | "PUBLISHED" | "STALE") {
     return "warning" as const;
   }
 
-  if (status === "DRAFT") {
+  if (status === "DRAFT_PENDING") {
     return "info" as const;
   }
 
   return "secondary" as const;
+}
+
+function liveStateLabel(status: "PUBLISHED" | "DRAFT_PENDING" | "NEEDS_REVIEW" | "STALE") {
+  if (status === "DRAFT_PENDING") {
+    return "Draft Pending";
+  }
+
+  if (status === "NEEDS_REVIEW") {
+    return "Needs Review";
+  }
+
+  return status;
 }
 
 function filterLabel(filter: (typeof ARCHITECTURE_RULE_CATALOG_FILTERS)[number]) {
@@ -103,7 +115,7 @@ export default async function AdminArchitectureCatalogPage({
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Admin Workspace</p>
             <h1 className="font-display text-4xl font-semibold text-slate-900">Architecture Catalog</h1>
             <p className="max-w-3xl text-sm leading-6 text-slate-600">
-              This is the private rule catalog behind the architecture review quote email. Detection and scoring stay code-backed. Only published catalog revisions affect live customer-facing service lines and pricing overrides.
+              This is the private rule catalog behind the architecture review estimate email. Detection and scoring stay code-backed. Only published catalog revisions affect live customer-facing service lines and pricing overrides.
             </p>
           </div>
           <AdminNav current="architecture-catalog" />
@@ -114,6 +126,7 @@ export default async function AdminArchitectureCatalogPage({
         {[
           { label: "Total rules", value: directory.stats.total },
           { label: "Needs review", value: directory.stats.needsReview },
+          { label: "Draft pending", value: directory.stats.draftPending },
           { label: "Stale", value: directory.stats.stale },
           { label: "Published", value: directory.stats.published },
         ].map((item) => (
@@ -131,7 +144,7 @@ export default async function AdminArchitectureCatalogPage({
       <Alert tone="info">
         <AlertTitle>Publish is the only live switch</AlertTitle>
         <AlertDescription>
-          Drafts help you research and refine service lines or override pricing, but the live quote email only reads published entries. If a code-backed rule changes, the catalog marks it stale so you can review it before trusting the published copy again.
+          Drafts help you research and refine service lines or override pricing, but the live estimate email only reads published entries. If a code-backed rule changes, the catalog marks it stale so you can review it before trusting the published copy again.
         </AlertDescription>
       </Alert>
 
@@ -182,10 +195,11 @@ export default async function AdminArchitectureCatalogPage({
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-mono text-sm font-semibold text-slate-900">{entry.ruleId}</span>
-                        <Badge variant={statusVariant(entry.reviewStatus)}>{entry.reviewStatus}</Badge>
+                        <Badge variant={liveStateVariant(entry.liveState)}>{liveStateLabel(entry.liveState)}</Badge>
                         <Badge variant="secondary">{entry.category}</Badge>
                         <Badge variant="info">{entry.pricingMode}</Badge>
                         {!entry.isPresentInCode ? <Badge variant="warning">Not in code</Badge> : null}
+                        {entry.hasDraftPending ? <Badge variant="info">Published live</Badge> : null}
                       </div>
                       <p className="text-sm font-semibold text-slate-900">{entry.serviceLineLabel}</p>
                       <p className="max-w-3xl text-sm leading-6 text-slate-600">{entry.publicFixSummary}</p>

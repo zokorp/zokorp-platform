@@ -28,11 +28,14 @@ export const ARCHITECTURE_RULE_CATALOG_FILTERS = [
 ] as const;
 
 export type ArchitectureRuleCatalogFilter = (typeof ARCHITECTURE_RULE_CATALOG_FILTERS)[number];
+export type ArchitectureRuleCatalogLiveState = "PUBLISHED" | "DRAFT_PENDING" | "NEEDS_REVIEW" | "STALE";
 
 export type ArchitectureRuleCatalogDirectoryEntry = {
   ruleId: string;
   category: string;
   reviewStatus: "UNREVIEWED" | "DRAFT" | "PUBLISHED" | "STALE";
+  liveState: ArchitectureRuleCatalogLiveState;
+  hasDraftPending: boolean;
   isPresentInCode: boolean;
   serviceLineLabel: string;
   publicFixSummary: string;
@@ -56,6 +59,7 @@ export type ArchitectureRuleCatalogDirectory = {
     needsReview: number;
     stale: number;
     published: number;
+    draftPending: number;
   };
 };
 
@@ -82,6 +86,8 @@ export type ArchitectureRuleCatalogDetail = {
   codeEntry: ArchitectureReviewPricingCatalogEntry;
   catalog: {
     reviewStatus: "UNREVIEWED" | "DRAFT" | "PUBLISHED" | "STALE";
+    liveState: ArchitectureRuleCatalogLiveState;
+    hasDraftPending: boolean;
     isPresentInCode: boolean;
     publishedVersion: number | null;
     publishedAt: Date | null;
@@ -305,11 +311,31 @@ function normalizeOverrideAmount(value: number | null | undefined) {
 }
 
 function runtimeSourceForRow(row: PersistedCatalogRecord | null) {
-  if (row && row.reviewStatus === "PUBLISHED" && row.isPresentInCode) {
+  if (row && row.publishedRevisionId && row.reviewStatus !== "STALE" && row.isPresentInCode) {
     return "published" as const;
   }
 
   return "fallback" as const;
+}
+
+function hasDraftPendingForRow(row: PersistedCatalogRecord) {
+  return row.reviewStatus === "DRAFT" && row.publishedRevisionId !== null && row.isPresentInCode;
+}
+
+function liveStateForRow(row: PersistedCatalogRecord): ArchitectureRuleCatalogLiveState {
+  if (!row.isPresentInCode || row.reviewStatus === "STALE") {
+    return "STALE";
+  }
+
+  if (hasDraftPendingForRow(row)) {
+    return "DRAFT_PENDING";
+  }
+
+  if (row.publishedRevisionId) {
+    return "PUBLISHED";
+  }
+
+  return "NEEDS_REVIEW";
 }
 
 function buildDirectoryEntry(row: PersistedCatalogRecord, codeEntry: ArchitectureReviewPricingCatalogEntry) {
@@ -317,6 +343,8 @@ function buildDirectoryEntry(row: PersistedCatalogRecord, codeEntry: Architectur
     ruleId: row.ruleId,
     category: row.category,
     reviewStatus: row.reviewStatus,
+    liveState: liveStateForRow(row),
+    hasDraftPending: hasDraftPendingForRow(row),
     isPresentInCode: row.isPresentInCode,
     serviceLineLabel: effectiveServiceLineLabel({
       codeEntry,
@@ -340,11 +368,11 @@ function buildDirectoryEntry(row: PersistedCatalogRecord, codeEntry: Architectur
 
 function matchDirectoryFilter(entry: ArchitectureRuleCatalogDirectoryEntry, filter: ArchitectureRuleCatalogFilter) {
   if (filter === "needs-review") {
-    return entry.reviewStatus === "UNREVIEWED" || entry.reviewStatus === "DRAFT";
+    return entry.liveState === "NEEDS_REVIEW" || entry.liveState === "DRAFT_PENDING";
   }
 
   if (filter === "stale") {
-    return entry.reviewStatus === "STALE";
+    return entry.liveState === "STALE";
   }
 
   if (filter === "recently-updated") {
@@ -534,11 +562,11 @@ async function fetchPublishedOverrides(ruleIds: string[]) {
     const rows = await db.architectureRuleCatalog.findMany({
       where: {
         ruleId: { in: ruleIds },
-        reviewStatus: PrismaArchitectureRuleCatalogReviewStatus.PUBLISHED,
         isPresentInCode: true,
       },
       select: {
         ruleId: true,
+        reviewStatus: true,
         publishedRevisionId: true,
         serviceLineLabel: true,
         publicFixSummary: true,
@@ -548,7 +576,15 @@ async function fetchPublishedOverrides(ruleIds: string[]) {
       },
     });
 
-    return new Map(rows.map((row) => [row.ruleId, row]));
+    return new Map(
+      rows
+        .filter(
+          (row) =>
+            row.publishedRevisionId !== null &&
+            row.reviewStatus !== PrismaArchitectureRuleCatalogReviewStatus.STALE,
+        )
+        .map((row) => [row.ruleId, row]),
+    );
   } catch (error) {
     if (isSchemaDriftError(error)) {
       return new Map<string, PublishedCatalogOverride>();
@@ -609,15 +645,15 @@ function buildArchitectureEstimateSnapshot(
 
   const totalUsd = lineItems.reduce((sum, item) => sum + item.amountUsd, 0);
   const assumptions = [
-    "Quoted only for the issues visible in the submitted diagram and written narrative.",
+    "Estimated only for the issues visible in the submitted diagram and written narrative.",
     report.analysisConfidence === "low"
-      ? "Because the evidence confidence was low, the quote assumes no hidden dependencies outside the submitted material."
-      : "The quote assumes the current architecture can be corrected without a broader redesign.",
+      ? "Because the evidence confidence was low, the estimate assumes no hidden dependencies outside the submitted material."
+      : "The estimate assumes the current architecture can be corrected without a broader redesign.",
     "Work is scoped for a solo implementation pass and one review cycle unless expanded during the booking conversation.",
   ];
   const exclusions = [
-    "New requirements, migrations, application code changes, and vendor procurement are excluded from this quote.",
-    "Issues not visible in the submitted diagram or uncovered later are outside this quoted total.",
+    "New requirements, migrations, application code changes, and vendor procurement are excluded from this estimate.",
+    "Issues not visible in the submitted diagram or uncovered later are outside this estimated total.",
     "Ongoing support, managed operations, and subscription work are not included unless separately agreed.",
   ];
 
@@ -780,23 +816,23 @@ export async function getArchitectureRuleCatalogDirectory(input?: {
       .filter((entry) => matchDirectoryFilter(entry, filter))
       .filter((entry) => matchSearch(entry, q))
       .sort((left, right) => {
-        const statusWeight = (status: ArchitectureRuleCatalogDirectoryEntry["reviewStatus"]) => {
-          if (status === "STALE") {
+        const statusWeight = (state: ArchitectureRuleCatalogDirectoryEntry["liveState"]) => {
+          if (state === "STALE") {
             return 0;
           }
 
-          if (status === "UNREVIEWED") {
+          if (state === "NEEDS_REVIEW") {
             return 1;
           }
 
-          if (status === "DRAFT") {
+          if (state === "DRAFT_PENDING") {
             return 2;
           }
 
           return 3;
         };
 
-        const weightDelta = statusWeight(left.reviewStatus) - statusWeight(right.reviewStatus);
+        const weightDelta = statusWeight(left.liveState) - statusWeight(right.liveState);
         if (weightDelta !== 0) {
           return weightDelta;
         }
@@ -810,9 +846,10 @@ export async function getArchitectureRuleCatalogDirectory(input?: {
       entries,
       stats: {
         total: rows.length,
-        needsReview: rows.filter((row) => row.reviewStatus === "UNREVIEWED" || row.reviewStatus === "DRAFT").length,
-        stale: rows.filter((row) => row.reviewStatus === "STALE").length,
-        published: rows.filter((row) => row.reviewStatus === "PUBLISHED").length,
+        needsReview: rows.filter((row) => liveStateForRow(row) === "NEEDS_REVIEW").length,
+        stale: rows.filter((row) => liveStateForRow(row) === "STALE").length,
+        published: rows.filter((row) => liveStateForRow(row) === "PUBLISHED").length,
+        draftPending: rows.filter((row) => liveStateForRow(row) === "DRAFT_PENDING").length,
       },
     } satisfies ArchitectureRuleCatalogDirectory;
   } catch (error) {
@@ -826,6 +863,7 @@ export async function getArchitectureRuleCatalogDirectory(input?: {
           needsReview: 0,
           stale: 0,
           published: 0,
+          draftPending: 0,
         },
       } satisfies ArchitectureRuleCatalogDirectory;
     }
@@ -913,6 +951,8 @@ export async function getArchitectureRuleCatalogDetail(ruleId: string) {
       codeEntry,
       catalog: {
         reviewStatus: catalog.reviewStatus,
+        liveState: liveStateForRow(catalog),
+        hasDraftPending: hasDraftPendingForRow(catalog),
         isPresentInCode: catalog.isPresentInCode,
         publishedVersion: catalog.publishedVersion,
         publishedAt: catalog.publishedAt,
