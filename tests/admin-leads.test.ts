@@ -197,4 +197,33 @@ describe("admin leads helper", () => {
     expect(csv).toContain("Savings Sprint");
     expect(csv).toContain("Cloud Cost");
   });
+
+  it("neutralizes spreadsheet formulas in CSV exports", () => {
+    const csv = renderLeadDirectoryCsv([
+      {
+        email: "formula@human-company.com",
+        name: "=HYPERLINK(\"https://evil.test\")",
+        companyName: "+Injected Corp",
+        hasAccount: false,
+        emailVerified: false,
+        isAdmin: false,
+        isInternal: false,
+        firstSeenAt: new Date("2026-03-12T00:00:00.000Z"),
+        latestAt: new Date("2026-03-12T00:00:00.000Z"),
+        latestSource: "ai-decider",
+        sources: ["ai-decider"],
+        submissionCount: 1,
+        emailDeliveryState: "sent",
+        crmSyncState: "skipped",
+        recommendedEngagement: null,
+        leadStage: null,
+        nextAction: "Review.",
+        signals: [],
+        isLikelyHuman: true,
+      },
+    ]);
+
+    expect(csv).toContain("\"'=HYPERLINK(\"\"https://evil.test\"\")\"");
+    expect(csv).toContain("\"'+Injected Corp\"");
+  });
 });

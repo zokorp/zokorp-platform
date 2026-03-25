@@ -2,6 +2,7 @@ import { PriceKind } from "@prisma/client";
 import { z } from "zod";
 
 import { requireUser } from "@/lib/auth";
+import { shouldHidePublicProductPricing } from "@/lib/billing-readiness";
 import { db } from "@/lib/db";
 import { jsonNoStore, methodNotAllowedJson } from "@/lib/internal-route";
 import { requireSameOrigin } from "@/lib/request-origin";
@@ -70,6 +71,10 @@ export async function POST(request: Request) {
     });
 
     if (!price || !price.active || !price.product.active || price.product.slug !== parsed.data.productSlug) {
+      return jsonNoStore({ error: "Price not available" }, { status: 404 });
+    }
+
+    if (shouldHidePublicProductPricing(price.product.accessModel)) {
       return jsonNoStore({ error: "Price not available" }, { status: 404 });
     }
 

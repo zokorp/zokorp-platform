@@ -5,6 +5,7 @@ import { z } from "zod";
 import {
   createArchitectureReviewJob,
   processArchitectureReviewJob,
+  serializeArchitectureReviewJobStatus,
 } from "@/lib/architecture-review/jobs";
 import { isSafeSvgBytes } from "@/lib/architecture-review/server";
 import { submitArchitectureReviewMetadataSchema } from "@/lib/architecture-review/types";
@@ -273,22 +274,23 @@ export async function POST(request: Request) {
           : formatWorkDriveArchiveStatus(diagramArchiveResult),
     });
 
-    void processArchitectureReviewJob(createdJob.id);
-
-    const body = {
-      status: "queued",
-      jobId: createdJob.id,
-      deliveryMode: null,
-      phase: "upload-validate",
-      progressPct: 0,
-      etaSeconds: 0,
-    } as const;
+    const processedJob = await processArchitectureReviewJob(createdJob.id);
+    const finalJob = processedJob ?? createdJob;
+    const serializedStatus = serializeArchitectureReviewJobStatus(finalJob);
+    const responseStatus =
+      serializedStatus.status === "sent" ||
+      serializedStatus.status === "fallback" ||
+      serializedStatus.status === "failed" ||
+      serializedStatus.status === "rejected"
+        ? 200
+        : 202;
+    const body = serializedStatus;
 
     if (idempotencyCacheKey) {
-      writeIdempotencyEntry(idempotencyCacheKey, { status: 202, body: { ...body, requestId } });
+      writeIdempotencyEntry(idempotencyCacheKey, { status: responseStatus, body: { ...body, requestId } });
     }
 
-    return jsonResponse(requestId, body, 202, limiterContext);
+    return jsonResponse(requestId, body, responseStatus, limiterContext);
   } catch (error) {
     if (isFreeToolAccessError(error)) {
       return jsonResponse(requestId, { error: error.message }, error.status, limiterContext);

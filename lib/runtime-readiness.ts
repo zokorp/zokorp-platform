@@ -87,9 +87,18 @@ export function buildRuntimeReadinessReport(env: RuntimeEnv = process.env): Runt
   ];
   const configuredPriceIds = priceIds.filter(configured).length;
   const archWorkerSecretConfigured = configured(env.ARCH_REVIEW_WORKER_SECRET);
+  const archiveEncryptionSecretConfigured = configured(env.ARCHIVE_ENCRYPTION_SECRET);
+  const archReviewEmlSecretConfigured = configured(env.ARCH_REVIEW_EML_SECRET);
+  const archReviewCtaSecretConfigured = configured(env.ARCH_REVIEW_CTA_SECRET);
   const followupSecretConfigured = configured(env.ARCH_REVIEW_FOLLOWUP_SECRET);
   const zohoSyncSecretConfigured = configured(env.ZOHO_SYNC_SECRET);
   const calendlySyncSecretConfigured = configured(env.CALENDLY_SYNC_SECRET);
+  const archiveFallingBackToNextAuth = !archiveEncryptionSecretConfigured && nextAuthSecretConfigured;
+  const archReviewEmlFallingBackToNextAuth = !archReviewEmlSecretConfigured && nextAuthSecretConfigured;
+  const archReviewCtaFallingBackToEml =
+    !archReviewCtaSecretConfigured && archReviewEmlSecretConfigured;
+  const archReviewCtaFallingBackToNextAuth =
+    !archReviewCtaSecretConfigured && !archReviewEmlSecretConfigured && nextAuthSecretConfigured;
   const followupAndZohoSecretsEqual =
     followupSecretConfigured &&
     zohoSyncSecretConfigured &&
@@ -240,6 +249,80 @@ export function buildRuntimeReadinessReport(env: RuntimeEnv = process.env): Runt
               summary: "ARCH_REVIEW_WORKER_SECRET is missing.",
               operatorAction: "Set the worker secret before relying on the scheduled queue drain.",
             },
+        archiveEncryptionSecretConfigured
+          ? {
+              id: "archive-encryption-secret",
+              label: "Archive encryption secret",
+              level: "pass",
+              summary: "ARCHIVE_ENCRYPTION_SECRET is configured explicitly.",
+            }
+          : archiveFallingBackToNextAuth
+            ? {
+                id: "archive-encryption-secret",
+                label: "Archive encryption secret",
+                level: "warning",
+                summary: "ARCHIVE_ENCRYPTION_SECRET is missing, so archive encryption falls back to NEXTAUTH_SECRET.",
+                operatorAction: "Set a dedicated ARCHIVE_ENCRYPTION_SECRET so archive confidentiality does not share the auth secret boundary.",
+              }
+            : {
+                id: "archive-encryption-secret",
+                label: "Archive encryption secret",
+                level: "fail",
+                summary: "ARCHIVE_ENCRYPTION_SECRET is missing.",
+                operatorAction: "Set a dedicated archive encryption secret before relying on encrypted archival flows.",
+              },
+        archReviewEmlSecretConfigured
+          ? {
+              id: "arch-review-eml-secret",
+              label: "Architecture .eml secret",
+              level: "pass",
+              summary: "ARCH_REVIEW_EML_SECRET is configured explicitly.",
+            }
+          : archReviewEmlFallingBackToNextAuth
+            ? {
+                id: "arch-review-eml-secret",
+                label: "Architecture .eml secret",
+                level: "warning",
+                summary: "ARCH_REVIEW_EML_SECRET is missing, so signed .eml downloads fall back to NEXTAUTH_SECRET.",
+                operatorAction: "Set a dedicated ARCH_REVIEW_EML_SECRET so signed email artifacts do not share the auth secret boundary.",
+              }
+            : {
+                id: "arch-review-eml-secret",
+                label: "Architecture .eml secret",
+                level: "fail",
+                summary: "ARCH_REVIEW_EML_SECRET is missing.",
+                operatorAction: "Set a dedicated .eml secret before relying on fallback email downloads.",
+              },
+        archReviewCtaSecretConfigured
+          ? {
+              id: "arch-review-cta-secret",
+              label: "Architecture CTA signing secret",
+              level: "pass",
+              summary: "ARCH_REVIEW_CTA_SECRET is configured explicitly.",
+            }
+          : archReviewCtaFallingBackToEml
+            ? {
+                id: "arch-review-cta-secret",
+                label: "Architecture CTA signing secret",
+                level: "warning",
+                summary: "ARCH_REVIEW_CTA_SECRET is missing, so CTA signing falls back to ARCH_REVIEW_EML_SECRET.",
+                operatorAction: "Set a dedicated ARCH_REVIEW_CTA_SECRET so CTA links do not share the .eml signing boundary.",
+              }
+            : archReviewCtaFallingBackToNextAuth
+              ? {
+                  id: "arch-review-cta-secret",
+                  label: "Architecture CTA signing secret",
+                  level: "warning",
+                  summary: "ARCH_REVIEW_CTA_SECRET is missing, so CTA signing falls back to NEXTAUTH_SECRET.",
+                  operatorAction: "Set a dedicated ARCH_REVIEW_CTA_SECRET so CTA links do not share the auth secret boundary.",
+                }
+              : {
+                  id: "arch-review-cta-secret",
+                  label: "Architecture CTA signing secret",
+                  level: "fail",
+                  summary: "ARCH_REVIEW_CTA_SECRET is missing.",
+                  operatorAction: "Set a dedicated CTA signing secret before relying on architecture follow-up links.",
+                },
         followupSecretConfigured
           ? {
               id: "arch-followup-secret",

@@ -1030,10 +1030,6 @@ export async function getArchitectureReviewJobStatus(jobId: string) {
     return null;
   }
 
-  if (job.status === "queued" || job.status === "running") {
-    void processArchitectureReviewJob(job.id);
-  }
-
   return job;
 }
 

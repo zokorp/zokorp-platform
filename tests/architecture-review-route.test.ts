@@ -17,6 +17,24 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/architecture-review/jobs", () => ({
   createArchitectureReviewJob: mocks.createArchitectureReviewJob,
   processArchitectureReviewJob: mocks.processArchitectureReviewJob,
+  serializeArchitectureReviewJobStatus: (job: { id: string; status: string; deliveryMode?: string | null }) => ({
+    jobId: job.id,
+    status: job.status,
+    phase: job.status === "queued" ? "upload-validate" : "completed",
+    progressPct: job.status === "queued" ? 0 : 100,
+    etaSeconds: 0,
+    deliveryMode: job.deliveryMode ?? null,
+    error: job.status === "failed" ? "Processing failed." : null,
+    reason: job.status === "rejected" ? "Rejected." : null,
+    fallback:
+      job.status === "fallback"
+        ? {
+            mailtoUrl: "mailto:test@example.com",
+            emlDownloadToken: "token",
+            reason: "fallback",
+          }
+        : null,
+  }),
 }));
 
 vi.mock("@/lib/free-tool-access", () => ({
@@ -230,6 +248,23 @@ describe("submit architecture review route", () => {
         workdriveUploadStatus: "diagram_uploaded",
       }),
     );
+  });
+
+  it("returns the final sent status when inline processing completes successfully", async () => {
+    mocks.processArchitectureReviewJob.mockResolvedValueOnce({
+      id: "job_123",
+      status: "sent",
+      deliveryMode: "sent",
+    });
+
+    const response = await POST(makeMultipartRequest());
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      status: "sent",
+      jobId: "job_123",
+      deliveryMode: "sent",
+    });
   });
 
   it("rejects SVG uploads that do not include browser-extracted text evidence", async () => {
