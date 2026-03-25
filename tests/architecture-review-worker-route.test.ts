@@ -1,13 +1,12 @@
-import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { auditCreateMock, drainArchitectureReviewQueueMock, isSchemaDriftErrorMock } = vi.hoisted(() => ({
+const { auditCreateMock, runWorkerBatchMock } = vi.hoisted(() => ({
   auditCreateMock: vi.fn(),
-  drainArchitectureReviewQueueMock: vi.fn(),
-  isSchemaDriftErrorMock: vi.fn(),
+  runWorkerBatchMock: vi.fn(),
 }));
 
-vi.mock("@/lib/architecture-review/jobs", () => ({
-  drainArchitectureReviewQueue: drainArchitectureReviewQueueMock,
+vi.mock("@/lib/architecture-review/worker-run", () => ({
+  runArchitectureReviewWorkerBatch: runWorkerBatchMock,
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -18,21 +17,15 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-vi.mock("@/lib/db-errors", () => ({
-  isSchemaDriftError: isSchemaDriftErrorMock,
-}));
-
 import { GET, POST } from "@/app/api/architecture-review/worker/route";
 
 describe("architecture review worker route", () => {
   const originalSecret = process.env.ARCH_REVIEW_WORKER_SECRET;
-  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
   beforeEach(() => {
     vi.clearAllMocks();
     auditCreateMock.mockResolvedValue({});
-    isSchemaDriftErrorMock.mockReturnValue(false);
-    drainArchitectureReviewQueueMock.mockResolvedValue({
+    runWorkerBatchMock.mockResolvedValue({
       scanned: 1,
       processed: 1,
       sent: 1,
@@ -40,6 +33,7 @@ describe("architecture review worker route", () => {
       rejected: 0,
       failed: 0,
       runningOrQueued: 0,
+      status: "ok",
     });
   });
 
@@ -49,10 +43,6 @@ describe("architecture review worker route", () => {
     } else {
       process.env.ARCH_REVIEW_WORKER_SECRET = originalSecret;
     }
-  });
-
-  afterAll(() => {
-    consoleErrorSpy.mockRestore();
   });
 
   it("returns 503 when the worker secret is not configured", async () => {
@@ -99,7 +89,7 @@ describe("architecture review worker route", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
-    expect(drainArchitectureReviewQueueMock).toHaveBeenCalledWith({ limit: 3 });
+    expect(runWorkerBatchMock).toHaveBeenCalledWith(3);
     await expect(response.json()).resolves.toMatchObject({
       status: "ok",
       processed: 1,
@@ -115,12 +105,15 @@ describe("architecture review worker route", () => {
     expect(response.status).toBe(405);
     expect(response.headers.get("cache-control")).toBe("no-store");
     await expect(response.json()).resolves.toEqual({ error: "Method not allowed" });
-    expect(drainArchitectureReviewQueueMock).not.toHaveBeenCalled();
+    expect(runWorkerBatchMock).not.toHaveBeenCalled();
   });
 
   it("does not expose raw error details on worker failures", async () => {
     process.env.ARCH_REVIEW_WORKER_SECRET = "worker-secret";
-    drainArchitectureReviewQueueMock.mockRejectedValueOnce(new Error("database connection detail"));
+    runWorkerBatchMock.mockResolvedValueOnce({
+      status: "failed",
+      error: "Architecture review worker run failed.",
+    });
 
     const response = await POST(
       new Request("http://localhost/api/architecture-review/worker?limit=1", {

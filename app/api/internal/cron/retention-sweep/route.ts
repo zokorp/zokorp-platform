@@ -61,7 +61,11 @@ export async function POST(request: Request) {
   return handleRetentionSweep(request);
 }
 
-export async function GET(_request: Request) {
+export async function GET(request: Request) {
+  return handleRetentionSweep(request);
+}
+
+export async function PUT(_request: Request) {
   void _request;
-  return methodNotAllowedJson("POST");
+  return methodNotAllowedJson("GET, POST");
 }

@@ -139,6 +139,7 @@ vi.mock("@/lib/db-errors", () => ({
 }));
 
 import {
+  getArchitectureRuleCatalogDirectory,
   loadArchitectureEstimateSnapshot,
   parseArchitectureRuleCatalogFormInput,
   publishArchitectureRuleCatalog,
@@ -303,10 +304,35 @@ describe("architecture rule catalog", () => {
         codeSnapshotJson: codeEntry,
         reviewStatus: ArchitectureRuleCatalogReviewStatus.PUBLISHED,
         publishedVersion: 1,
+        publishedRevisionId: "revision_cost_live",
         serviceLineLabel: "Cost guardrail review",
         publicFixSummary: "Current published summary.",
+        pricingMode: ArchitectureRuleCatalogPricingMode.OVERRIDE,
+        overrideMinPriceUsd: 650,
+        overrideMaxPriceUsd: 650,
       }),
     );
+
+    const report = buildArchitectureReviewReport({
+      provider: "aws",
+      flowNarrative: "Services fan out to multiple managed dependencies.",
+      findings: [
+        {
+          ruleId: "PILLAR-COST",
+          category: "cost",
+          pointsDeducted: 8,
+          message: "Cost controls are missing.",
+          fix: "Add budget guardrails, scale limits, and lifecycle coverage.",
+          evidence: "No cost controls were described.",
+        },
+      ],
+      userEmail: "architect@zokorp.com",
+      generatedAtISO: "2026-03-24T00:00:00.000Z",
+    });
+
+    const liveBeforeDraft = await loadArchitectureEstimateSnapshot(report, {
+      bookingUrl: "https://book.zokorp.com/architecture",
+    });
 
     await saveArchitectureRuleCatalogDraft({
       ruleId: "PILLAR-COST",
@@ -317,15 +343,82 @@ describe("architecture rule catalog", () => {
 
     const catalog = state.catalogs.find((entry) => entry.ruleId === "PILLAR-COST");
     const draftRevision = state.revisions.find((entry) => entry.catalogId === "catalog_cost");
+    const liveAfterDraft = await loadArchitectureEstimateSnapshot(report, {
+      bookingUrl: "https://book.zokorp.com/architecture",
+    });
+    const directory = await getArchitectureRuleCatalogDirectory();
+    const directoryEntry = directory.entries.find((entry) => entry.ruleId === "PILLAR-COST");
 
     expect(catalog?.reviewStatus).toBe(ArchitectureRuleCatalogReviewStatus.DRAFT);
     expect(catalog?.serviceLineLabel).toBe("Cost guardrail review");
+    expect(liveBeforeDraft.snapshot.lineItems[0]).toMatchObject({
+      source: "published",
+      serviceLineLabel: "Cost guardrail review",
+      amountUsd: 650,
+    });
+    expect(liveAfterDraft.snapshot.lineItems[0]).toMatchObject({
+      source: "published",
+      serviceLineLabel: "Cost guardrail review",
+      amountUsd: 650,
+    });
+    expect(directoryEntry).toMatchObject({
+      liveState: "DRAFT_PENDING",
+      hasDraftPending: true,
+    });
     expect(draftRevision).toMatchObject({
       status: ArchitectureRuleCatalogReviewStatus.DRAFT,
       serviceLineLabel: "Draft cost optimization package",
       publicFixSummary: "Draft summary only.",
       changedByEmail: "owner@zokorp.com",
     });
+  });
+
+  it("falls back to code-backed pricing when a previously published rule is stale", async () => {
+    const codeEntry = getArchitectureReviewPricingCatalogEntry("PILLAR-SECURITY");
+    state.catalogs.push(
+      state.createCatalog({
+        id: "catalog_security_stale",
+        ruleId: "PILLAR-SECURITY",
+        category: "security",
+        codeSnapshotJson: codeEntry,
+        reviewStatus: ArchitectureRuleCatalogReviewStatus.STALE,
+        publishedVersion: 4,
+        publishedRevisionId: "revision_security_stale",
+        serviceLineLabel: "Stale security override",
+        publicFixSummary: "Should not stay live when stale.",
+        pricingMode: ArchitectureRuleCatalogPricingMode.OVERRIDE,
+        overrideMinPriceUsd: 1500,
+        overrideMaxPriceUsd: 1500,
+      }),
+    );
+
+    const report = buildArchitectureReviewReport({
+      provider: "aws",
+      flowNarrative: "Traffic reaches application services and stateful systems.",
+      findings: [
+        {
+          ruleId: "PILLAR-SECURITY",
+          category: "security",
+          pointsDeducted: 12,
+          message: "Security controls are missing.",
+          fix: "Document identity, secret, and encryption controls.",
+          evidence: "No explicit security controls were described.",
+        },
+      ],
+      userEmail: "architect@zokorp.com",
+      generatedAtISO: "2026-03-24T00:00:00.000Z",
+    });
+
+    const { snapshot } = await loadArchitectureEstimateSnapshot(report, {
+      bookingUrl: "https://book.zokorp.com/architecture",
+    });
+
+    expect(snapshot.lineItems[0]).toMatchObject({
+      source: "fallback",
+      serviceLineLabel: codeEntry?.serviceLine,
+      publicFixSummary: report.findings[0]?.fix,
+    });
+    expect(snapshot.lineItems[0]?.amountUsd).toBe(report.findings[0]?.fixCostUSD);
   });
 
   it("publishes a reviewed revision and leaves immutable code-backed fields untouched", async () => {

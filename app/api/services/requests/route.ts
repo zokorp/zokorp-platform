@@ -1,4 +1,4 @@
-import { Prisma, ServiceRequestType } from "@prisma/client";
+import { ServiceRequestType } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { isSchemaDriftError } from "@/lib/db-errors";
 import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
-import { generateServiceTrackingCode } from "@/lib/service-requests";
+import { createServiceRequest } from "@/lib/service-requests";
 
 const requestSchema = z.object({
   type: z.nativeEnum(ServiceRequestType),
@@ -20,45 +20,6 @@ const requestSchema = z.object({
     .optional(),
   budgetRange: z.string().trim().max(80).optional(),
 });
-
-async function createServiceRequest(input: {
-  userId: string;
-  type: ServiceRequestType;
-  title: string;
-  summary: string;
-  preferredStart?: string;
-  budgetRange?: string;
-}) {
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const trackingCode = generateServiceTrackingCode();
-
-    try {
-      return await db.serviceRequest.create({
-        data: {
-          userId: input.userId,
-          trackingCode,
-          type: input.type,
-          title: input.title,
-          summary: input.summary,
-          preferredStart: input.preferredStart ? new Date(`${input.preferredStart}T00:00:00.000Z`) : undefined,
-          budgetRange: input.budgetRange,
-        },
-      });
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2002" &&
-        typeof error.meta?.target !== "undefined"
-      ) {
-        continue;
-      }
-
-      throw error;
-    }
-  }
-
-  throw new Error("SERVICE_TRACKING_CODE_EXHAUSTED");
-}
 
 export async function POST(request: Request) {
   try {
@@ -99,8 +60,10 @@ export async function POST(request: Request) {
       type: parsed.data.type,
       title: parsed.data.title,
       summary: parsed.data.summary,
-      preferredStart: parsed.data.preferredStart,
-      budgetRange: parsed.data.budgetRange,
+      preferredStart: parsed.data.preferredStart
+        ? new Date(`${parsed.data.preferredStart}T00:00:00.000Z`)
+        : undefined,
+      budgetRange: parsed.data.budgetRange ?? undefined,
     });
 
     await db.auditLog.create({

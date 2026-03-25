@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { verifyArchitectureReviewCtaToken } from "@/lib/architecture-review/cta-token";
 import { db } from "@/lib/db";
 import { isSchemaDriftError } from "@/lib/db-errors";
+import { recordLeadInteraction, upsertLead } from "@/lib/privacy-leads";
 
 export const runtime = "nodejs";
 
@@ -34,8 +35,14 @@ export async function GET(request: Request) {
     const payload = verifyArchitectureReviewCtaToken(token, secret);
 
     try {
-      await db.leadLog.update({
+      const updatedLeadLog = await db.leadLog.update({
         where: { id: payload.leadId },
+        select: {
+          id: true,
+          userId: true,
+          userEmail: true,
+          userName: true,
+        },
         data: {
           leadStage: "CTA Clicked",
           ctaClicks: {
@@ -43,6 +50,20 @@ export async function GET(request: Request) {
           },
           lastCtaClickedAt: new Date(),
         },
+      });
+
+      const lead = await upsertLead({
+        userId: updatedLeadLog.userId,
+        email: updatedLeadLog.userEmail,
+        name: updatedLeadLog.userName,
+      });
+
+      await recordLeadInteraction({
+        leadId: lead.id,
+        userId: updatedLeadLog.userId,
+        source: "architecture-review",
+        action: "cta_clicked",
+        provider: payload.ctaType === "book-call" ? "calendly" : null,
       });
     } catch (error) {
       if (!isSchemaDriftError(error)) {

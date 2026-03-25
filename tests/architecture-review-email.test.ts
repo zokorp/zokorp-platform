@@ -4,7 +4,7 @@ import { buildArchitectureReviewEmailContent } from "@/lib/architecture-review/e
 import { buildArchitectureReviewReport } from "@/lib/architecture-review/report";
 
 describe("architecture review email content", () => {
-  it("renders the final implementation quote and booking link without package menus", () => {
+  it("renders the implementation estimate and booking link without package menus", () => {
     const report = buildArchitectureReviewReport({
       provider: "aws",
       flowNarrative: "Client requests enter ALB, app tier calls services, and writes to a managed database.",
@@ -37,11 +37,11 @@ describe("architecture review email content", () => {
     });
 
     expect(content.subject).toContain("estimate");
-    expect(content.text).toContain("Final implementation quote:");
-    expect(content.text).toContain("Final quoted total:");
+    expect(content.text).toContain("Implementation estimate:");
+    expect(content.text).toContain("Estimated total (based on submitted materials):");
     expect(content.text).toContain("Book implementation follow-up: https://book.zokorp.com/architecture");
     expect(content.text).not.toContain("Engagement options:");
-    expect(content.html).toContain("Final Implementation Quote");
+    expect(content.html).toContain("Implementation Estimate");
     expect(content.html).toContain("Book implementation follow-up");
     expect(content.html).toContain("Estimate Reference");
     expect(content.html).toContain("Assumptions and Exclusions");
@@ -49,7 +49,7 @@ describe("architecture review email content", () => {
     expect(content.html).not.toContain("Request scoped engagement");
   });
 
-  it("keeps low-confidence reviews estimate-first while still showing the final quote block", () => {
+  it("keeps low-confidence reviews estimate-first while still showing the estimate block", () => {
     const report = buildArchitectureReviewReport({
       provider: "aws",
       flowNarrative:
@@ -95,8 +95,8 @@ describe("architecture review email content", () => {
 
     expect(report.analysisConfidence).toBe("low");
     expect(content.text).toContain("Because the evidence confidence was low");
-    expect(content.text).toContain("Final implementation quote:");
-    expect(content.html).toContain("The quote below is limited to the issues visible in the submitted material.");
+    expect(content.text).toContain("Implementation estimate:");
+    expect(content.html).toContain("The estimate below is limited to the issues visible in the submitted material.");
   });
 
   it("lists each quoted rule line in the customer email", () => {

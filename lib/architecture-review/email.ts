@@ -58,7 +58,7 @@ type EmailCtaLinks = {
 function resolveDefaultCtaLinks() {
   const siteUrl = getSiteUrl();
   return {
-    bookArchitectureCallUrl: `${siteUrl}/services#service-request`,
+    bookArchitectureCallUrl: process.env.ARCH_REVIEW_BOOK_CALL_URL ?? `${siteUrl}/services#service-request`,
   } satisfies EmailCtaLinks;
 }
 
@@ -88,14 +88,14 @@ function confidenceStyles(confidence: ArchitectureReviewReport["analysisConfiden
 
 function nextStepNote(report: ArchitectureReviewReport) {
   if (report.analysisConfidence === "low") {
-    return "The quote below is limited to the issues visible in the submitted material. Use the booking link to confirm whether any hidden dependencies would change scope.";
+    return "The estimate below is limited to the issues visible in the submitted material. Use the booking link to confirm whether any hidden dependencies would change scope.";
   }
 
   if (report.quoteTier === "implementation-partner") {
-    return "The quote below covers the fixes visible in this review. If the follow-up uncovers a broader redesign or rollout program, that extra scope is handled separately.";
+    return "The estimate below covers the fixes visible in this review. If the follow-up uncovers a broader redesign or rollout program, that extra scope is handled separately.";
   }
 
-  return "The quote below covers the implementation work implied by the detected findings in this review. The free review itself stays free.";
+  return "The estimate below covers the implementation work implied by the detected findings in this review. The free review itself stays free.";
 }
 
 function buildHtmlEmail(
@@ -162,7 +162,7 @@ function buildHtmlEmail(
             `,
           )
           .join("")
-      : `<tr><td colspan="2" style="padding:10px 12px;color:#334155;font-size:13px;">No implementation quote was produced because no mandatory fix scope was detected.</td></tr>`;
+      : `<tr><td colspan="2" style="padding:10px 12px;color:#334155;font-size:13px;">No implementation estimate was produced because no mandatory fix scope was detected.</td></tr>`;
 
   const optionalRows =
     optionalRecommendations.length > 0
@@ -218,7 +218,7 @@ function buildHtmlEmail(
                       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #dbe3ef;border-radius:10px;">
                         <tr>
                           <td style="padding:10px 12px;">
-                            <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">Final Implementation Quote</div>
+                            <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">Implementation Estimate</div>
                             <div style="margin-top:4px;font-size:24px;font-weight:800;color:#0f172a;">${escapeHtml(
                               toUsd(estimateSnapshot.totalUsd),
                             )}</div>
@@ -288,7 +288,7 @@ function buildHtmlEmail(
                   ${topDeductionsHtml}
                 </table>
 
-                <div style="margin-top:22px;font-size:18px;font-weight:700;color:#0f172a;">Final Implementation Quote</div>
+                <div style="margin-top:22px;font-size:18px;font-weight:700;color:#0f172a;">Implementation Estimate</div>
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;border-collapse:collapse;border:1px solid #dbe3ef;border-radius:10px;overflow:hidden;">
                   <tr>
                     <td style="padding:9px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:700;color:#334155;">Service Line</td>
@@ -296,7 +296,7 @@ function buildHtmlEmail(
                   </tr>
                   ${quoteRows}
                   <tr>
-                    <td style="padding:12px;font-size:14px;font-weight:800;color:#0f172a;">Final quoted total</td>
+                    <td style="padding:12px;font-size:14px;font-weight:800;color:#0f172a;">Estimated total (based on submitted materials)</td>
                     <td align="right" style="padding:12px;font-size:16px;font-weight:900;color:#0f172a;">${escapeHtml(
                       toUsd(estimateSnapshot.totalUsd),
                     )}</td>
@@ -376,7 +376,7 @@ export function buildArchitectureReviewEmailContent(
     `Analysis confidence: ${confidenceLabel(report.analysisConfidence)}`,
     `Recommended work path: ${quoteTierLabel(report.quoteTier)}`,
     `Estimate reference: ${estimateSnapshot.referenceCode}`,
-    `Final implementation quote: ${toUsd(estimateSnapshot.totalUsd)}`,
+    `Implementation estimate: ${toUsd(estimateSnapshot.totalUsd)}`,
     "",
     "Flow narrative:",
     report.flowNarrative,
@@ -390,19 +390,19 @@ export function buildArchitectureReviewEmailContent(
       ? mandatoryFindings.slice(0, 6).map((finding) => `- ${finding.ruleId} | -${finding.pointsDeducted} points | ${finding.message}`)
       : ["No mandatory deductions."]),
     "",
-    "Final implementation quote:",
+    "Implementation estimate:",
     ...(estimateSnapshot.lineItems.length > 0
       ? estimateSnapshot.lineItems.map(
           (lineItem) =>
             `- ${lineItem.ruleId} | ${lineItem.serviceLineLabel} | ${toUsd(lineItem.amountUsd)} | ${lineItem.publicFixSummary}`,
         )
-      : ["No implementation quote was produced because no mandatory fix scope was detected."]),
-    `Final quoted total: ${toUsd(estimateSnapshot.totalUsd)}`,
+      : ["No implementation estimate was produced because no mandatory fix scope was detected."]),
+    `Estimated total (based on submitted materials): ${toUsd(estimateSnapshot.totalUsd)}`,
     "",
-    "Quote assumptions:",
+    "Estimate assumptions:",
     ...estimateSnapshot.assumptions.map((line) => `- ${line}`),
     "",
-    "Quote exclusions:",
+    "Estimate exclusions:",
     ...estimateSnapshot.exclusions.map((line) => `- ${line}`),
     "",
     "Optional recommendations:",

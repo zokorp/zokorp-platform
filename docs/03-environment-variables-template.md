@@ -41,6 +41,10 @@ These values are required for a normal local app and production runtime.
 - `NEXTAUTH_URL`
   - Secret: no.
   - Purpose: explicit auth callback base URL. Useful locally and in some deployments.
+- `ARCHIVE_ENCRYPTION_SECRET`
+  - Secret: yes.
+  - Purpose: encrypts opt-in archived tool payloads at rest.
+  - Production guidance: set this explicitly and keep it distinct from auth, cron, and provider webhook secrets.
 - `AUTH_PASSWORD_ENABLED`
   - Secret: no.
   - Purpose: enables the credentials login flow. Defaults to enabled unless set to a false-like value.
@@ -115,12 +119,20 @@ Price IDs can exist before public display. Subscription prices should still stay
   - Secret: yes.
   - Purpose: authenticates the architecture follow-up sender route.
   - Production guidance: set this explicitly and keep it distinct from `ZOHO_SYNC_SECRET`. The route still accepts `ZOHO_SYNC_SECRET` as a temporary compatibility fallback today, but that fallback should not be relied on for long-term production posture.
+- `CRON_SECRET`
+  - Secret: yes.
+  - Purpose: authenticates Vercel cron invocations for retention sweeps, architecture worker drains, and scheduled Zoho sync runs.
+  - Production guidance: Vercel cron sends this as `Authorization: Bearer <CRON_SECRET>`; keep it distinct from worker, follow-up, and provider webhook secrets.
 - `ARCH_REVIEW_BOOK_CALL_URL`
   - Secret: no.
   - Purpose: operator-controlled CTA destination for booking.
 - `ARCH_REVIEW_REMEDIATION_PLAN_URL`
   - Secret: no.
   - Purpose: operator-controlled remediation CTA destination.
+- `CALENDLY_WEBHOOK_SIGNING_KEY`
+  - Secret: yes.
+  - Purpose: verifies signed Calendly webhook deliveries for booked-call automation.
+  - Production guidance: set this only if Calendly webhook automation is enabled and keep it distinct from `CRON_SECRET`.
 
 ## Zoho CRM and WorkDrive
 
@@ -208,6 +220,7 @@ Before production is considered launch-ready, confirm:
 - email delivery is configured
 - Stripe secret, webhook secret, and live-approved price IDs are configured
 - worker and scheduled-route secrets are configured
+- archive encryption and booking webhook secrets are configured when those features are enabled
 - Zoho credentials are configured if CRM/archival automation is expected
 - public pricing approval flag is intentionally set or intentionally left off
 

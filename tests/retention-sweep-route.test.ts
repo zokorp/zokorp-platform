@@ -77,18 +77,36 @@ describe("retention sweep cron route", () => {
     await expect(response.json()).resolves.toEqual({ error: "Unauthorized" });
   });
 
-  it("rejects GET requests and requires POST", async () => {
+  it("returns unauthorized on GET without the cron secret", async () => {
     const response = await GET(
       new Request("http://localhost/api/internal/cron/retention-sweep", {
         method: "GET",
       }),
     );
 
-    expect(response.status).toBe(405);
-    await expect(response.json()).resolves.toEqual({ error: "Method not allowed" });
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "Unauthorized" });
   });
 
-  it("runs the retention sweep when authorized", async () => {
+  it("runs the retention sweep on authorized GET", async () => {
+    const response = await GET(
+      new Request("http://localhost/api/internal/cron/retention-sweep", {
+        method: "GET",
+        headers: {
+          authorization: "Bearer cron-secret",
+        },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocks.runRetentionSweep).toHaveBeenCalledTimes(1);
+    await expect(response.json()).resolves.toMatchObject({
+      status: "ok",
+      architectureOutboxesRedacted: 8,
+    });
+  });
+
+  it("still runs the retention sweep on authorized POST", async () => {
     const response = await POST(
       new Request("http://localhost/api/internal/cron/retention-sweep", {
         method: "POST",
