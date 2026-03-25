@@ -145,6 +145,7 @@ These are not application runtime env vars; they live in GitHub Actions secrets.
 - `CALENDLY_PERSONAL_ACCESS_TOKEN`
   - Secret: yes.
   - Purpose: authenticates the scheduled GitHub Actions poller against the Calendly API for free-plan booked-call sync.
+  - Production guidance: generate this with the minimum read scopes required for the poller. Current target: `scheduled_events:read` and `invitees:read`. `users:read` is no longer required because the poller derives the user URI from the token payload when possible.
 - `CALENDLY_SYNC_INGEST_URL`
   - Secret: yes.
   - Purpose: target URL for the internal booked-call ingest route, typically `https://app.zokorp.com/api/internal/calendly/booked-call`.
