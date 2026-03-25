@@ -22,6 +22,31 @@ function stripApiBase(uri) {
   return uri;
 }
 
+function decodeBase64Url(input) {
+  const normalized = input.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized + "=".repeat((4 - (normalized.length % 4 || 4)) % 4);
+  return Buffer.from(padded, "base64").toString("utf8");
+}
+
+function userUriFromToken(token) {
+  const parts = token.split(".");
+  if (parts.length < 2) {
+    return null;
+  }
+
+  try {
+    const claims = JSON.parse(decodeBase64Url(parts[1]));
+    const userUuid = typeof claims.user_uuid === "string" ? claims.user_uuid.trim() : "";
+    if (!userUuid) {
+      return null;
+    }
+
+    return `${API_BASE}/users/${userUuid}`;
+  } catch {
+    return null;
+  }
+}
+
 function extractTracking(record) {
   if (!record || typeof record !== "object") {
     return null;
@@ -136,8 +161,8 @@ async function main() {
   const syncSecret = requireEnv("CALENDLY_SYNC_SECRET");
   const lookbackHours = Number(process.env.CALENDLY_SYNC_LOOKBACK_HOURS ?? DEFAULT_LOOKBACK_HOURS);
 
-  const me = await apiGet("/users/me", token);
-  const userUri = me.resource?.uri;
+  const me = userUriFromToken(token) ? null : await apiGet("/users/me", token);
+  const userUri = userUriFromToken(token) ?? me?.resource?.uri;
   if (typeof userUri !== "string" || !userUri) {
     throw new Error("Calendly current user URI missing from /users/me response");
   }

@@ -229,6 +229,7 @@
     - sends architecture follow-ups daily via `ARCH_REVIEW_FOLLOWUP_URL` + `ARCH_REVIEW_FOLLOWUP_SECRET`
   - `.github/workflows/calendly-booking-sync.yml`
     - polls Calendly every 15 minutes with `CALENDLY_PERSONAL_ACCESS_TOKEN`, then posts matched booked-call events to `CALENDLY_SYNC_INGEST_URL` using `CALENDLY_SYNC_SECRET`
+    - on the free-plan path, the PAT should have read access for scheduled events and invitees; `users:read` is not required by the current poller implementation
   - `.github/workflows/zoho-sync-leads.yml`
     - triggers Zoho sync via `ZOHO_SYNC_URL` + `ZOHO_SYNC_SECRET`
 - Operator note:
