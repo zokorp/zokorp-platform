@@ -1,17 +1,17 @@
 # Launch Readiness Evidence Matrix
 
-Date: March 25, 2026
+Date: March 25, 2026 (updated March 26, 2026)
 
 ## Environment Truth
 
 | Track | Command / Proof | Observed Result | Status |
 | --- | --- | --- | --- |
-| Git baseline | `git rev-parse --short HEAD` | `4602753` | Pass |
-| Working tree state | `git status --short` | Audit changes present locally and deployed to production from working tree | Pass with traceability caveat |
-| Production deployment identity | `npx vercel inspect app.zokorp.com` | Deployment `dpl_DhvHvU1EAc84o5UHpyKEVgKVeK5d`, target `production`, alias `https://app.zokorp.com` | Pass |
+| Git baseline | `git rev-parse --short HEAD` | `1f9c4f9` | Pass |
+| Working tree state | `git status --short` | Clean after commit + push | Pass |
+| Production deployment identity | `npx vercel inspect app.zokorp.com` | Deployment `dpl_Eb6KoHxjki6AafqCBC7A53vyWJLU`, target `production`, alias `https://app.zokorp.com` | Pass |
 | Local lint | `npm run lint` | Passed | Pass |
 | Local typecheck | `npm run typecheck -- --incremental false` | Passed | Pass |
-| Local tests | `npm test` | `277 passed / 277 tests` | Pass |
+| Local tests | `npm test` | `281 passed / 281 tests` | Pass |
 | Local build | `npm run build` | Passed | Pass |
 | Production smoke | `SMOKE_BASE_URL=https://app.zokorp.com npm run smoke:production` | Passed at `2026-03-25T21:35:34.500Z` | Pass |
 
@@ -34,7 +34,7 @@ Date: March 25, 2026
 | --- | --- | --- | --- |
 | Architecture review status cache behavior | `curl -si 'https://app.zokorp.com/api/architecture-review-status?jobId=cmn6hsc500003lb04kehewmt3'` | `401` with `Cache-Control: no-store` | Pass |
 | Admin forbidden behavior in code | `tests/admin-page-access.test.ts` | `UNAUTHORIZED` redirects to login; `FORBIDDEN` raises forbidden boundary | Pass |
-| Admin forbidden UI deployment | Production deploy `dpl_DhvHvU1EAc84o5UHpyKEVgKVeK5d` | `app/forbidden.tsx` shipped live | Pass |
+| Admin forbidden UI deployment | Production deploy `dpl_Eb6KoHxjki6AafqCBC7A53vyWJLU` | `app/forbidden.tsx` shipped live | Pass |
 | Live browser auth lifecycle | Not completed in this pass | Register / verify / reset / admin login still need mailbox/browser proof | Caveat |
 
 ## `/services` Funnel And Calendly Tracking
@@ -43,6 +43,7 @@ Date: March 25, 2026
 | --- | --- | --- | --- |
 | Tagged booking URL helper | `tests/calendly.test.ts` | Helper supports per-surface UTM overrides without breaking email CTA defaults | Pass |
 | `/services` server render state | `tests/services-page.test.tsx` | Page passes signed-in state to `ServiceRequestPanel` from the server | Pass |
+| `/services` post-submit live state | Atlas narrow browser run after commit `1f9c4f9` | `NEW_BUILD_LIVE`; success heading `Request recorded`; form hidden after submit; account navigation works; artifact `SR-260326-CK7DE` created | Pass |
 | Live `/services` CTA | Production HTML | Raw untagged Calendly URL removed; live CTA is now tagged | Pass |
 | Live `/services` copy | Production HTML | Copy now says tracked request immediately, booked-call sync later after same-email match | Pass |
 | Real booked-call ingestion artifact | Not completed in this pass | No new founder-controlled live booking artifact yet | Caveat |
@@ -55,7 +56,8 @@ Date: March 25, 2026
 | Checkout-session resilience | `tests/stripe-create-checkout-session-route.test.ts` | Session URL returns successfully even if audit write fails | Pass |
 | Portal-session resilience | `tests/stripe-create-portal-session-route.test.ts` | Portal URL returns successfully even if audit write fails | Pass |
 | Entitlement post-decrement state | `tests/entitlements-admin-bypass.test.ts` | Remaining-use state returned from the decrement transaction | Pass |
-| Browser-completed Stripe checkout | Not completed in this pass | Still needs one real test-mode browser proof after deploy | Caveat |
+| Browser-completed Stripe checkout | Atlas browser run on March 26, 2026 | Hosted Stripe Checkout completed in test mode and account wallet reflected one FTR run | Pass |
+| Live non-admin paid-validator consumption | Not completed in this pass | Admin-account browser proof is weaker because admin bypass prevents clean non-admin decrement verification | Caveat |
 
 ## Security And Resilience
 
@@ -83,6 +85,6 @@ Date: March 25, 2026
 | --- | --- | --- |
 | Domain cutover | Requires registrar / DNS / possibly Squarespace UI access | Open |
 | Full auth lifecycle proof | Requires mailbox/browser access for `consulting@zokorp.com` and `zkhawaja@zokorp.com` | Open |
-| Stripe hosted checkout proof | Requires browser test-mode purchase completion | Open |
+| Non-admin paid-validator consumption proof | Requires one browser purchase-plus-run on a non-admin account | Open |
 | Calendly booking ingestion proof | Requires one real founder-controlled booking and follow-up verification | Open |
 | WorkDrive capability diagnosis | Requires Zoho / WorkDrive account UI access | Open |

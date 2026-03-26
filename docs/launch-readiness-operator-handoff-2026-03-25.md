@@ -1,20 +1,20 @@
 # Launch Readiness Operator Handoff
 
-Date: March 25, 2026
+Date: March 25, 2026 (updated March 26, 2026)
 
 ## Current Live State
 
 - Production app alias: [https://app.zokorp.com](https://app.zokorp.com)
-- Current production deployment: `dpl_DhvHvU1EAc84o5UHpyKEVgKVeK5d`
-- Deployment inspector: [zokorp-web / DhvHvU1EAc84o5UHpyKEVgKVeK5d](https://vercel.com/leggoboyos-projects/zokorp-web/DhvHvU1EAc84o5UHpyKEVgKVeK5d)
-- Base workspace commit: `4602753`
-- Note: production includes current local audit changes that are not yet committed
+- Current production deployment: `dpl_Eb6KoHxjki6AafqCBC7A53vyWJLU`
+- Deployment inspector: [zokorp-web / Eb6KoHxjki6AafqCBC7A53vyWJLU](https://vercel.com/leggoboyos-projects/zokorp-web/Eb6KoHxjki6AafqCBC7A53vyWJLU)
+- Base workspace commit: `1f9c4f9`
 
 ## What Changed In This Release
 
 - `/services` booking CTA now uses the tagged Calendly URL strategy.
 - `/services` copy now matches the real request-vs-booking behavior.
 - `/services` request panel no longer relies on client-only first-paint auth state.
+- `/services` now uses a post-submit success state that hides the form until the user explicitly chooses to submit another request.
 - validator / checkout / portal flows now treat audit logging as best-effort, not success-blocking.
 - admin pages now use a real forbidden boundary.
 - architecture-review status responses are now fully `no-store`.
@@ -32,6 +32,15 @@ Date: March 25, 2026
 - `SMOKE_BASE_URL=https://app.zokorp.com npm run smoke:production`
 
 All of the above passed in this pass.
+
+Additional live proof now completed:
+
+- Atlas browser verification confirmed `/services` post-submit behavior on production:
+  - `Request recorded`
+  - tracking code `SR-260326-CK7DE`
+  - current status shown
+  - `Open account timeline` navigates correctly
+  - `/account` -> `Submit another request` navigates back to `/services#service-request`
 
 ## Manual Work Still Required
 
@@ -68,13 +77,12 @@ Needed proofs:
 - `/admin/leads`
 - `/admin/service-requests`
 
-### 3. Stripe browser checkout proof
+### 3. Non-admin paid-validator consumption proof
 
 Needed proof:
 
-- one full Stripe test-mode checkout completion after this deploy
-- webhook fulfillment visible
-- credits / entitlement visible
+- one non-admin purchase-plus-run after checkout
+- decrement / enforcement visible without admin bypass masking the result
 
 ### 4. Calendly booking ingestion proof
 
@@ -119,5 +127,5 @@ Treat broad public marketing as blocked until all four are true:
 
 1. apex and `www` no longer serve Squarespace
 2. auth lifecycle is browser-proven
-3. Stripe test checkout is browser-proven
+3. non-admin paid-validator purchase-plus-consumption is browser-proven
 4. `/services` booked-call ingestion is artifact-proven

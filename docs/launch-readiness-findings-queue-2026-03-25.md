@@ -1,6 +1,6 @@
 # Launch Readiness Findings Queue
 
-Date: March 25, 2026
+Date: March 25, 2026 (updated March 26, 2026)
 
 ## P0
 
@@ -46,18 +46,21 @@ None.
 - Recommended action:
   - run one Atlas/browser pass that completes the full auth lifecycle and founder admin verification
 
-### P1-3: Browser-completed Stripe test checkout is still missing after the billing hardening deploy
+### P1-3: Paid-validator purchase is browser-proven, but live non-admin consumption is still not artifact-proven
 
 - Affected journey:
   - paid validator purchase path
+  - paid validator first real use on a non-admin account
 - Verified proof:
-  - server-side correctness bugs are fixed
-  - regression tests pass
-  - one literal hosted Stripe Checkout completion was not run in this pass
+  - browser-completed hosted Stripe Checkout succeeded in test mode on March 26, 2026
+  - billing portal session opened successfully
+  - the account wallet reflected one FTR run after purchase
+  - the remaining weak point is that the founder admin account can bypass normal decrement enforcement, so the live non-admin consume path is still missing
 - Business impact:
-  - public paid promotion should not start until the browser path is proven once
+  - the purchase path itself looks real
+  - the remaining launch risk is on real non-admin first-use enforcement rather than checkout creation
 - Recommended action:
-  - complete one Stripe test-mode checkout end to end and confirm fulfillment
+  - use a non-admin account to buy one run and consume it once end to end
 
 ### P1-4: Real booked-call ingestion from the fixed `/services` CTA is still unproven
 
@@ -114,17 +117,7 @@ None.
 
 ## P3
 
-### P3-1: Production now includes a live deployment from an audited working tree that is not yet committed
-
-- Affected journey:
-  - engineering traceability / rollback clarity
-- Verified proof:
-  - `git rev-parse --short HEAD` is still `4602753`
-  - production deployment `dpl_DhvHvU1EAc84o5UHpyKEVgKVeK5d` reflects current local audit changes
-- Business impact:
-  - operationally fine today, but commit-level traceability is weaker until the current state is committed
-- Recommended action:
-  - commit the audited state before the next release cycle
+None.
 
 ## Closed In This Pass
 
@@ -133,6 +126,7 @@ These started as real blockers or caveats and are now fixed in code, validated l
 - `/services` raw Calendly CTA bypassing tracking
 - `/services` copy overstating immediate consultation tracking behavior
 - `/services` signed-in flicker / false first-paint wall
+- `/services` post-submit ambiguity and account-navigation reliability, verified live on deployment `dpl_Eb6KoHxjki6AafqCBC7A53vyWJLU` with artifact `SR-260326-CK7DE`
 - validator success turning into `500` after post-run bookkeeping failure
 - Stripe checkout/portal session success turning into `500` after audit-log failure
 - missing `no-store` coverage on architecture-review status error branches

@@ -1,11 +1,10 @@
 # Launch Readiness Audit Summary
 
-Date: March 25, 2026  
+Date: March 25, 2026 (updated March 26, 2026)  
 Primary production app: [https://app.zokorp.com](https://app.zokorp.com)  
-Current production deployment: `dpl_DhvHvU1EAc84o5UHpyKEVgKVeK5d`  
-Deployment inspector: [zokorp-web / DhvHvU1EAc84o5UHpyKEVgKVeK5d](https://vercel.com/leggoboyos-projects/zokorp-web/DhvHvU1EAc84o5UHpyKEVgKVeK5d)  
-Base git commit in workspace: `4602753`  
-Important traceability note: production was updated from the current audited working tree, so the live deployment includes local changes that are not yet committed.
+Current production deployment: `dpl_Eb6KoHxjki6AafqCBC7A53vyWJLU`  
+Deployment inspector: [zokorp-web / Eb6KoHxjki6AafqCBC7A53vyWJLU](https://vercel.com/leggoboyos-projects/zokorp-web/Eb6KoHxjki6AafqCBC7A53vyWJLU)  
+Base git commit in workspace: `1f9c4f9`
 
 ## Verdict
 
@@ -14,7 +13,6 @@ ZoKorp is **not ready** for broad public marketing yet.
 `app.zokorp.com` is now strong enough for founder-led demos, direct prospect links, and controlled soft-launch traffic. The main reasons broad public launch is still blocked are external and proof-related rather than code-quality related:
 
 - `zokorp.com` and `www.zokorp.com` still serve the stale Squarespace surface instead of the audited platform.
-- One real browser-completed Stripe test checkout is still unproven in this pass.
 - One real `/services` to Calendly to internal-ingestion booking artifact is still unproven in this pass.
 - One live mailbox-driven auth lifecycle proof is still missing.
 
@@ -30,6 +28,7 @@ This pass was execution, not review-only. The following launch-relevant fixes we
   - the form creates a tracked service request immediately
   - booked calls are synced later after Calendly confirmation and same-email account matching
 - `ServiceRequestPanel` now gets server-rendered auth state so signed-in users no longer hit a false first-paint signed-out wall.
+- `/services` now swaps into an explicit success state after submit, hides the form until the user intentionally requests another submission, and links cleanly into the account timeline.
 - `decrementUsesAtomically` now returns post-transaction remaining-use state.
 - The validator route now treats parse + validate + decrement as the essential success path and keeps audit/lookup work best-effort only.
 - Checkout-session and portal-session creation now stay successful even if later audit-log writes fail.
@@ -43,15 +42,22 @@ This pass was execution, not review-only. The following launch-relevant fixes we
 
 ## What Was Re-Verified Live After Deploy
 
-- Production deployment `dpl_DhvHvU1EAc84o5UHpyKEVgKVeK5d` is live on `app.zokorp.com`.
+- Production deployment `dpl_Eb6KoHxjki6AafqCBC7A53vyWJLU` is live on `app.zokorp.com`.
 - `npm run lint` passed.
 - `npm run typecheck -- --incremental false` passed.
-- `npm test` passed with `277 / 277` tests.
+- `npm test` passed with `281 / 281` tests.
 - `npm run build` passed.
 - `SMOKE_BASE_URL=https://app.zokorp.com npm run smoke:production` passed after deploy.
 - `/services` now serves the tagged Calendly CTA live:
   - `https://calendly.com/zkhawaja-zokorp/zokorp-architecture-review-follow-up?utm_source=zokorp&utm_medium=services-page&utm_campaign=architecture-follow-up`
 - `/services` now serves the corrected tracked-request / same-email sync copy live.
+- A March 26 Atlas browser verification against deployment `dpl_Eb6KoHxjki6AafqCBC7A53vyWJLU` confirmed:
+  - success heading `Request recorded`
+  - tracking code `SR-260326-CK7DE`
+  - current status shown as `submitted`
+  - form hidden after submit until `Submit another request` is used
+  - `Open account timeline` navigates correctly to `/account`
+  - `/account` -> `Submit another request` navigates correctly back to `/services#service-request`
 - `GET /api/architecture-review-status?jobId=...` now returns `401` with `Cache-Control: no-store` when unauthenticated.
 - `zokorp.com` still redirects to `www.zokorp.com`, and `www.zokorp.com` still serves the stale Squarespace site.
 
@@ -84,9 +90,15 @@ The code, tests, and route structure support credentials auth with business-emai
 
 This needs inbox/browser access that was not safely available from CLI alone.
 
-### 3. Browser-completed Stripe test checkout is still unproven in this pass
+### 3. Browser-completed Stripe checkout is proven, but live non-admin paid-validator consumption is still weaker than ideal
 
-The billing and validator server-side correctness issues are fixed and covered by regression tests, but the literal hosted Stripe Checkout browser path still needs one fresh test-mode completion after this deploy.
+March 26 browser evidence already proved:
+
+- hosted Stripe Checkout opens in test mode
+- purchase completion succeeds
+- the account wallet reflects one FTR run after purchase
+
+What is still weaker than ideal is a real non-admin browser proof that the purchased run is consumed cleanly end to end, because the founder admin account can bypass normal decrement enforcement.
 
 ### 4. Real booked-call ingestion from the fixed `/services` CTA is still unproven in this pass
 
@@ -110,12 +122,12 @@ The founder/operator visibility problem is fixed, but the provider capability pr
 - Direct outbound links sent to `https://app.zokorp.com`
 - Controlled invite-only soft launch to the app subdomain
 - Public sharing of free tools and services pages when the link goes directly to `app.zokorp.com`
+- Public sharing of the `/services` request flow itself, because the post-submit UX is now proven live
 
 ### Do not do yet
 
 - Broad marketing to `zokorp.com`
 - Broad marketing to `www.zokorp.com`
-- Public paid-validator promotion before one real Stripe test checkout is completed
 - Claiming fully proven booked-call ingestion before one real Calendly booking is observed
 
 ## Shortest Path To Safe Public Marketing
@@ -124,13 +136,14 @@ The founder/operator visibility problem is fixed, but the provider capability pr
 2. Run one live auth/browser proof with mailbox access using:
    - `consulting@zokorp.com`
    - `zkhawaja@zokorp.com`
-3. Run one Stripe test-mode browser checkout and verify fulfillment.
+3. Run one non-admin paid-validator purchase-plus-consumption browser proof.
 4. Run one real `/services` Calendly booking and verify the internal ingestion artifact.
 
 ## Audit Artifacts Created In This Pass
 
 - Production deployment:
-  - `dpl_DhvHvU1EAc84o5UHpyKEVgKVeK5d`
-- No new customer-facing production data records were intentionally created during the code-hardening + redeploy pass itself.
-
-Earlier same-day audit artifacts may still exist in production from pre-hardening verification work. Those are documented separately in the evidence matrix and operator handoff notes.
+  - `dpl_Eb6KoHxjki6AafqCBC7A53vyWJLU`
+- Production service-request proof:
+  - `SR-260326-CK7DE`
+- Earlier same-day browser billing proof created:
+  - one test-mode Stripe Checkout completion that credited one FTR run to the signed-in account
