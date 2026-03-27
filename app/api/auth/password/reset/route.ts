@@ -5,6 +5,7 @@ import { expectedAdminRole } from "@/lib/admin-access";
 import { isPasswordAuthEnabled } from "@/lib/auth-config";
 import { db } from "@/lib/db";
 import { hashPassword, hashOpaqueToken, validatePasswordStrength } from "@/lib/password-auth";
+import { consumePasswordResetToken } from "@/lib/password-reset-tokens";
 import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { ensureUserAuthSchemaReady } from "@/lib/user-auth-schema";
@@ -64,24 +65,53 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unable to reset password." }, { status: 503 });
     }
 
-    const tokenHash = hashOpaqueToken(parsed.data.token);
-    const userAuth = await db.userAuth.findFirst({
-      where: {
-        resetTokenHash: tokenHash,
-        resetTokenExpiresAt: {
-          gt: new Date(),
-        },
-      },
-      select: {
-        userId: true,
-        user: {
-          select: {
-            email: true,
-            emailVerified: true,
+    const resetTokenResult = await consumePasswordResetToken(parsed.data.token);
+    let userAuth:
+      | {
+          userId: string;
+          user: {
+            email: string | null;
+            emailVerified: Date | null;
+          };
+          tokenIdentifier: string | null;
+        }
+      | null =
+      resetTokenResult.status === "valid"
+        ? {
+            userId: resetTokenResult.userId,
+            user: resetTokenResult.user,
+            tokenIdentifier: resetTokenResult.identifier,
+          }
+        : null;
+
+    if (!userAuth) {
+      const tokenHash = hashOpaqueToken(parsed.data.token);
+      const legacyUserAuth = await db.userAuth.findFirst({
+        where: {
+          resetTokenHash: tokenHash,
+          resetTokenExpiresAt: {
+            gt: new Date(),
           },
         },
-      },
-    });
+        select: {
+          userId: true,
+          user: {
+            select: {
+              email: true,
+              emailVerified: true,
+            },
+          },
+        },
+      });
+
+      if (legacyUserAuth) {
+        userAuth = {
+          userId: legacyUserAuth.userId,
+          user: legacyUserAuth.user,
+          tokenIdentifier: null,
+        };
+      }
+    }
 
     if (!userAuth) {
       return NextResponse.json({ error: "Reset token is invalid or expired." }, { status: 400 });
@@ -126,17 +156,29 @@ export async function POST(request: Request) {
           },
         });
       }
+
+      if (userAuth.tokenIdentifier) {
+        await tx.verificationToken.deleteMany({
+          where: {
+            identifier: userAuth.tokenIdentifier,
+          },
+        });
+      }
     });
 
-    await db.auditLog.create({
-      data: {
-        userId: userAuth.userId,
-        action: "auth.password_reset_completed",
-        metadataJson: {
-          autoVerifiedEmail: shouldAutoVerify,
+    try {
+      await db.auditLog.create({
+        data: {
+          userId: userAuth.userId,
+          action: "auth.password_reset_completed",
+          metadataJson: {
+            autoVerifiedEmail: shouldAutoVerify,
+          },
         },
-      },
-    });
+      });
+    } catch (error) {
+      console.error("Failed to persist password reset completion audit log", error);
+    }
 
     return NextResponse.json({
       message: shouldAutoVerify

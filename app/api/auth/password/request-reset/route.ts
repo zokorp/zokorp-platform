@@ -4,19 +4,16 @@ import { z } from "zod";
 import { sendPasswordResetEmail } from "@/lib/auth-email";
 import { isPasswordAuthEnabled } from "@/lib/auth-config";
 import { db } from "@/lib/db";
-import { generateOpaqueToken, hashOpaqueToken } from "@/lib/password-auth";
+import { issuePasswordResetToken } from "@/lib/password-reset-tokens";
 import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { isBusinessEmail } from "@/lib/security";
+import { getSiteOriginFromRequest } from "@/lib/site-origin";
 import { ensureUserAuthSchemaReady } from "@/lib/user-auth-schema";
 
 const requestResetSchema = z.object({
   email: z.string().trim().email(),
 });
-
-function getBaseUrl() {
-  return process.env.NEXTAUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-}
 
 export const runtime = "nodejs";
 
@@ -82,35 +79,31 @@ export async function POST(request: Request) {
       });
     }
 
-    const token = generateOpaqueToken(32);
-    const tokenHash = hashOpaqueToken(token);
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
-
-    await db.userAuth.update({
-      where: { userId: user.id },
-      data: {
-        resetTokenHash: tokenHash,
-        resetTokenExpiresAt: expiresAt,
-      },
+    const resetToken = await issuePasswordResetToken({
+      email,
+      baseUrl: getSiteOriginFromRequest(request),
     });
 
-    const resetUrl = `${getBaseUrl().replace(/\/$/, "")}/login/reset-password?token=${encodeURIComponent(token)}`;
     const sendResult = await sendPasswordResetEmail({
       to: email,
-      resetUrl,
+      resetUrl: resetToken.resetUrl,
     });
 
-    await db.auditLog.create({
-      data: {
-        userId: user.id,
-        action: "auth.password_reset_requested",
-        metadataJson: {
-          email,
-          deliveryOk: sendResult.ok,
-          deliveryError: sendResult.ok ? null : sendResult.error,
+    try {
+      await db.auditLog.create({
+        data: {
+          userId: user.id,
+          action: "auth.password_reset_requested",
+          metadataJson: {
+            email,
+            deliveryOk: sendResult.ok,
+            deliveryError: sendResult.ok ? null : sendResult.error,
+          },
         },
-      },
-    });
+      });
+    } catch (error) {
+      console.error("Failed to persist password reset request audit log", error);
+    }
 
     return NextResponse.json({
       message: "If that account exists, a reset email has been sent.",
