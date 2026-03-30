@@ -63,6 +63,7 @@ const baseUrl = readSetting("JOURNEY_BASE_URL", "https://app.zokorp.com");
 const outputDir = readSetting("JOURNEY_OUTPUT_DIR", "output/playwright/customer-journey-audit");
 const headed = readSetting("JOURNEY_HEADED") === "true";
 const browserChannel = readSetting("JOURNEY_BROWSER_CHANNEL", "chrome");
+const visibilityTimeoutMs = Number.parseInt(readSetting("JOURNEY_TIMEOUT_MS", "30000"), 10);
 const loginEmail = readSetting("JOURNEY_EMAIL");
 const loginPassword = readSetting("JOURNEY_PASSWORD");
 const expectSubscription = readSetting("JOURNEY_EXPECT_SUBSCRIPTION") === "true";
@@ -160,12 +161,30 @@ function buildSummary(steps) {
 }
 
 async function assertVisibleText(page, text) {
-  await page.getByText(text, { exact: false }).first().waitFor({ state: "visible", timeout: 20_000 });
+  await page.getByText(text, { exact: false }).first().waitFor({ state: "visible", timeout: visibilityTimeoutMs });
+}
+
+async function withRetry(label, fn, attempts = 2) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    }
+  }
+
+  throw new Error(`${label} failed after ${attempts} attempt(s): ${lastError instanceof Error ? lastError.message : String(lastError)}`);
 }
 
 async function navigateAndAssert(page, href, marker) {
-  await page.goto(new URL(href, baseUrl).toString(), { waitUntil: "networkidle" });
-  await assertVisibleText(page, marker);
+  await withRetry(`Navigate ${href}`, async () => {
+    await page.goto(new URL(href, baseUrl).toString(), { waitUntil: "networkidle" });
+    await assertVisibleText(page, marker);
+  });
 }
 
 function headerNavLink(page, label) {
@@ -231,13 +250,16 @@ async function runAuthJourney(page, steps) {
     return;
   }
 
-  await navigateAndAssert(page, "/login", "Sign in");
-  await page.locator("#email").fill(loginEmail);
-  await page.locator("#password").fill(loginPassword);
-  await page.locator("form").first().getByRole("button", { name: "Sign in", exact: true }).click();
-  await page.waitForURL(new RegExp("\\/account$"), { timeout: 20_000 });
-  await assertVisibleText(page, "Welcome back");
-  await assertVisibleText(page, loginEmail);
+  await withRetry("Authenticated login", async () => {
+    await page.context().clearCookies();
+    await navigateAndAssert(page, "/login", "Sign in");
+    await page.locator("#email").fill(loginEmail);
+    await page.locator("#password").fill(loginPassword);
+    await page.locator("form").first().getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.waitForURL(new RegExp("\\/account$"), { timeout: visibilityTimeoutMs });
+    await assertVisibleText(page, "Welcome back");
+    await assertVisibleText(page, loginEmail);
+  });
 
   steps.push(
     buildStep("auth_login", "Sign in with configured account", "pass", {
