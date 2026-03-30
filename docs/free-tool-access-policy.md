@@ -2,14 +2,11 @@
 
 ## Current enforced policy
 
-ZoKorp free diagnostic tools send full consulting-style output only to a signed-in, already-verified business-email account.
+ZoKorp currently enforces verified-business-email delivery for the Architecture Diagram Reviewer.
 
 This policy currently applies to:
 
 - `Architecture Diagram Reviewer`
-- `AI Decider`
-- `Landing Zone Readiness Checker`
-- `Cloud Cost Leak Finder`
 
 ## What the user must do
 
@@ -31,9 +28,8 @@ The result email is sent only to the verified business email on the signed-in ac
 
 - Shared server enforcement lives in `lib/free-tool-access.ts`.
 - Shared UI gating lives in `components/free-tool-access-gate.tsx`.
-- Generic software routes use the gate for Architecture Review, AI Decider, and Landing Zone Readiness.
-- The dedicated Cloud Cost page uses the same gate.
-- AI Decider, Landing Zone, and Cloud Cost forms now display the signed-in verified email as the fixed delivery address instead of treating it as an anonymous lead field.
+- Generic software routes use the gate for Architecture Review.
+- The reviewer displays the signed-in verified email as the fixed delivery address instead of treating it as an anonymous lead field.
 
 ## Product caveat
 

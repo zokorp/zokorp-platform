@@ -548,7 +548,7 @@ export function ArchitectureDiagramReviewerForm({
     let clientSvgText: string | undefined;
     let clientSvgDimensions: { width: number; height: number } | undefined;
 
-    if (diagramValidation.format === "png") {
+    if (diagramValidation.format === "png" || diagramValidation.format === "jpg") {
       setPhase("ocr");
       setProgressPct(4);
       setEtaSeconds(45);
@@ -562,7 +562,7 @@ export function ArchitectureDiagramReviewerForm({
         });
       } catch {
         setStatus("error");
-        setError("Browser PNG text extraction failed. Retry with a clearer PNG or upload SVG.");
+        setError("Browser image text extraction failed. Retry with a clearer PNG/JPG or upload PDF/SVG.");
         return;
       }
     }
@@ -618,6 +618,7 @@ export function ArchitectureDiagramReviewerForm({
             totalClientMs: Math.max(0, Math.round(performance.now() - startedAtMs)),
           },
           clientPngOcrText,
+          clientPdfText: undefined,
           clientSvgText,
           clientSvgDimensions,
         }),
@@ -735,7 +736,7 @@ export function ArchitectureDiagramReviewerForm({
             Private
           </Badge>
           <Badge variant="brand" className="border-white/20 bg-white/12 text-white shadow-none">
-            Email-only report in ~2 min
+            AWS-only report in ~2 min
           </Badge>
           <Badge variant="brand" className="border-white/20 bg-white/12 text-white shadow-none">
             No findings on page
@@ -824,11 +825,11 @@ export function ArchitectureDiagramReviewerForm({
                   onChange={(event) => setProvider(event.target.value as ArchitectureProvider)}
                   className={fieldClassName}
                   required
+                  disabled
                 >
                   <option value="aws">AWS</option>
-                  <option value="azure">Azure</option>
-                  <option value="gcp">GCP</option>
                 </select>
+                <p className="text-xs text-slate-500">AWS-only at launch so the scoring and follow-up guidance stay trustworthy.</p>
               </label>
 
               <label className="space-y-2">
@@ -836,7 +837,7 @@ export function ArchitectureDiagramReviewerForm({
                 <input
                   name="diagram"
                   type="file"
-                  accept="image/png,image/svg+xml,.png,.svg"
+                  accept="image/png,image/jpeg,application/pdf,image/svg+xml,.png,.jpg,.jpeg,.pdf,.svg"
                   required
                   onChange={(event) => {
                     const nextFile = event.target.files?.[0] ?? null;
@@ -847,7 +848,7 @@ export function ArchitectureDiagramReviewerForm({
                   }}
                   className={fieldClassName}
                 />
-                <p className="text-xs text-slate-500">Only `image/png` and `image/svg+xml` files are accepted.</p>
+                <p className="text-xs text-slate-500">Accepted formats: PNG, JPG/JPEG, PDF, and SVG.</p>
                 {selectedFile ? (
                   <p className="text-xs font-medium text-slate-700">Current file: {selectedFile.name}</p>
                 ) : null}

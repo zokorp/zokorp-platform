@@ -7,9 +7,8 @@ import type { ComponentProps } from "react";
 import { CheckoutButton } from "@/components/checkout-button";
 import { CheckoutFlashBanner } from "@/components/checkout-flash-banner";
 import { FreeToolAccessGate } from "@/components/free-tool-access-gate";
-import { AiDeciderForm } from "@/components/ai-decider/AiDeciderForm";
 import { ArchitectureDiagramReviewerForm } from "@/components/architecture-diagram-reviewer/ArchitectureDiagramReviewerForm";
-import { LandingZoneReadinessCheckerForm } from "@/components/landing-zone-readiness/LandingZoneReadinessCheckerForm";
+import { ForecastingWorkspace } from "@/components/mlops/ForecastingWorkspace";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -340,16 +339,13 @@ export default async function SoftwareDetailPage({
   const signedIn = Boolean(currentEmail);
   const isAdminTester = session?.user?.role === Role.ADMIN;
   const isValidator = product.slug === "zokorp-validator";
-  const isAiDecider = product.slug === "ai-decider";
   const isArchitectureReviewer = product.slug === "architecture-diagram-reviewer";
-  const isLandingZoneChecker = product.slug === "landing-zone-readiness-checker";
-  const requiresVerifiedFreeToolAccount = isArchitectureReviewer || isAiDecider || isLandingZoneChecker;
+  const isMLOpsPlatform = product.slug === "mlops-foundation-platform";
+  const requiresVerifiedFreeToolAccount = isArchitectureReviewer;
   const productDescription = isArchitectureReviewer
-    ? "Free cloud architecture diagram reviewer for PNG/SVG uploads with deterministic findings delivered to a verified business-email account."
-    : isAiDecider
-      ? "Free deterministic consulting diagnostic for SMB teams. Sign in with a verified business email, answer targeted follow-up questions, and receive the verdict, findings, and estimate by email."
-    : isLandingZoneChecker
-      ? "Free deterministic landing-zone assessment for SMB teams. Sign in with a verified business email, answer structured questions, and receive your score, top gaps, and estimate by email."
+    ? "AWS-only architecture review for PNG, JPG, PDF, or SVG uploads with deterministic findings, source links, and estimate-first follow-up."
+    : isMLOpsPlatform
+      ? "Forecasting workspace for SMB teams. Upload CSV or XLSX revenue history, review a deterministic forecast, and keep the run in your account activity."
       : product.description;
   const validatorTargets = isValidator ? getValidatorTargetOptions() : [];
   let validatorProfileCredits: Record<ValidationProfile, number> = {
@@ -470,9 +466,8 @@ export default async function SoftwareDetailPage({
       </Badge>
       {isValidator ? <Badge variant="outline">1 credit per run</Badge> : null}
       {isArchitectureReviewer ? <Badge variant="outline">Email-only review</Badge> : null}
-      {isLandingZoneChecker ? <Badge variant="outline">Deterministic score</Badge> : null}
-      {isAiDecider ? <Badge variant="outline">Verified delivery</Badge> : null}
-      {!isValidator && !isArchitectureReviewer && !isLandingZoneChecker && !isAiDecider ? (
+      {isMLOpsPlatform ? <Badge variant="outline">Forecasting workspace</Badge> : null}
+      {!isValidator && !isArchitectureReviewer && !isMLOpsPlatform ? (
         <Badge variant="outline">Account-linked access</Badge>
       ) : null}
     </>
@@ -649,9 +644,9 @@ export default async function SoftwareDetailPage({
         </>
       }
       pricing={pricingSection}
-      bodyTitle={!isValidator && !isArchitectureReviewer && !isLandingZoneChecker && !isAiDecider ? "Tool workflow" : undefined}
+      bodyTitle={!isValidator && !isArchitectureReviewer && !isMLOpsPlatform ? "Tool workflow" : undefined}
       bodyDescription={
-        !isValidator && !isArchitectureReviewer && !isLandingZoneChecker && !isAiDecider
+        !isValidator && !isArchitectureReviewer && !isMLOpsPlatform
           ? product.accessModel === AccessModel.FREE
             ? "This product is free to use today and can later connect to account-linked history and access controls."
             : "This product is configured for account-based access. Sign in, purchase access, then launch it from your account context."
@@ -679,34 +674,12 @@ export default async function SoftwareDetailPage({
         >
           <ArchitectureDiagramReviewerForm />
         </FreeToolAccessGate>
-      ) : isAiDecider ? (
-        <FreeToolAccessGate
-          toolName="AI Decider"
-          callbackPath={`/software/${product.slug}`}
-          authRuntimeReady={authRuntimeReady}
+      ) : isMLOpsPlatform ? (
+        <ForecastingWorkspace
           signedIn={signedIn}
-          currentEmail={currentEmail}
-        >
-          <AiDeciderForm
-            initialEmail={currentEmail ?? ""}
-            initialName={session?.user?.name ?? ""}
-            lockedEmail={currentEmail ?? ""}
-          />
-        </FreeToolAccessGate>
-      ) : isLandingZoneChecker ? (
-        <FreeToolAccessGate
-          toolName="Landing Zone Readiness Checker"
-          callbackPath={`/software/${product.slug}`}
-          authRuntimeReady={authRuntimeReady}
-          signedIn={signedIn}
-          currentEmail={currentEmail}
-        >
-          <LandingZoneReadinessCheckerForm
-            initialEmail={currentEmail ?? ""}
-            initialName={session?.user?.name ?? ""}
-            lockedEmail={currentEmail ?? ""}
-          />
-        </FreeToolAccessGate>
+          currentEmail={currentEmail ?? null}
+          hasAccess={entitlement?.status === EntitlementStatus.ACTIVE}
+        />
       ) : (
         <Card className="rounded-[calc(var(--radius-xl)+0.25rem)] p-6">
           <CardHeader>

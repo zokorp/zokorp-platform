@@ -3,7 +3,7 @@ import { Role } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getEmailDomain } from "@/lib/security";
 
-export const LEAD_SOURCES = ["account", "architecture-review", "landing-zone", "cloud-cost", "ai-decider"] as const;
+export const LEAD_SOURCES = ["account", "architecture-review"] as const;
 export type LeadSource = (typeof LEAD_SOURCES)[number];
 
 export const LEAD_AUDIENCE_FILTERS = ["human", "flagged", "all"] as const;
@@ -89,9 +89,6 @@ export type LeadDirectoryResult = {
 export const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {
   account: "Account",
   "architecture-review": "Architecture Review",
-  "landing-zone": "Landing Zone",
-  "cloud-cost": "Cloud Cost",
-  "ai-decider": "AI Decider",
 };
 
 export const LEAD_SIGNAL_LABELS: Record<LeadSignal, string> = {

@@ -8,7 +8,7 @@ export const ARCHITECTURE_REVIEW_VERSION = "1.0" as const;
 export const architectureProviderSchema = z.enum(["aws", "azure", "gcp"]);
 export type ArchitectureProvider = z.infer<typeof architectureProviderSchema>;
 
-export const architectureDiagramFormatSchema = z.enum(["png", "svg"]);
+export const architectureDiagramFormatSchema = z.enum(["png", "jpg", "pdf", "svg"]);
 export type ArchitectureDiagramFormat = z.infer<typeof architectureDiagramFormatSchema>;
 
 export const architectureCategorySchema = z.enum([
@@ -102,6 +102,7 @@ export const architectureEstimateLineItemSchema = z.object({
   serviceLineLabel: z.string().trim().min(1).max(160),
   publicFixSummary: z.string().trim().min(1).max(240),
   amountUsd: z.number().int().min(0),
+  estimatedHours: z.number().min(0).max(200),
   source: z.enum(["published", "fallback"]),
   publishedRevisionId: z.string().cuid().nullable().optional(),
 });
@@ -162,6 +163,7 @@ export const architectureReviewMetadataSchema = z.object({
   submissionContext: architectureSubmissionContextSchema.optional(),
   clientTiming: architectureClientTimingSchema.optional(),
   clientPngOcrText: z.string().trim().max(50_000).optional(),
+  clientPdfText: z.string().trim().max(50_000).optional(),
   clientSvgText: z.string().trim().max(50_000).optional(),
   clientSvgDimensions: architectureSvgDimensionsSchema.optional(),
   analysisConfidence: architectureAnalysisConfidenceSchema.optional(),

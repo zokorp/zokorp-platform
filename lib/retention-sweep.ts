@@ -9,9 +9,6 @@ const REDACTED_EMAIL_TEXT = "Email body redacted after delivery. See the live in
 export type RetentionSweepResult = {
   expiredArchivedSubmissionsDeleted: number;
   expiredFingerprintsDeleted: number;
-  legacyAiSubmissionsDeleted: number;
-  legacyLandingZoneSubmissionsDeleted: number;
-  legacyCloudCostSubmissionsDeleted: number;
   leadLogsScrubbed: number;
   architectureJobsScrubbed: number;
   architectureOutboxesRedacted: number;
@@ -23,9 +20,6 @@ export async function runRetentionSweep(now = new Date()): Promise<RetentionSwee
   const [
     archivedToolSubmissions,
     submissionFingerprints,
-    aiDeciderSubmissions,
-    landingZoneReadinessSubmissions,
-    cloudCostLeakFinderSubmissions,
     leadLogs,
     architectureReviewJobs,
     architectureReviewEmailOutboxes,
@@ -44,9 +38,6 @@ export async function runRetentionSweep(now = new Date()): Promise<RetentionSwee
         },
       },
     }),
-    db.aiDeciderSubmission.deleteMany({}),
-    db.landingZoneReadinessSubmission.deleteMany({}),
-    db.cloudCostLeakFinderSubmission.deleteMany({}),
     db.leadLog.updateMany({
       data: {
         inputParagraph: null,
@@ -91,9 +82,6 @@ export async function runRetentionSweep(now = new Date()): Promise<RetentionSwee
   return {
     expiredArchivedSubmissionsDeleted: archivedToolSubmissions.count,
     expiredFingerprintsDeleted: submissionFingerprints.count,
-    legacyAiSubmissionsDeleted: aiDeciderSubmissions.count,
-    legacyLandingZoneSubmissionsDeleted: landingZoneReadinessSubmissions.count,
-    legacyCloudCostSubmissionsDeleted: cloudCostLeakFinderSubmissions.count,
     leadLogsScrubbed: leadLogs.count,
     architectureJobsScrubbed: architectureReviewJobs.count,
     architectureOutboxesRedacted: architectureReviewEmailOutboxes.count,

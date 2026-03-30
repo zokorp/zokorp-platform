@@ -70,7 +70,7 @@ describe("admin leads helper", () => {
         user: null,
         events: [
           {
-            source: "landing-zone",
+            source: "architecture-review",
             deliveryState: "failed",
             crmSyncState: "pending",
             saveForFollowUp: false,
@@ -93,7 +93,7 @@ describe("admin leads helper", () => {
         user: null,
         events: [
           {
-            source: "cloud-cost",
+            source: "architecture-review",
             deliveryState: "sent",
             crmSyncState: "synced",
             saveForFollowUp: true,
@@ -180,8 +180,8 @@ describe("admin leads helper", () => {
         isInternal: false,
         firstSeenAt: new Date("2026-03-12T00:00:00.000Z"),
         latestAt: new Date("2026-03-12T00:00:00.000Z"),
-        latestSource: "cloud-cost",
-        sources: ["account", "cloud-cost"],
+        latestSource: "architecture-review",
+        sources: ["account", "architecture-review"],
         submissionCount: 1,
         emailDeliveryState: "sent",
         crmSyncState: "synced",
@@ -197,7 +197,7 @@ describe("admin leads helper", () => {
     expect(csv).toContain("email,name,company_name");
     expect(csv).toContain("jane@human-company.com");
     expect(csv).toContain("Savings Sprint");
-    expect(csv).toContain("Cloud Cost");
+    expect(csv).toContain("Architecture Review");
     expect(csv).toContain("workdrive_upload_status");
     expect(csv).toContain("uploaded");
   });
@@ -214,8 +214,8 @@ describe("admin leads helper", () => {
         isInternal: false,
         firstSeenAt: new Date("2026-03-12T00:00:00.000Z"),
         latestAt: new Date("2026-03-12T00:00:00.000Z"),
-        latestSource: "ai-decider",
-        sources: ["ai-decider"],
+        latestSource: "architecture-review",
+        sources: ["architecture-review"],
         submissionCount: 1,
         emailDeliveryState: "sent",
         crmSyncState: "skipped",

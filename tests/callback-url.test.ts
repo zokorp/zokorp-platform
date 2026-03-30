@@ -8,7 +8,7 @@ describe("sanitizeCallbackUrl", () => {
   });
 
   it("allows a local path callback URL", () => {
-    expect(sanitizeCallbackUrl("/software/cloud-cost-leak-finder")).toBe("/software/cloud-cost-leak-finder");
+    expect(sanitizeCallbackUrl("/software/architecture-diagram-reviewer")).toBe("/software/architecture-diagram-reviewer");
   });
 
   it("rejects absolute URLs", () => {
@@ -43,8 +43,8 @@ describe("sanitizeCallbackUrl", () => {
 describe("sanitizeAuthRedirectTarget", () => {
   it("allows same-origin absolute redirects", () => {
     expect(
-      sanitizeAuthRedirectTarget("https://app.zokorp.com/software/cloud-cost-leak-finder", "https://app.zokorp.com"),
-    ).toBe("https://app.zokorp.com/software/cloud-cost-leak-finder");
+      sanitizeAuthRedirectTarget("https://app.zokorp.com/software/architecture-diagram-reviewer", "https://app.zokorp.com"),
+    ).toBe("https://app.zokorp.com/software/architecture-diagram-reviewer");
   });
 
   it("rejects cross-origin redirects", () => {
@@ -64,8 +64,8 @@ describe("sanitizeAuthRedirectTarget", () => {
       sanitizeAuthRedirectTarget(
         "https://evil.example/phish",
         "https://app.zokorp.com",
-        "/software/cloud-cost-leak-finder",
+        "/software/architecture-diagram-reviewer",
       ),
-    ).toBe("https://app.zokorp.com/software/cloud-cost-leak-finder");
+    ).toBe("https://app.zokorp.com/software/architecture-diagram-reviewer");
   });
 });

@@ -62,11 +62,11 @@ function roundToNearest(value: number, step: number) {
 }
 
 function scoreCapByBand(overallScore: number) {
-  if (overallScore >= 85) {
+  if (overallScore >= 90) {
     return 750;
   }
 
-  if (overallScore >= 70) {
+  if (overallScore >= 60) {
     return 1500;
   }
 
@@ -183,11 +183,11 @@ export function determineQuoteTier(
     return "advisory-review";
   }
 
-  if (input.overallScore >= 85) {
+  if (input.overallScore >= 90) {
     return "advisory-review";
   }
 
-  if (input.overallScore >= 70) {
+  if (input.overallScore >= 60) {
     return "remediation-sprint";
   }
 

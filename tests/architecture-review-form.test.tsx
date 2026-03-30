@@ -29,7 +29,10 @@ describe("ArchitectureDiagramReviewerForm", () => {
     vi.unstubAllGlobals();
   });
 
-  it("enforces PNG/SVG-only uploads", async () => {
+  it("accepts the launch upload formats in the chooser", async () => {
+    vi.spyOn(architectureReviewClient, "extractPngTextEvidence").mockResolvedValue(
+      "Users call API Gateway then Lambda writes to DynamoDB and CloudWatch captures alerts.",
+    );
     render(<ArchitectureDiagramReviewerForm />);
 
     expect(screen.getByText(/what improves the review/i)).toBeTruthy();
@@ -46,15 +49,14 @@ describe("ArchitectureDiagramReviewerForm", () => {
     const descriptionInput = screen.getByLabelText(/architecture description/i);
     const submitButton = screen.getByRole("button", { name: /run review/i });
     const form = submitButton.closest("form");
-    expect(fileInput.getAttribute("accept")).toBe("image/png,image/svg+xml,.png,.svg");
+    expect(fileInput.getAttribute("accept")).toBe(
+      "image/png,image/jpeg,application/pdf,image/svg+xml,.png,.jpg,.jpeg,.pdf,.svg",
+    );
+    expect(screen.getByText(/AWS-only at launch/i)).toBeTruthy();
 
-    const jpgFile = new File([new Uint8Array([1, 2, 3, 4])], "diagram.jpg", { type: "image/jpeg" });
+    const jpgFile = new File([new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00])], "diagram.jpg", { type: "image/jpeg" });
 
-    Object.defineProperty(fileInput, "files", {
-      value: [jpgFile],
-      writable: false,
-    });
-    fireEvent.change(fileInput);
+    fireEvent.change(fileInput, { target: { files: [jpgFile] } });
     fireEvent.change(descriptionInput, {
       target: { value: "Client sends request to API then service writes to DB." },
     });
@@ -63,8 +65,8 @@ describe("ArchitectureDiagramReviewerForm", () => {
     }
     fireEvent.submit(form);
 
-    await waitFor(() => expect(fetchMock).not.toHaveBeenCalled());
-    await waitFor(() => expect(screen.getByText(/file name must end with \.png or \.svg/i)).toBeTruthy());
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByText(/network error while submitting review metadata/i)).toBeTruthy());
   });
 
   it("shows email fallback actions without rendering findings", async () => {

@@ -33,7 +33,7 @@ async function main() {
     update: {
       name: "Architecture Diagram Reviewer",
       description:
-        "Free cloud architecture diagram reviewer for PNG uploads with deterministic findings delivered by email.",
+        "AWS-only architecture review for PNG, JPG, PDF, or SVG diagrams with score-based findings, official guidance links, and estimate-first follow-up.",
       accessModel: AccessModel.FREE,
       active: true,
     },
@@ -41,66 +41,20 @@ async function main() {
       slug: "architecture-diagram-reviewer",
       name: "Architecture Diagram Reviewer",
       description:
-        "Free cloud architecture diagram reviewer for PNG uploads with deterministic findings delivered by email.",
+        "AWS-only architecture review for PNG, JPG, PDF, or SVG diagrams with score-based findings, official guidance links, and estimate-first follow-up.",
       accessModel: AccessModel.FREE,
       active: true,
     },
   });
 
-  const aiDecider = await prisma.product.upsert({
-    where: { slug: "ai-decider" },
-    update: {
-      name: "AI Decider",
-      description:
-        "Free deterministic consulting diagnostic that tells SMB teams whether their problem needs AI, automation, analytics, or more discovery before any build.",
-      accessModel: AccessModel.FREE,
-      active: true,
+  await prisma.product.updateMany({
+    where: {
+      slug: {
+        in: ["ai-decider", "landing-zone-readiness-checker", "cloud-cost-leak-finder"],
+      },
     },
-    create: {
-      slug: "ai-decider",
-      name: "AI Decider",
-      description:
-        "Free deterministic consulting diagnostic that tells SMB teams whether their problem needs AI, automation, analytics, or more discovery before any build.",
-      accessModel: AccessModel.FREE,
-      active: true,
-    },
-  });
-
-  const landingZoneChecker = await prisma.product.upsert({
-    where: { slug: "landing-zone-readiness-checker" },
-    update: {
-      name: "Landing Zone Readiness Checker",
-      description:
-        "Free deterministic landing-zone assessment for SMB teams with emailed scoring, findings, and estimate.",
-      accessModel: AccessModel.FREE,
-      active: true,
-    },
-    create: {
-      slug: "landing-zone-readiness-checker",
-      name: "Landing Zone Readiness Checker",
-      description:
-        "Free deterministic landing-zone assessment for SMB teams with emailed scoring, findings, and estimate.",
-      accessModel: AccessModel.FREE,
-      active: true,
-    },
-  });
-
-  const cloudCostLeakFinder = await prisma.product.upsert({
-    where: { slug: "cloud-cost-leak-finder" },
-    update: {
-      name: "Cloud Cost Leak Finder",
-      description:
-        "Free deterministic cloud cost diagnostic for SMB teams with an emailed estimate memo, likely savings range, and estimate.",
-      accessModel: AccessModel.FREE,
-      active: true,
-    },
-    create: {
-      slug: "cloud-cost-leak-finder",
-      name: "Cloud Cost Leak Finder",
-      description:
-        "Free deterministic cloud cost diagnostic for SMB teams with an emailed estimate memo, likely savings range, and estimate.",
-      accessModel: AccessModel.FREE,
-      active: true,
+    data: {
+      active: false,
     },
   });
 
@@ -109,7 +63,7 @@ async function main() {
     update: {
       name: "ZoKorp MLOps Foundation Platform",
       description:
-        "Subscription SaaS for SMB teams needing streamlined MLOps workflows, governance checks, and delivery visibility.",
+        "Forecasting workspace for SMB teams: upload spreadsheet data, run practical revenue forecasts, review outputs, and add only the modules you need.",
       accessModel: AccessModel.SUBSCRIPTION,
       active: true,
     },
@@ -117,7 +71,7 @@ async function main() {
       slug: "mlops-foundation-platform",
       name: "ZoKorp MLOps Foundation Platform",
       description:
-        "Subscription SaaS for SMB teams needing streamlined MLOps workflows, governance checks, and delivery visibility.",
+        "Forecasting workspace for SMB teams: upload spreadsheet data, run practical revenue forecasts, review outputs, and add only the modules you need.",
       accessModel: AccessModel.SUBSCRIPTION,
       active: true,
     },
@@ -196,7 +150,7 @@ async function main() {
   }
 
   console.log(
-    `Seeded products: ${validator.slug}, ${aiDecider.slug}, ${freeReviewer.slug}, ${landingZoneChecker.slug}, ${cloudCostLeakFinder.slug}, ${mlopsPlatform.slug}`,
+    `Seeded products: ${validator.slug}, ${freeReviewer.slug}, ${mlopsPlatform.slug}`,
   );
 }
 

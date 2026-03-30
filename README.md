@@ -14,16 +14,13 @@ Production-oriented Next.js App Router application for ZoKorp marketing, free di
 - Software hub: `/software`, `/software/[slug]`
 - Account area: `/account`, `/account/billing`
 - Admin area: `/admin/products`, `/admin/prices`, `/admin/service-requests`
-- Free diagnostic tools:
+- Launch products:
   - `Architecture Diagram Reviewer`
-  - `AI Decider`
-  - `Landing Zone Readiness Checker`
-  - `Cloud Cost Leak Finder`
-- Paid software:
   - `ZoKorpValidator`
+  - `ZoKorp MLOps Foundation Platform`
 
 ## Current platform rules
-- Free diagnostic tools require a signed-in, verified business-email account before full consulting-style output is delivered.
+- Architecture Diagram Reviewer requires a signed-in, verified business-email account before full consulting-style output is delivered.
 - Public subscription pricing stays hidden unless `PUBLIC_SUBSCRIPTION_PRICING_APPROVED=true`.
 - Public software and pricing pages fall back to a static core catalog when the DB-backed catalog is unavailable.
 - Billing, admin, and entitlement-protected routes enforce access server-side.

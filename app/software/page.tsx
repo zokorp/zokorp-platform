@@ -17,22 +17,30 @@ export const metadata = buildPageMetadata({
   path: "/software",
 });
 
-const roadmapItems = [
+const spotlightItems = [
   {
-    title: "MLOps Foundation Platform",
-    status: "Planned SaaS",
+    title: "ZoKorp MLOps Foundation Platform",
+    status: "Forecasting workspace",
     summary:
-      "A subdomain product for SMB teams that need practical MLOps workflows, governance checks, and lightweight deployment operations.",
-    cta: "Track roadmap",
-    href: "/account",
+      "Upload spreadsheet data, run a narrow revenue-forecast workflow, and add only the modules your team actually needs.",
+    cta: "Open product",
+    href: "/software/mlops-foundation-platform",
   },
   {
     title: "Architecture Diagram Reviewer",
-    status: "Free tool",
+    status: "AWS-only review",
     summary:
-      "Upload a cloud architecture PNG or SVG and receive structured feedback on reliability, security, and operational readiness.",
+      "Upload an AWS architecture PNG, JPG, PDF, or SVG and receive score-based findings, source-backed guidance, and an estimate-first next step.",
     cta: "Open in catalog",
     href: "/software/architecture-diagram-reviewer",
+  },
+  {
+    title: "ZoKorpValidator",
+    status: "FTR-first launch",
+    summary:
+      "Use credit-based validation for FTR evidence today, with polished on-screen output, email delivery, and actionable rewrite guidance.",
+    cta: "Open validator",
+    href: "/software/zokorp-validator",
   },
 ];
 
@@ -104,16 +112,16 @@ export default async function SoftwarePage() {
       <section className="surface soft-grid rounded-[calc(var(--radius-xl)+0.25rem)] p-6 md:p-7">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Roadmap</p>
-            <h2 className="font-display mt-1 text-3xl font-semibold text-slate-900">Upcoming product surfaces</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Current Focus</p>
+            <h2 className="font-display mt-1 text-3xl font-semibold text-slate-900">Three product surfaces, one account</h2>
           </div>
           <Link href="/services#service-request" className={buttonVariants({ variant: "link" })}>
-            Request priority access
+            Request product help
           </Link>
         </div>
 
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
-          {roadmapItems.map((item) => (
+        <div className="mt-5 grid gap-4 md:grid-cols-3">
+          {spotlightItems.map((item) => (
             <Card key={item.title} lift className="rounded-3xl border border-slate-200 bg-white p-5">
               <CardHeader>
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{item.status}</p>

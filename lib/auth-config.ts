@@ -21,3 +21,10 @@ export function isPasswordResetEmailConfigured() {
     Boolean(process.env.EMAIL_FROM)
   );
 }
+
+export function isResultEmailConfigured() {
+  return (
+    (Boolean(process.env.RESEND_API_KEY) && Boolean(process.env.RESEND_FROM_EMAIL)) ||
+    isPasswordResetEmailConfigured()
+  );
+}

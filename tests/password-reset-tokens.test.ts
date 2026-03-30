@@ -71,17 +71,19 @@ describe("password reset token helpers", () => {
   it("accepts any still-valid reset token stored for the same email", async () => {
     const rawToken = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     const tokenHash = hashOpaqueToken(rawToken);
+    const now = new Date();
+    const verifiedAt = new Date(now.getTime() - 60_000);
 
     verificationFindUniqueMock.mockResolvedValue({
       identifier: "password-reset:zkhawaja+atlas3@zokorp.com",
       token: tokenHash,
-      expires: new Date("2026-03-27T20:00:00.000Z"),
+      expires: new Date(now.getTime() + 30 * 60 * 1000),
     });
     userAuthFindFirstMock.mockResolvedValue({
       userId: "user_123",
       user: {
         email: "zkhawaja+atlas3@zokorp.com",
-        emailVerified: new Date("2026-03-27T19:05:00.000Z"),
+        emailVerified: verifiedAt,
       },
     });
 
@@ -95,7 +97,7 @@ describe("password reset token helpers", () => {
       identifier: "password-reset:zkhawaja+atlas3@zokorp.com",
       user: {
         email: "zkhawaja+atlas3@zokorp.com",
-        emailVerified: new Date("2026-03-27T19:05:00.000Z"),
+        emailVerified: verifiedAt,
       },
     });
   });
@@ -103,11 +105,12 @@ describe("password reset token helpers", () => {
   it("expires old reset tokens and removes the stored hash", async () => {
     const rawToken = "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd";
     const tokenHash = hashOpaqueToken(rawToken);
+    const now = new Date();
 
     verificationFindUniqueMock.mockResolvedValue({
       identifier: "password-reset:zkhawaja+atlas3@zokorp.com",
       token: tokenHash,
-      expires: new Date("2026-03-27T18:00:00.000Z"),
+      expires: new Date(now.getTime() - 1_000),
     });
 
     const result = await consumePasswordResetToken(rawToken);

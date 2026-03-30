@@ -30,14 +30,14 @@ const routeChecks = [
     criticality: "medium",
   },
   {
-    path: "/software/landing-zone-readiness-checker",
-    marker: "Landing Zone Readiness Checker",
+    path: "/software/zokorp-validator",
+    marker: "ZoKorpValidator",
     owner: "software-tools",
     criticality: "medium",
   },
   {
-    path: "/software/cloud-cost-leak-finder",
-    marker: "Cloud Cost Leak Finder",
+    path: "/software/mlops-foundation-platform",
+    marker: "ZoKorp MLOps Foundation Platform",
     owner: "software-tools",
     criticality: "medium",
   },

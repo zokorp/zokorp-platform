@@ -1,3 +1,5 @@
+import { resolveZohoInvoiceRuntimeConfig } from "@/lib/zoho-invoice";
+
 export type ReadinessLevel = "pass" | "warning" | "fail";
 
 type RuntimeEnv = Record<string, string | undefined>;
@@ -63,6 +65,18 @@ function totalByLevel(sections: ReadinessSection[], level: ReadinessLevel) {
   );
 }
 
+function zohoCredentialSourceLabel(source: "invoice" | "crm" | null) {
+  if (source === "invoice") {
+    return "invoice";
+  }
+
+  if (source === "crm") {
+    return "CRM";
+  }
+
+  return "refresh";
+}
+
 export function buildRuntimeReadinessReport(env: RuntimeEnv = process.env): RuntimeReadinessReport {
   const passwordAuthEnabled = isTruthy(env.AUTH_PASSWORD_ENABLED, true);
   const nextAuthSecretConfigured = configured(env.NEXTAUTH_SECRET);
@@ -78,6 +92,7 @@ export function buildRuntimeReadinessReport(env: RuntimeEnv = process.env): Runt
   const resendConfigured = configured(env.RESEND_API_KEY) && configured(env.RESEND_FROM_EMAIL);
   const stripeSecretConfigured = configured(env.STRIPE_SECRET_KEY);
   const stripeWebhookConfigured = configured(env.STRIPE_WEBHOOK_SECRET);
+  const publicSubscriptionPricingApproved = env.PUBLIC_SUBSCRIPTION_PRICING_APPROVED === "true";
   const priceIds = [
     env.STRIPE_PRICE_ID_FTR_SINGLE,
     env.STRIPE_PRICE_ID_SDP_SRP_SINGLE,
@@ -109,6 +124,7 @@ export function buildRuntimeReadinessReport(env: RuntimeEnv = process.env): Runt
     configured(env.ZOHO_CRM_REFRESH_TOKEN) &&
     configured(env.ZOHO_CLIENT_ID) &&
     configured(env.ZOHO_CLIENT_SECRET);
+  const zohoInvoiceConfig = resolveZohoInvoiceRuntimeConfig(env);
   const workdriveDirectAccessConfigured = configured(env.ZOHO_WORKDRIVE_ACCESS_TOKEN);
   const workdriveRefreshConfigured =
     configured(env.ZOHO_WORKDRIVE_REFRESH_TOKEN) &&
@@ -229,6 +245,20 @@ export function buildRuntimeReadinessReport(env: RuntimeEnv = process.env): Runt
               level: "warning",
               summary: `${configuredPriceIds}/${priceIds.length} core Stripe price IDs are configured.`,
               operatorAction: "Finish the Stripe product/price map before treating billing as launch-ready.",
+            },
+        publicSubscriptionPricingApproved
+          ? {
+              id: "subscription-pricing-approval",
+              label: "Public subscription pricing approval",
+              level: "pass",
+              summary: "Public subscription pricing is approved for subscription product surfaces.",
+            }
+          : {
+              id: "subscription-pricing-approval",
+              label: "Public subscription pricing approval",
+              level: "warning",
+              summary: "Subscription pricing is still gated behind the launch approval flag.",
+              operatorAction: "Set PUBLIC_SUBSCRIPTION_PRICING_APPROVED=true only when the public subscription offer is ready to launch.",
             },
       ],
     },
@@ -447,6 +477,48 @@ export function buildRuntimeReadinessReport(env: RuntimeEnv = process.env): Runt
               summary: "Zoho CRM credentials are not configured.",
               operatorAction: "Configure Zoho CRM credentials if lead sync is expected in this environment.",
             },
+        zohoInvoiceConfig.isConfigured
+          ? {
+              id: "zoho-invoice",
+              label: "Zoho Invoice estimate companion",
+              level: "pass",
+              summary: zohoInvoiceConfig.accessTokenSource
+                ? `Zoho Invoice organization and ${zohoCredentialSourceLabel(zohoInvoiceConfig.accessTokenSource)} access token are configured.`
+                : `Zoho Invoice organization and ${zohoCredentialSourceLabel(zohoInvoiceConfig.refreshTokenSource)} refresh-token credentials are configured.`,
+              details: [
+                `Organization ID: ${zohoInvoiceConfig.organizationId || "missing"}`,
+                `Access token source: ${zohoInvoiceConfig.accessTokenSource ?? "none"}`,
+                `Refresh token source: ${zohoInvoiceConfig.refreshTokenSource ?? "none"}`,
+              ],
+            }
+          : zohoInvoiceConfig.organizationId ||
+              zohoInvoiceConfig.accessToken ||
+              zohoInvoiceConfig.refreshTokenSource
+            ? {
+                id: "zoho-invoice",
+                label: "Zoho Invoice estimate companion",
+                level: "warning",
+                summary: "Zoho Invoice estimate companion is only partially configured.",
+                details: [
+                  `Organization ID: ${zohoInvoiceConfig.organizationId || "missing"}`,
+                  `Access token source: ${zohoInvoiceConfig.accessTokenSource ?? "none"}`,
+                  `Refresh token source: ${zohoInvoiceConfig.refreshTokenSource ?? "none"}`,
+                ],
+                operatorAction:
+                  "Set ZOHO_INVOICE_ORGANIZATION_ID and either a direct token or refresh-token credentials before relying on automatic estimate mirroring.",
+              }
+            : {
+                id: "zoho-invoice",
+                label: "Zoho Invoice estimate companion",
+                level: "warning",
+                summary: "Zoho Invoice estimate companion is not configured.",
+                details: [
+                  `Access token source: ${zohoInvoiceConfig.accessTokenSource ?? "none"}`,
+                  `Refresh token source: ${zohoInvoiceConfig.refreshTokenSource ?? "none"}`,
+                ],
+                operatorAction:
+                  "Configure Zoho Invoice only if automatic formal estimate mirroring is expected in this environment.",
+              },
         workdriveFolderConfigured && (workdriveDirectAccessConfigured || workdriveRefreshConfigured)
           ? {
               id: "zoho-workdrive",

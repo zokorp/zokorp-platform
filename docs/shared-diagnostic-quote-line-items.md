@@ -1,6 +1,6 @@
 # Shared Diagnostic Quote Line Items
 
-This document defines the typed line-item contract now shared by the free diagnostic tools.
+This document defines the typed line-item contract used by the Architecture Diagram Reviewer and any future deterministic estimate-first diagnostics.
 
 ## Canonical contract
 
@@ -21,19 +21,11 @@ Shared helpers now provide:
 - deduplication by stable `code`
 - proportional scaling so itemized lines can sum exactly to a tool’s final quote range
 
-## Tool usage
+## Current usage
 
-- `AI Decider`
-  - uses weighted line items for base engagement scope, workflow/KPI framing, data readiness, and systems/risk coordination
-  - keeps the existing engagement types and price range fields, but the stored/email quote now includes itemization
-- `Landing Zone Readiness`
-  - uses grouped category hardening items plus multi-cloud, sensitive-data, and core-control scope drivers
-  - scales the line items to the same deterministic quote range already produced by the engine
-- `Cloud Cost Leak Finder`
-  - already had itemized line items; it now uses the shared contract and render helpers instead of a tool-local shape
 - `Architecture Diagram Reviewer`
   - retains the existing top-level `consultationQuoteUSD` and `quoteTier` fields for compatibility
-  - now also includes `consultationQuote` with shared line items and rationale so storage and email packaging align with the other tools
+  - now also includes `consultationQuote` with shared line items and rationale so storage and email packaging remain deterministic
 
 ## Guardrails
 

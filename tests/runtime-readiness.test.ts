@@ -115,6 +115,38 @@ describe("runtime readiness report", () => {
     });
   });
 
+  it("warns when subscription pricing is still gated and Zoho Invoice is only partially configured", () => {
+    const report = buildRuntimeReadinessReport({
+      NEXTAUTH_SECRET: "nextauth-secret",
+      NEXTAUTH_URL: "https://app.zokorp.com",
+      NEXT_PUBLIC_SITE_URL: "https://app.zokorp.com",
+      AUTH_PASSWORD_ENABLED: "false",
+      ZOHO_INVOICE_ORGANIZATION_ID: "org_123",
+    });
+
+    expect(findCheck(report, "subscription-pricing-approval")).toMatchObject({
+      level: "warning",
+    });
+    expect(findCheck(report, "zoho-invoice")).toMatchObject({
+      level: "warning",
+    });
+  });
+
+  it("passes Zoho Invoice when CRM fallback credentials are configured", () => {
+    const report = buildRuntimeReadinessReport({
+      NEXTAUTH_SECRET: "nextauth-secret",
+      NEXTAUTH_URL: "https://app.zokorp.com",
+      NEXT_PUBLIC_SITE_URL: "https://app.zokorp.com",
+      AUTH_PASSWORD_ENABLED: "false",
+      ZOHO_INVOICE_ORGANIZATION_ID: "org_123",
+      ZOHO_CRM_ACCESS_TOKEN: "crm-token",
+    });
+
+    expect(findCheck(report, "zoho-invoice")).toMatchObject({
+      level: "pass",
+    });
+  });
+
   it("passes the main checks when critical runtime config is present and separated", () => {
     const report = buildRuntimeReadinessReport({
       NEXTAUTH_SECRET: "nextauth-secret",
@@ -144,6 +176,9 @@ describe("runtime readiness report", () => {
       RESEND_API_KEY: "re_123",
       RESEND_FROM_EMAIL: "hello@zokorp.com",
       ZOHO_CRM_ACCESS_TOKEN: "crm-token",
+      ZOHO_INVOICE_ORGANIZATION_ID: "invoice-org",
+      ZOHO_INVOICE_ACCESS_TOKEN: "invoice-token",
+      PUBLIC_SUBSCRIPTION_PRICING_APPROVED: "true",
       ZOHO_WORKDRIVE_FOLDER_ID: "folder_123",
       ZOHO_WORKDRIVE_ACCESS_TOKEN: "workdrive-token",
       ZOKORP_ADMIN_EMAILS: "ops@zokorp.com",
@@ -151,12 +186,14 @@ describe("runtime readiness report", () => {
 
     expect(findCheck(report, "auth-secret")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "stripe-core")).toMatchObject({ level: "pass" });
+    expect(findCheck(report, "subscription-pricing-approval")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "cron-secret")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "archive-encryption-secret")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "arch-review-eml-secret")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "arch-review-cta-secret")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "scheduled-secret-separation")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "calendly-sync-secret")).toMatchObject({ level: "pass" });
+    expect(findCheck(report, "zoho-invoice")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "zoho-workdrive")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "github-actions-schedulers")).toMatchObject({ level: "warning" });
     expect(report.totals.fail).toBe(0);

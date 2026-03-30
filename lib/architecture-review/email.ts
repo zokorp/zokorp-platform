@@ -42,6 +42,12 @@ function toUsd(value: number) {
   }).format(value);
 }
 
+function formatHours(value: number) {
+  const rounded = Math.round(value * 10) / 10;
+  const label = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+  return `${label} hour${rounded === 1 ? "" : "s"}`;
+}
+
 function escapeHtml(input: string) {
   return input
     .replace(/&/g, "&amp;")
@@ -102,6 +108,7 @@ function buildHtmlEmail(
   report: ArchitectureReviewReport,
   estimateSnapshot: ArchitectureEstimateSnapshot,
   ctaLinks: EmailCtaLinks,
+  officialEstimateReference?: string | null,
 ) {
   const mandatoryFindings = report.findings.filter((finding) => finding.pointsDeducted > 0);
   const optionalRecommendations = report.findings.filter((finding) => finding.pointsDeducted === 0);
@@ -134,7 +141,7 @@ function buildHtmlEmail(
                     <div style="margin-top:4px;color:#334155;">Fix: ${escapeHtml(finding.fix)}</div>
                     ${
                       lineItem
-                        ? `<div style="margin-top:4px;color:#334155;">Quoted line: ${escapeHtml(lineItem.serviceLineLabel)} · ${escapeHtml(toUsd(lineItem.amountUsd))}</div>`
+                        ? `<div style="margin-top:4px;color:#334155;">Quoted line: ${escapeHtml(lineItem.serviceLineLabel)} · ${escapeHtml(toUsd(lineItem.amountUsd))} · ${escapeHtml(formatHours(lineItem.estimatedHours))}</div>`
                         : ""
                     }
                   </td>
@@ -157,6 +164,7 @@ function buildHtmlEmail(
                 </td>
                 <td align="right" style="padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;color:#0f172a;font-size:14px;font-weight:800;white-space:nowrap;">
                   ${escapeHtml(toUsd(lineItem.amountUsd))}
+                  <div style="margin-top:4px;font-size:11px;font-weight:600;color:#475569;">${escapeHtml(formatHours(lineItem.estimatedHours))}</div>
                 </td>
               </tr>
             `,
@@ -234,6 +242,12 @@ function buildHtmlEmail(
                             <div style="margin-top:4px;font-size:14px;font-weight:700;color:#0f172a;">${escapeHtml(
                               estimateSnapshot.referenceCode,
                             )}</div>
+                            ${
+                              officialEstimateReference
+                                ? `<div style="margin-top:8px;font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">Formal Estimate</div>
+                            <div style="margin-top:4px;font-size:14px;font-weight:700;color:#0f172a;">${escapeHtml(officialEstimateReference)}</div>`
+                                : ""
+                            }
                             <div style="margin-top:8px;font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">Recommended Work Path</div>
                             <div style="margin-top:4px;font-size:16px;font-weight:800;color:#0f172a;">${escapeHtml(
                               quoteTierLabel(report.quoteTier),
@@ -353,6 +367,7 @@ export function buildArchitectureReviewEmailContent(
   options?: {
     ctaLinks?: Partial<EmailCtaLinks>;
     estimateSnapshot?: ArchitectureEstimateSnapshot;
+    officialEstimateReference?: string | null;
   },
 ) {
   const defaults = resolveDefaultCtaLinks();
@@ -366,6 +381,10 @@ export function buildArchitectureReviewEmailContent(
     }).snapshot;
   const mandatoryFindings = report.findings.filter((finding) => finding.pointsDeducted > 0);
   const optionalRecommendations = report.findings.filter((finding) => finding.pointsDeducted === 0);
+  const officialEstimateReference =
+    typeof options?.officialEstimateReference === "string" && options.officialEstimateReference.trim()
+      ? options.officialEstimateReference.trim()
+      : null;
 
   const lines = [
     `Architecture Diagram Review (${providerLabel(report.provider)})`,
@@ -376,6 +395,7 @@ export function buildArchitectureReviewEmailContent(
     `Analysis confidence: ${confidenceLabel(report.analysisConfidence)}`,
     `Recommended work path: ${quoteTierLabel(report.quoteTier)}`,
     `Estimate reference: ${estimateSnapshot.referenceCode}`,
+    ...(officialEstimateReference ? [`Formal estimate reference: ${officialEstimateReference}`] : []),
     `Implementation estimate: ${toUsd(estimateSnapshot.totalUsd)}`,
     "",
     "Flow narrative:",
@@ -394,7 +414,7 @@ export function buildArchitectureReviewEmailContent(
     ...(estimateSnapshot.lineItems.length > 0
       ? estimateSnapshot.lineItems.map(
           (lineItem) =>
-            `- ${lineItem.ruleId} | ${lineItem.serviceLineLabel} | ${toUsd(lineItem.amountUsd)} | ${lineItem.publicFixSummary}`,
+            `- ${lineItem.ruleId} | ${lineItem.serviceLineLabel} | ${toUsd(lineItem.amountUsd)} | ${formatHours(lineItem.estimatedHours)} | ${lineItem.publicFixSummary}`,
         )
       : ["No implementation estimate was produced because no mandatory fix scope was detected."]),
     `Estimated total (based on submitted materials): ${toUsd(estimateSnapshot.totalUsd)}`,
@@ -413,7 +433,7 @@ export function buildArchitectureReviewEmailContent(
 
   const subject = `[ZoKorp] ${providerLabel(report.provider)} architecture estimate ${report.overallScore}/100`;
   const text = lines.join("\n");
-  const html = buildHtmlEmail(report, estimateSnapshot, ctaLinks);
+  const html = buildHtmlEmail(report, estimateSnapshot, ctaLinks, officialEstimateReference);
 
   return {
     subject,

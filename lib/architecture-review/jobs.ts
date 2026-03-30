@@ -18,6 +18,7 @@ import {
 } from "@/lib/architecture-review/types";
 import { db } from "@/lib/db";
 import { isSchemaDriftError } from "@/lib/db-errors";
+import { recordEstimateCompanion } from "@/lib/estimate-companions";
 import { ensureLeadLogSchemaReady } from "@/lib/lead-log-schema";
 import {
   archiveToolSubmission,
@@ -26,6 +27,7 @@ import {
 } from "@/lib/privacy-leads";
 import { redactedArchitectureEmailBody } from "@/lib/retention-sweep";
 import { estimateBandForRange, scoreBandForScore } from "@/lib/tool-consent";
+import { syncZohoInvoiceEstimate } from "@/lib/zoho-invoice";
 import {
   archiveArchitectureReviewReportToWorkDrive,
   formatWorkDriveArchiveStatus,
@@ -501,7 +503,7 @@ export async function createArchitectureReviewJob(input: {
   userEmail: string;
   metadata: SubmitArchitectureReviewMetadata;
   diagramFileName: string;
-  diagramMimeType: "image/png" | "image/svg+xml";
+  diagramMimeType: "image/png" | "image/jpeg" | "application/pdf" | "image/svg+xml";
   workdriveDiagramFileId?: string | null;
   workdriveUploadStatus?: string | null;
 }) {
@@ -543,10 +545,21 @@ export async function processArchitectureReviewJob(jobId: string): Promise<Archi
 
     job = await updatePhase(job, "upload-validate", "start");
 
-    const isPng = job.diagramMimeType === "image/png" || metadata.diagramFormat === "png" || job.diagramFileName.toLowerCase().endsWith(".png");
+    const isRaster =
+      job.diagramMimeType === "image/png" ||
+      job.diagramMimeType === "image/jpeg" ||
+      metadata.diagramFormat === "png" ||
+      metadata.diagramFormat === "jpg" ||
+      job.diagramFileName.toLowerCase().endsWith(".png") ||
+      job.diagramFileName.toLowerCase().endsWith(".jpg") ||
+      job.diagramFileName.toLowerCase().endsWith(".jpeg");
+    const isPdf =
+      job.diagramMimeType === "application/pdf" ||
+      metadata.diagramFormat === "pdf" ||
+      job.diagramFileName.toLowerCase().endsWith(".pdf");
     const isSvg = job.diagramMimeType === "image/svg+xml" || metadata.diagramFormat === "svg" || job.diagramFileName.toLowerCase().endsWith(".svg");
 
-    if (!isPng && !isSvg) {
+    if (!isRaster && !isPdf && !isSvg) {
       return rejectJob(job, "Uploaded file type is unsupported for architecture review.");
     }
 
@@ -561,7 +574,11 @@ export async function processArchitectureReviewJob(jobId: string): Promise<Archi
     job = await updatePhase(job, "diagram-precheck", "complete");
     job = await updatePhase(job, "ocr", "start");
 
-    const ocrText = isPng ? metadata.clientPngOcrText?.trim() ?? "" : metadata.clientSvgText?.trim() ?? "";
+    const ocrText = isSvg
+      ? metadata.clientSvgText?.trim() ?? ""
+      : isPdf
+        ? metadata.clientPdfText?.trim() ?? ""
+        : metadata.clientPngOcrText?.trim() ?? "";
 
     if (ocrText.length === 0) {
       return rejectJob(job, "Missing browser diagram evidence. Re-upload the diagram and retry.");
@@ -742,6 +759,90 @@ export async function processArchitectureReviewJob(jobId: string): Promise<Archi
     const { snapshot: estimateSnapshot, auditUsage: estimateAuditUsage } = await loadArchitectureEstimateSnapshot(report, {
       bookingUrl: ctaLinks?.bookArchitectureCallUrl,
     });
+    const quoteCompanionResult =
+      report.overallScore >= 60 && estimateSnapshot.totalUsd > 0
+        ? await syncZohoInvoiceEstimate({
+            email: job.userEmail,
+            fullName: userName,
+            serviceLabel: `Architecture Diagram Reviewer (${report.provider.toUpperCase()})`,
+            referenceNumber: estimateSnapshot.referenceCode,
+            notes: [
+              `Score: ${report.overallScore}/100`,
+              `Confidence: ${report.analysisConfidence}`,
+              `Work path: ${report.quoteTier}`,
+              ...estimateSnapshot.lineItems.map(
+                (lineItem) => `${lineItem.ruleId}: ${lineItem.serviceLineLabel} (${lineItem.amountUsd}, ${lineItem.estimatedHours}h)`,
+              ),
+            ],
+            lineItems:
+              estimateSnapshot.lineItems.length > 0
+                ? estimateSnapshot.lineItems.map((lineItem) => ({
+                    name: `${lineItem.ruleId} · ${lineItem.serviceLineLabel}`,
+                    description: `${lineItem.publicFixSummary} Approx. ${lineItem.estimatedHours}h.`,
+                    rate: lineItem.amountUsd,
+                  }))
+                : [
+                    {
+                      name: "Architecture remediation estimate",
+                      description: `Architecture remediation follow-up for ${report.provider.toUpperCase()} findings.`,
+                      rate: estimateSnapshot.totalUsd,
+                    },
+                  ],
+          })
+        : {
+            ok: false as const,
+            status: "not_configured" as const,
+            error: "QUOTE_COMPANION_SKIPPED",
+            referenceNumber: estimateSnapshot.referenceCode,
+          };
+    const quoteCompanion = quoteCompanionResult.ok
+      ? {
+          status: "created" as const,
+          provider: "zoho-invoice" as const,
+          estimateId: quoteCompanionResult.estimateId,
+          estimateNumber: quoteCompanionResult.estimateNumber ?? quoteCompanionResult.referenceNumber,
+        }
+      : {
+          status: quoteCompanionResult.status === "timeout" ? "failed" : quoteCompanionResult.status,
+          provider: quoteCompanionResult.status === "not_configured" ? null : ("zoho-invoice" as const),
+          estimateId:
+            "estimateId" in quoteCompanionResult && quoteCompanionResult.estimateId
+              ? quoteCompanionResult.estimateId
+              : null,
+          estimateNumber: null,
+          error: quoteCompanionResult.error,
+        };
+    try {
+      await recordEstimateCompanion({
+        userId: job.userId,
+        source: "architecture-review",
+        sourceRecordKey: job.id,
+        sourceLabel: `Architecture Diagram Reviewer (${report.provider.toUpperCase()})`,
+        provider: quoteCompanion.provider,
+        status: quoteCompanion.status,
+        referenceCode: estimateSnapshot.referenceCode,
+        customerEmail: job.userEmail,
+        customerName: userName,
+        amountUsd: estimateSnapshot.totalUsd,
+        externalId: quoteCompanion.estimateId,
+        externalNumber: quoteCompanion.estimateNumber ?? null,
+        summary: `Architecture review score ${report.overallScore}/100.`,
+        metadata: {
+          provider: report.provider,
+          score: report.overallScore,
+          analysisConfidence: report.analysisConfidence,
+          quoteTier: report.quoteTier,
+          lineItems: estimateSnapshot.lineItems.map((lineItem) => ({
+            ruleId: lineItem.ruleId,
+            serviceLineLabel: lineItem.serviceLineLabel,
+            amountUsd: lineItem.amountUsd,
+            estimatedHours: lineItem.estimatedHours,
+          })),
+        },
+      });
+    } catch (error) {
+      console.error("Failed to persist architecture estimate companion", error);
+    }
     const emailContent = buildArchitectureReviewEmailContent(report, {
       ctaLinks: ctaLinks
         ? {
@@ -749,6 +850,7 @@ export async function processArchitectureReviewJob(jobId: string): Promise<Archi
           }
         : undefined,
       estimateSnapshot,
+      officialEstimateReference: quoteCompanion.status === "created" ? quoteCompanion.estimateNumber : null,
     });
 
     const outbox = await db.architectureReviewEmailOutbox.create({
@@ -795,6 +897,7 @@ export async function processArchitectureReviewJob(jobId: string): Promise<Archi
             paragraphInput: metadata.paragraphInput,
             clientEvidence: {
               pngText: metadata.clientPngOcrText ?? null,
+              pdfText: metadata.clientPdfText ?? null,
               svgText: metadata.clientSvgText ?? null,
             },
             metadata,
@@ -897,6 +1000,10 @@ export async function processArchitectureReviewJob(jobId: string): Promise<Archi
           estimateReferenceCode: estimateSnapshot.referenceCode,
           estimateTotalUsd: estimateSnapshot.totalUsd,
           estimateLineItems: estimateAuditUsage,
+          quoteCompanionStatus: quoteCompanion.status,
+          quoteCompanionProvider: quoteCompanion.provider,
+          quoteCompanionReference: quoteCompanion.status === "created" ? quoteCompanion.estimateNumber : null,
+          quoteCompanionError: quoteCompanion.status === "failed" ? quoteCompanion.error : null,
           emailStatus: "sent",
           emailProvider: sendResult.provider,
           emailError: null,
@@ -1008,6 +1115,10 @@ export async function processArchitectureReviewJob(jobId: string): Promise<Archi
         estimateReferenceCode: estimateSnapshot.referenceCode,
         estimateTotalUsd: estimateSnapshot.totalUsd,
         estimateLineItems: estimateAuditUsage,
+        quoteCompanionStatus: quoteCompanion.status,
+        quoteCompanionProvider: quoteCompanion.provider,
+        quoteCompanionReference: quoteCompanion.status === "created" ? quoteCompanion.estimateNumber : null,
+        quoteCompanionError: quoteCompanion.status === "failed" ? quoteCompanion.error : null,
         emailStatus: "fallback",
         emailProvider: sendResult.provider,
         emailError: sendResult.error,

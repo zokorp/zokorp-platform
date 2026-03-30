@@ -1,7 +1,9 @@
 import Link from "next/link";
 import {
+  type ArchitectureReviewJob,
   CreditTier,
   EntitlementStatus,
+  type EstimateCompanion,
   Role,
   ServiceRequestStatus,
   type ServiceRequest,
@@ -40,6 +42,69 @@ function formatTierLabel(tier: CreditTier) {
   return tier;
 }
 
+function humanizeArchitectureJobStatus(job: Pick<ArchitectureReviewJob, "status" | "deliveryMode">) {
+  if (job.status === "sent") {
+    return "Delivered";
+  }
+
+  if (job.status === "fallback") {
+    return "Fallback ready";
+  }
+
+  if (job.status === "rejected") {
+    return "Rejected";
+  }
+
+  if (job.status === "failed") {
+    return "Failed";
+  }
+
+  if (job.deliveryMode === "sent") {
+    return "Delivered";
+  }
+
+  return "Processing";
+}
+
+function auditSummary(metadata: unknown) {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return null;
+  }
+
+  const record = metadata as Record<string, unknown>;
+  const parts: string[] = [];
+
+  if (typeof record.profile === "string") {
+    parts.push(`Profile ${record.profile}`);
+  }
+
+  if (typeof record.score === "number") {
+    parts.push(`Score ${record.score}`);
+  }
+
+  if (typeof record.filename === "string") {
+    parts.push(record.filename);
+  }
+
+  if (typeof record.deliveryStatus === "string") {
+    parts.push(`Email ${record.deliveryStatus}`);
+  }
+
+  if (typeof record.quoteCompanionStatus === "string") {
+    parts.push(`Quote ${record.quoteCompanionStatus}`);
+  }
+
+  if (typeof record.quoteCompanionReference === "string") {
+    parts.push(record.quoteCompanionReference);
+  }
+
+  if (typeof record.forecastPeriods === "number") {
+    parts.push(`${record.forecastPeriods} forecast periods`);
+  }
+
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
 export default async function AccountPage() {
   const session = await auth();
   const email = session?.user?.email;
@@ -51,6 +116,7 @@ export default async function AccountPage() {
 
   let user = null;
   let serviceRequests: ServiceRequest[] = [];
+  let estimateCompanions: EstimateCompanion[] = [];
   let accountLoadError = false;
 
   try {
@@ -84,6 +150,10 @@ export default async function AccountPage() {
           orderBy: { createdAt: "desc" },
           take: 20,
         },
+        architectureReviewJobs: {
+          orderBy: { createdAt: "desc" },
+          take: 12,
+        },
       },
     });
 
@@ -97,6 +167,25 @@ export default async function AccountPage() {
             createdAt: "desc",
           },
           take: 25,
+        });
+      } catch (error) {
+        if (!isSchemaDriftError(error)) {
+          throw error;
+        }
+      }
+
+      try {
+        estimateCompanions = await db.estimateCompanion.findMany({
+          where: {
+            OR: [
+              { userId: user.id },
+              ...(user.email ? [{ customerEmail: user.email }] : []),
+            ],
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 20,
         });
       } catch (error) {
         if (!isSchemaDriftError(error)) {
@@ -157,6 +246,7 @@ export default async function AccountPage() {
   );
   const activeCredits = user.creditBalances.filter((wallet) => wallet.status === EntitlementStatus.ACTIVE);
   const openServiceRequests = serviceRequests.filter((request) => isServiceRequestOpen(request.status));
+  const architectureReviews = user.architectureReviewJobs;
 
   return (
     <div className="space-y-6">
@@ -219,6 +309,8 @@ export default async function AccountPage() {
           { label: "Active Subscriptions", value: activeSubscriptions.length },
           { label: "Credit Wallets", value: activeCredits.length },
           { label: "Recent Purchases", value: user.checkoutFulfillments.length },
+          { label: "Formal Estimates", value: estimateCompanions.length },
+          { label: "Architecture Reviews", value: architectureReviews.length },
         ].map((item) => (
           <Card key={item.label} lift className="rounded-3xl p-4">
             <CardHeader>
@@ -249,6 +341,8 @@ export default async function AccountPage() {
               <TabsTrigger value="credits">Credits</TabsTrigger>
               <TabsTrigger value="entitlements">Entitlements</TabsTrigger>
               <TabsTrigger value="purchases">Purchases</TabsTrigger>
+              <TabsTrigger value="estimates">Estimates</TabsTrigger>
+              <TabsTrigger value="reviews">Reviews</TabsTrigger>
               <TabsTrigger value="activity">Activity</TabsTrigger>
             </TabsList>
 
@@ -391,6 +485,88 @@ export default async function AccountPage() {
               )}
             </TabsContent>
 
+            <TabsContent value="estimates" className="space-y-4">
+              {estimateCompanions.length === 0 ? (
+                <Card tone="muted" className="rounded-3xl p-5">
+                  <CardContent>
+                    <p className="text-sm text-slate-600">No formal consultation or remediation estimates have been recorded yet.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {estimateCompanions.map((estimate) => (
+                    <TimelineCard
+                      key={estimate.id}
+                      title={estimate.sourceLabel}
+                      meta={new Date(estimate.createdAt).toLocaleString()}
+                      badge={<Badge variant={estimate.status === "created" ? "success" : estimate.status === "failed" ? "danger" : "secondary"}>{estimate.status}</Badge>}
+                      summary={
+                        <>
+                          {new Intl.NumberFormat("en-US", {
+                            style: "currency",
+                            currency: estimate.currency.toUpperCase(),
+                            maximumFractionDigits: 0,
+                          }).format(estimate.amountUsd)}
+                          {estimate.provider ? ` · ${estimate.provider}` : ""}
+                          {estimate.externalNumber ? ` · ${estimate.externalNumber}` : ""}
+                        </>
+                      }
+                      details={
+                        <>
+                          <span>Reference: {estimate.referenceCode}</span>
+                          <span>Customer email: {estimate.customerEmail}</span>
+                        </>
+                      }
+                      footer={
+                        estimate.externalUrl ? (
+                          <Link href={estimate.externalUrl} className={buttonVariants({ variant: "secondary", size: "sm" })}>
+                            Open formal estimate
+                          </Link>
+                        ) : undefined
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="reviews" className="space-y-4">
+              {architectureReviews.length === 0 ? (
+                <Card tone="muted" className="rounded-3xl p-5">
+                  <CardContent>
+                    <p className="text-sm text-slate-600">No architecture reviews have completed on this account yet.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {architectureReviews.map((review) => (
+                    <TimelineCard
+                      key={review.id}
+                      title="Architecture Diagram Reviewer"
+                      meta={new Date(review.createdAt).toLocaleString()}
+                      badge={<Badge variant="secondary">{humanizeArchitectureJobStatus(review)}</Badge>}
+                      summary={
+                        <>
+                          {review.overallScore !== null ? `Score ${review.overallScore}/100` : "Review in progress"}
+                          {review.analysisConfidence ? ` · ${review.analysisConfidence} confidence` : ""}
+                          {review.quoteTier ? ` · ${review.quoteTier}` : ""}
+                        </>
+                      }
+                      details={review.completedAt ? <span>Completed {new Date(review.completedAt).toLocaleString()}</span> : undefined}
+                      footer={
+                        <Link
+                          href="/software/architecture-diagram-reviewer"
+                          className={buttonVariants({ variant: "secondary", size: "sm" })}
+                        >
+                          Open reviewer
+                        </Link>
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
             <TabsContent value="activity" className="space-y-4">
               {user.auditLogs.length === 0 ? (
                 <Card tone="muted" className="rounded-3xl p-5">
@@ -406,6 +582,7 @@ export default async function AccountPage() {
                       title={log.action}
                       meta={new Date(log.createdAt).toLocaleString()}
                       badge={<Badge variant="outline">Audit</Badge>}
+                      summary={auditSummary(log.metadataJson)}
                     />
                   ))}
                 </div>

@@ -30,12 +30,9 @@ describe("retention sweep cron route", () => {
     mocks.runRetentionSweep.mockResolvedValue({
       expiredArchivedSubmissionsDeleted: 1,
       expiredFingerprintsDeleted: 2,
-      legacyAiSubmissionsDeleted: 3,
-      legacyLandingZoneSubmissionsDeleted: 4,
-      legacyCloudCostSubmissionsDeleted: 5,
-      leadLogsScrubbed: 6,
-      architectureJobsScrubbed: 7,
-      architectureOutboxesRedacted: 8,
+      leadLogsScrubbed: 3,
+      architectureJobsScrubbed: 4,
+      architectureOutboxesRedacted: 5,
     });
   });
 
@@ -102,7 +99,7 @@ describe("retention sweep cron route", () => {
     expect(mocks.runRetentionSweep).toHaveBeenCalledTimes(1);
     await expect(response.json()).resolves.toMatchObject({
       status: "ok",
-      architectureOutboxesRedacted: 8,
+      architectureOutboxesRedacted: 5,
     });
   });
 
@@ -120,7 +117,7 @@ describe("retention sweep cron route", () => {
     expect(mocks.runRetentionSweep).toHaveBeenCalledTimes(1);
     await expect(response.json()).resolves.toMatchObject({
       status: "ok",
-      architectureOutboxesRedacted: 8,
+      architectureOutboxesRedacted: 5,
     });
   });
 });

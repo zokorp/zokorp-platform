@@ -34,6 +34,16 @@ export type CatalogProduct = {
   prices: CatalogPrice[];
 };
 
+const PUBLIC_PRODUCT_SLUGS = new Set([
+  "architecture-diagram-reviewer",
+  "zokorp-validator",
+  "mlops-foundation-platform",
+]);
+
+export function isPublicProductSlug(slug: string) {
+  return PUBLIC_PRODUCT_SLUGS.has(slug);
+}
+
 const FALLBACK_PUBLIC_CATALOG: CatalogProduct[] = [
   {
     id: "fallback-zokorp-validator",
@@ -80,38 +90,18 @@ const FALLBACK_PUBLIC_CATALOG: CatalogProduct[] = [
     slug: "architecture-diagram-reviewer",
     name: "Architecture Diagram Reviewer",
     description:
-      "Free cloud architecture diagram reviewer for PNG or SVG uploads with deterministic findings delivered to a verified business-email account.",
+      "AWS-only architecture review for PNG, JPG, PDF, or SVG diagrams with score-based findings, official guidance links, and estimate-first follow-up.",
     accessModel: AccessModel.FREE,
     active: true,
     prices: [],
   },
   {
-    id: "fallback-ai-decider",
-    slug: "ai-decider",
-    name: "AI Decider",
+    id: "fallback-mlops-foundation-platform",
+    slug: "mlops-foundation-platform",
+    name: "ZoKorp MLOps Foundation Platform",
     description:
-      "Free deterministic consulting diagnostic that tells SMB teams whether their problem needs AI, automation, analytics, or more discovery before any build.",
-    accessModel: AccessModel.FREE,
-    active: true,
-    prices: [],
-  },
-  {
-    id: "fallback-landing-zone-readiness-checker",
-    slug: "landing-zone-readiness-checker",
-    name: "Landing Zone Readiness Checker",
-    description:
-      "Free deterministic landing-zone assessment for SMB teams with emailed scoring, findings, and estimate.",
-    accessModel: AccessModel.FREE,
-    active: true,
-    prices: [],
-  },
-  {
-    id: "fallback-cloud-cost-leak-finder",
-    slug: "cloud-cost-leak-finder",
-    name: "Cloud Cost Leak Finder",
-    description:
-      "Free deterministic cloud cost diagnostic for SMB teams with an emailed estimate memo, likely savings range, and estimate.",
-    accessModel: AccessModel.FREE,
+      "Forecasting workspace for SMB teams: upload spreadsheet data, run practical revenue forecasts, review outputs, and add only the modules you need.",
+    accessModel: AccessModel.SUBSCRIPTION,
     active: true,
     prices: [],
   },
@@ -158,7 +148,7 @@ export async function getSoftwareCatalog(): Promise<CatalogProduct[]> {
       orderBy: { name: "asc" },
     });
 
-    return products;
+    return products.filter((product) => PUBLIC_PRODUCT_SLUGS.has(product.slug));
   } catch (error) {
     console.error("Failed to load software catalog from database.", error);
     return loadFallbackCatalog("database-backed catalog query failed", error);
@@ -166,12 +156,16 @@ export async function getSoftwareCatalog(): Promise<CatalogProduct[]> {
 }
 
 export async function getProductBySlug(slug: string): Promise<CatalogProduct | null> {
+  if (!isPublicProductSlug(slug)) {
+    return null;
+  }
+
   if (!process.env.DATABASE_URL) {
     return cloneFallbackCatalog().find((product) => product.slug === slug) ?? null;
   }
 
   try {
-    return await db.product.findUnique({
+    const product = await db.product.findUnique({
       where: { slug },
       include: {
         prices: {
@@ -180,6 +174,12 @@ export async function getProductBySlug(slug: string): Promise<CatalogProduct | n
         },
       },
     });
+
+    if (!product || !isPublicProductSlug(product.slug)) {
+      return null;
+    }
+
+    return product;
   } catch (error) {
     console.error("Failed to load product by slug from database.", { slug, error });
     return cloneFallbackCatalog().find((product) => product.slug === slug) ?? null;

@@ -26,7 +26,7 @@ describe("architecture review schema", () => {
     expect(parsed.success).toBe(true);
     expect(report.reportVersion).toBe("1.0");
     expect(report.analysisConfidence).toBe("high");
-    expect(report.quoteTier).toBe("advisory-review");
+    expect(report.quoteTier).toBe("remediation-sprint");
     expect(report.findings[0].fixCostUSD).toBeGreaterThan(0);
     expect(report.consultationQuote.lineItems[0]?.label).toBe("Advisory review baseline");
   });

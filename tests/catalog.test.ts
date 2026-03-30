@@ -22,9 +22,7 @@ describe("public catalog fallback", () => {
     expect(products.map((product) => product.slug)).toEqual([
       "zokorp-validator",
       "architecture-diagram-reviewer",
-      "ai-decider",
-      "landing-zone-readiness-checker",
-      "cloud-cost-leak-finder",
+      "mlops-foundation-platform",
     ]);
   });
 
@@ -39,5 +37,33 @@ describe("public catalog fallback", () => {
       name: "Architecture Diagram Reviewer",
       accessModel: "FREE",
     });
+  });
+
+  it("returns null for retired software slugs when DATABASE_URL is missing", async () => {
+    delete process.env.DATABASE_URL;
+
+    const { getProductBySlug } = await import("@/lib/catalog");
+    const product = await getProductBySlug("cloud-cost-leak-finder");
+
+    expect(product).toBeNull();
+  });
+});
+
+describe("database-backed product visibility", () => {
+  it("blocks non-public software slugs before querying the database", async () => {
+    process.env.DATABASE_URL = "postgres://example";
+    const findUnique = vi.fn();
+
+    vi.doMock("@/lib/db", () => ({
+      db: {
+        product: {
+          findUnique,
+        },
+      },
+    }));
+
+    const { getProductBySlug } = await import("@/lib/catalog");
+    await expect(getProductBySlug("cloud-cost-leak-finder")).resolves.toBeNull();
+    expect(findUnique).not.toHaveBeenCalled();
   });
 });

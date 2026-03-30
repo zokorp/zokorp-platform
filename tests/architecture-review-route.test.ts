@@ -289,4 +289,21 @@ describe("submit architecture review route", () => {
     });
     expect(mocks.createArchitectureReviewJob).not.toHaveBeenCalled();
   });
+
+  it("rejects non-AWS submissions while the reviewer is AWS-only", async () => {
+    const response = await POST(
+      makeMultipartRequestWithMetadata({
+        provider: "azure",
+        paragraphInput: "Users enter through the edge layer, app services process requests, and data persists to a managed store.",
+        diagramFormat: "png",
+        clientPngOcrText: "edge app service data store",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "Architecture Diagram Reviewer is AWS-only right now. Choose AWS and retry.",
+    });
+    expect(mocks.createArchitectureReviewJob).not.toHaveBeenCalled();
+  });
 });

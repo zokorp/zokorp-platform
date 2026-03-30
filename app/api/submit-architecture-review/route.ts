@@ -35,8 +35,8 @@ type RateLimitResult = {
 type ParsedDiagram = {
   filename: string;
   bytes: Uint8Array;
-  format: "png" | "svg";
-  mimeType: "image/png" | "image/svg+xml";
+  format: "png" | "jpg" | "pdf" | "svg";
+  mimeType: "image/png" | "image/jpeg" | "application/pdf" | "image/svg+xml";
 };
 
 function responseHeaders(requestId: string, limiter?: RateLimitResult) {
@@ -85,6 +85,24 @@ function isPngBytes(bytes: Uint8Array) {
   return signature.every((byte, index) => bytes[index] === byte);
 }
 
+function isJpegBytes(bytes: Uint8Array) {
+  const signature = [0xff, 0xd8, 0xff];
+  if (bytes.length < signature.length) {
+    return false;
+  }
+
+  return signature.every((byte, index) => bytes[index] === byte);
+}
+
+function isPdfBytes(bytes: Uint8Array) {
+  const signature = [0x25, 0x50, 0x44, 0x46];
+  if (bytes.length < signature.length) {
+    return false;
+  }
+
+  return signature.every((byte, index) => bytes[index] === byte);
+}
+
 function wantsFollowUpArchive(metadata: z.infer<typeof submitArchitectureReviewMetadataSchema>) {
   return metadata.saveForFollowUp ?? metadata.archiveForFollowup ?? false;
 }
@@ -113,6 +131,9 @@ async function parsePayloadFromRequest(request: Request) {
   }
 
   const metadata = submitArchitectureReviewMetadataSchema.parse(JSON.parse(metadataRaw));
+  if (metadata.provider !== "aws") {
+    throw new Error("UNSUPPORTED_PROVIDER");
+  }
   const bytes = new Uint8Array(await diagramRaw.arrayBuffer());
   if (bytes.length > maxBytes) {
     throw new Error("DIAGRAM_TOO_LARGE");
@@ -139,6 +160,61 @@ async function parsePayloadFromRequest(request: Request) {
         bytes,
         format: "png",
         mimeType: "image/png",
+      } satisfies ParsedDiagram,
+    } as const;
+  }
+
+  if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) {
+    if (metadata.diagramFormat && metadata.diagramFormat !== "jpg") {
+      throw new Error("DIAGRAM_FORMAT_MISMATCH");
+    }
+
+    if (!isJpegBytes(bytes)) {
+      throw new Error("INVALID_DIAGRAM_FILE");
+    }
+
+    if (!metadata.clientPngOcrText?.trim()) {
+      throw new Error("MISSING_DIAGRAM_EVIDENCE");
+    }
+
+    return {
+      metadata,
+      diagram: {
+        filename: diagramRaw.name,
+        bytes,
+        format: "jpg",
+        mimeType: "image/jpeg",
+      } satisfies ParsedDiagram,
+    } as const;
+  }
+
+  if (lowerName.endsWith(".pdf")) {
+    if (metadata.diagramFormat && metadata.diagramFormat !== "pdf") {
+      throw new Error("DIAGRAM_FORMAT_MISMATCH");
+    }
+
+    if (!isPdfBytes(bytes)) {
+      throw new Error("INVALID_DIAGRAM_FILE");
+    }
+
+    const pdfParseModule = await import("pdf-parse");
+    const parsed = await pdfParseModule.default(Buffer.from(bytes));
+    const clientPdfText = (parsed.text || "").replace(/\s+/g, " ").trim();
+
+    if (!clientPdfText) {
+      throw new Error("MISSING_DIAGRAM_EVIDENCE");
+    }
+
+    return {
+      metadata: {
+        ...metadata,
+        clientPdfText,
+      },
+      diagram: {
+        filename: diagramRaw.name,
+        bytes,
+        format: "pdf",
+        mimeType: "application/pdf",
       } satisfies ParsedDiagram,
     } as const;
   }
@@ -253,7 +329,8 @@ export async function POST(request: Request) {
       ? await archiveArchitectureDiagramToWorkDrive({
           diagramFileName: diagram.filename,
           diagramBytes: diagram.bytes,
-          diagramMimeType: diagram.mimeType,
+          diagramMimeType:
+            diagram.mimeType === "image/png" || diagram.mimeType === "image/svg+xml" ? diagram.mimeType : undefined,
         })
       : {
           status: "not_requested",
@@ -301,7 +378,16 @@ export async function POST(request: Request) {
     }
 
     if (error instanceof Error && (error.message === "INVALID_DIAGRAM_FILE" || error.message === "INVALID_SVG_FILE")) {
-      return jsonResponse(requestId, { error: "Invalid diagram file. Upload a safe PNG or SVG." }, 400, limiterContext);
+      return jsonResponse(requestId, { error: "Invalid diagram file. Upload a safe PNG, JPG, PDF, or SVG." }, 400, limiterContext);
+    }
+
+    if (error instanceof Error && error.message === "UNSUPPORTED_PROVIDER") {
+      return jsonResponse(
+        requestId,
+        { error: "Architecture Diagram Reviewer is AWS-only right now. Choose AWS and retry." },
+        400,
+        limiterContext,
+      );
     }
 
     if (error instanceof Error && error.message === "DIAGRAM_FORMAT_MISMATCH") {

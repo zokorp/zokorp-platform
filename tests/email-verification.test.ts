@@ -95,12 +95,13 @@ describe("email verification helpers", () => {
   it("allows the same valid verification link to be consumed repeatedly until it expires", async () => {
     const rawToken = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     const tokenHash = hashOpaqueToken(rawToken);
-    const verifiedAt = new Date("2026-03-27T18:00:00.000Z");
+    const now = new Date();
+    const verifiedAt = new Date(now.getTime() - 60_000);
 
     verificationFindUniqueMock.mockResolvedValue({
       identifier: "verify-email:consulting+atlas1@zokorp.com",
       token: tokenHash,
-      expires: new Date("2026-03-28T18:00:00.000Z"),
+      expires: new Date(now.getTime() + 60 * 60 * 1000),
     });
     userUpdateManyMock.mockResolvedValue({ count: 1 });
     userFindUniqueMock.mockResolvedValue({
@@ -129,11 +130,12 @@ describe("email verification helpers", () => {
   it("expires old tokens and removes their stored hash", async () => {
     const rawToken = "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd";
     const tokenHash = hashOpaqueToken(rawToken);
+    const now = new Date();
 
     verificationFindUniqueMock.mockResolvedValue({
       identifier: "verify-email:consulting+atlas1@zokorp.com",
       token: tokenHash,
-      expires: new Date("2026-03-27T17:59:59.000Z"),
+      expires: new Date(now.getTime() - 1_000),
     });
 
     const result = await consumeEmailVerificationToken(rawToken);

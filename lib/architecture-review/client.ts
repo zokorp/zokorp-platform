@@ -20,11 +20,21 @@ import {
 import { extractSvgLabelText, parseSvgDimensions, validateSvgMarkup } from "@/lib/architecture-review/svg-safety";
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+const JPEG_SIGNATURE = [0xff, 0xd8, 0xff];
+const PDF_SIGNATURE = [0x25, 0x50, 0x44, 0x46];
 const MAX_DIAGRAM_FILE_BYTES = 8 * 1024 * 1024;
 const PNG_OCR_TIMEOUT_MS = 90_000;
 
 function isPngBytes(bytes: Uint8Array) {
   return PNG_SIGNATURE.every((byte, index) => bytes[index] === byte);
+}
+
+function isJpegBytes(bytes: Uint8Array) {
+  return JPEG_SIGNATURE.every((byte, index) => bytes[index] === byte);
+}
+
+function isPdfBytes(bytes: Uint8Array) {
+  return PDF_SIGNATURE.every((byte, index) => bytes[index] === byte);
 }
 
 export async function extractSvgEvidence(file: File) {
@@ -88,17 +98,23 @@ export async function extractPngTextEvidence(file: File, options?: ExtractPngTex
 }
 
 export async function isStrictDiagramFile(file: File): Promise<
-  | { ok: true; format: ArchitectureDiagramFormat; mimeType: "image/png" | "image/svg+xml" }
+  | {
+      ok: true;
+      format: ArchitectureDiagramFormat;
+      mimeType: "image/png" | "image/jpeg" | "application/pdf" | "image/svg+xml";
+    }
   | { ok: false; error: string }
 > {
   const lowerName = file.name.toLowerCase();
   const isPngName = lowerName.endsWith(".png");
+  const isJpgName = lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg");
+  const isPdfName = lowerName.endsWith(".pdf");
   const isSvgName = lowerName.endsWith(".svg");
 
-  if (!isPngName && !isSvgName) {
+  if (!isPngName && !isJpgName && !isPdfName && !isSvgName) {
     return {
       ok: false,
-      error: "File name must end with .png or .svg.",
+      error: "File name must end with .png, .jpg, .jpeg, .pdf, or .svg.",
     };
   }
 
@@ -116,19 +132,26 @@ export async function isStrictDiagramFile(file: File): Promise<
     };
   }
 
-  if (isPngName) {
-    const bytes = new Uint8Array(await file.slice(0, PNG_SIGNATURE.length).arrayBuffer());
-    if (bytes.length < PNG_SIGNATURE.length || !isPngBytes(bytes)) {
+  if (isPngName || isJpgName || isPdfName) {
+    const signatureLength = isPngName ? PNG_SIGNATURE.length : isJpgName ? JPEG_SIGNATURE.length : PDF_SIGNATURE.length;
+    const bytes = new Uint8Array(await file.slice(0, signatureLength).arrayBuffer());
+    const signatureValid = isPngName
+      ? bytes.length >= PNG_SIGNATURE.length && isPngBytes(bytes)
+      : isJpgName
+        ? bytes.length >= JPEG_SIGNATURE.length && isJpegBytes(bytes)
+        : bytes.length >= PDF_SIGNATURE.length && isPdfBytes(bytes);
+
+    if (!signatureValid) {
       return {
         ok: false,
-        error: "Invalid PNG signature.",
+        error: isPngName ? "Invalid PNG signature." : isJpgName ? "Invalid JPEG signature." : "Invalid PDF signature.",
       };
     }
 
     return {
       ok: true,
-      format: "png",
-      mimeType: "image/png",
+      format: isPngName ? "png" : isJpgName ? "jpg" : "pdf",
+      mimeType: isPngName ? "image/png" : isJpgName ? "image/jpeg" : "application/pdf",
     };
   }
 

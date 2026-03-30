@@ -11,6 +11,11 @@ import {
 export const LEAD_INTERACTION_ACTIONS = ["cta_clicked", "call_booked"] as const;
 export type LeadInteractionAction = (typeof LEAD_INTERACTION_ACTIONS)[number];
 
+const ESTIMATE_REFERENCE_PREFIXES: Record<ToolEventSource, string> = {
+  "architecture-review": "ARCH",
+  "zokorp-validator": "VAL",
+};
+
 function stableStringify(value: unknown): string {
   if (Array.isArray(value)) {
     return `[${value.map((item) => stableStringify(item)).join(",")}]`;
@@ -50,14 +55,7 @@ export function buildEstimateReferenceCode(input: {
   email: string;
   generatedAtISO?: string;
 }) {
-  const prefix =
-    input.source === "architecture-review"
-      ? "ARCH"
-      : input.source === "landing-zone"
-        ? "LZ"
-        : input.source === "cloud-cost"
-          ? "COST"
-          : "AI";
+  const prefix = ESTIMATE_REFERENCE_PREFIXES[input.source];
   const dateStamp = (input.generatedAtISO ?? new Date().toISOString()).slice(0, 10).replaceAll("-", "");
   const checksum = createHash("sha1")
     .update(`${input.source}:${normalizeEmail(input.email)}:${input.generatedAtISO ?? ""}`)
@@ -66,6 +64,30 @@ export function buildEstimateReferenceCode(input: {
     .toUpperCase();
 
   return `ZK-${prefix}-${dateStamp}-${checksum}`;
+}
+
+export function buildUniqueEstimateReferenceCode(input: {
+  source: ToolEventSource;
+  email: string;
+  generatedAtISO?: string;
+  runKey?: string;
+}) {
+  const baseCode = buildEstimateReferenceCode({
+    source: input.source,
+    email: input.email,
+    generatedAtISO: input.generatedAtISO,
+  });
+
+  const entropySource = input.runKey?.trim();
+  const suffix = entropySource
+    ? createHash("sha1")
+        .update(`${input.source}:${normalizeEmail(input.email)}:${input.generatedAtISO ?? ""}:${entropySource}`)
+        .digest("hex")
+        .slice(0, 4)
+        .toUpperCase()
+    : randomBytes(2).toString("hex").toUpperCase();
+
+  return `${baseCode}-${suffix}`;
 }
 
 export function hashSubmissionFingerprint(input: {

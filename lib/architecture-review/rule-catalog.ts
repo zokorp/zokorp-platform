@@ -236,6 +236,30 @@ function midpointAmount(low: number, high: number) {
   return roundToNearest((low + high) / 2, 25);
 }
 
+function roundHours(value: number) {
+  return Math.max(0.5, Math.round(value * 2) / 2);
+}
+
+function estimatedHoursForFinding(input: {
+  category: ArchitectureCategory;
+  pointsDeducted: number;
+  amountUsd: number;
+}) {
+  const categoryMultiplier: Record<ArchitectureCategory, number> = {
+    clarity: 0.3,
+    operations: 0.4,
+    performance: 0.45,
+    cost: 0.4,
+    sustainability: 0.25,
+    reliability: 0.55,
+    security: 0.6,
+  };
+
+  const pointsComponent = input.pointsDeducted * categoryMultiplier[input.category];
+  const amountComponent = input.amountUsd / 300;
+  return roundHours(pointsComponent + amountComponent);
+}
+
 function formatDateInputValue(value: Date | null | undefined) {
   if (!value) {
     return "";
@@ -628,6 +652,11 @@ function buildArchitectureEstimateSnapshot(
         normalizeText(publishedOverride?.publicFixSummary) ||
         finding.fix,
       amountUsd: finding.fixCostUSD,
+      estimatedHours: estimatedHoursForFinding({
+        category: finding.category,
+        pointsDeducted: finding.pointsDeducted,
+        amountUsd: finding.fixCostUSD,
+      }),
       source: publishedOverride ? "published" : "fallback",
       publishedRevisionId: publishedOverride?.publishedRevisionId ?? null,
     };
@@ -639,6 +668,16 @@ function buildArchitectureEstimateSnapshot(
         overrideMinPriceUsd: publishedOverride?.overrideMinPriceUsd ?? null,
         overrideMaxPriceUsd: publishedOverride?.overrideMaxPriceUsd ?? null,
         pricingMode: publishedOverride?.pricingMode ?? "DERIVED",
+      }),
+      estimatedHours: estimatedHoursForFinding({
+        category: finding.category,
+        pointsDeducted: finding.pointsDeducted,
+        amountUsd: quoteAmountForFinding({
+          lineItem: baseLineItem,
+          overrideMinPriceUsd: publishedOverride?.overrideMinPriceUsd ?? null,
+          overrideMaxPriceUsd: publishedOverride?.overrideMaxPriceUsd ?? null,
+          pricingMode: publishedOverride?.pricingMode ?? "DERIVED",
+        }),
       }),
     };
   });

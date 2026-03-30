@@ -1,0 +1,25 @@
+name: Sync Zoho Estimate Companions
+
+on:
+  schedule:
+    - cron: "25 * * * *"
+  workflow_dispatch:
+
+jobs:
+  sync-estimate-companions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Zoho estimate companion sync endpoint
+        env:
+          ZOHO_ESTIMATE_COMPANION_SYNC_URL: ${{ secrets.ZOHO_ESTIMATE_COMPANION_SYNC_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$ZOHO_ESTIMATE_COMPANION_SYNC_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "Missing ZOHO_ESTIMATE_COMPANION_SYNC_URL or CRON_SECRET"
+            exit 1
+          fi
+
+          curl --fail --show-error --silent \
+            "$ZOHO_ESTIMATE_COMPANION_SYNC_URL" \
+            -H "x-cron-secret: $CRON_SECRET" \
+            -H "Content-Type: application/json"

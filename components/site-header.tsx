@@ -4,17 +4,18 @@ import { SiteHeaderShell } from "@/components/site-header-shell";
 import { isPasswordAuthEnabled } from "@/lib/auth-config";
 
 const primaryLinks = [
-  { href: "/", label: "Home" },
   { href: "/software", label: "Software" },
   { href: "/services", label: "Services" },
-  { href: "/pricing", label: "Pricing" },
-  { href: "/account", label: "Account" },
+  { href: "/case-studies", label: "Case Studies" },
+  { href: "/contact", label: "Contact Us" },
+  { href: "/about", label: "About" },
 ];
 
 const secondaryLinks = [
-  { href: "/case-studies", label: "Case Studies" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/account", label: "Account" },
   { href: "/media", label: "Media" },
-  { href: "/about", label: "About" },
+  { href: "/support", label: "Support" },
 ];
 
 export function SiteHeader() {

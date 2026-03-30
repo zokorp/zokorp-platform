@@ -8,6 +8,12 @@ const {
   requireEntitlementMock,
   decrementUsesAtomicallyMock,
   parseValidatorInputMock,
+  buildUniqueEstimateReferenceCodeMock,
+  buildValidatorEstimateMock,
+  buildValidatorEmailContentMock,
+  sendValidatorResultsEmailMock,
+  recordEstimateCompanionMock,
+  syncZohoInvoiceEstimateMock,
   getValidatorTargetOptionsMock,
   resolveValidatorTargetContextMock,
   entitlementFindFirstMock,
@@ -21,6 +27,12 @@ const {
   requireEntitlementMock: vi.fn(),
   decrementUsesAtomicallyMock: vi.fn(),
   parseValidatorInputMock: vi.fn(),
+  buildUniqueEstimateReferenceCodeMock: vi.fn(),
+  buildValidatorEstimateMock: vi.fn(),
+  buildValidatorEmailContentMock: vi.fn(),
+  sendValidatorResultsEmailMock: vi.fn(),
+  recordEstimateCompanionMock: vi.fn(),
+  syncZohoInvoiceEstimateMock: vi.fn(),
   getValidatorTargetOptionsMock: vi.fn(),
   resolveValidatorTargetContextMock: vi.fn(),
   entitlementFindFirstMock: vi.fn(),
@@ -48,6 +60,24 @@ vi.mock("@/lib/entitlements", () => ({
 
 vi.mock("@/lib/validator", () => ({
   parseValidatorInput: parseValidatorInputMock,
+}));
+
+vi.mock("@/lib/privacy-leads", () => ({
+  buildUniqueEstimateReferenceCode: buildUniqueEstimateReferenceCodeMock,
+}));
+
+vi.mock("@/lib/validator-delivery", () => ({
+  buildValidatorEstimate: buildValidatorEstimateMock,
+  buildValidatorEmailContent: buildValidatorEmailContentMock,
+  sendValidatorResultsEmail: sendValidatorResultsEmailMock,
+}));
+
+vi.mock("@/lib/estimate-companions", () => ({
+  recordEstimateCompanion: recordEstimateCompanionMock,
+}));
+
+vi.mock("@/lib/zoho-invoice", () => ({
+  syncZohoInvoiceEstimate: syncZohoInvoiceEstimateMock,
 }));
 
 vi.mock("@/lib/validator-library", () => ({
@@ -121,6 +151,58 @@ describe("zokorp validator route", () => {
       reviewedWorkbookFileName: "reviewed.xlsx",
       reviewedWorkbookMimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
+    buildUniqueEstimateReferenceCodeMock.mockReturnValue("ZK-VAL-20260329-ABC123-A1B2");
+    buildValidatorEstimateMock.mockReturnValue({
+      quoteUsd: 625,
+      estimatedHoursTotal: 4.5,
+      slaLabel: "2-4 business days",
+      summary: "Bounded remediation estimate.",
+      nextStep: "Tighten the reviewer-facing evidence and rerun.",
+      lineItems: [
+        {
+          catalogKey: "FTR::scope",
+          ruleId: "scope",
+          title: "Scope and objectives are defined",
+          status: "MISSING",
+          severity: "CRITICAL",
+          serviceLineLabel: "Gap memo",
+          publicFixSummary: "Clarify scope boundaries and objectives.",
+          amountUsd: 375,
+          estimatedHours: 2.5,
+          source: "catalog",
+        },
+        {
+          catalogKey: "FTR::control-row-review",
+          ruleId: "control-row-review",
+          title: "Control-row rewrite pass",
+          status: "PARTIAL",
+          severity: "PACKAGE",
+          serviceLineLabel: "Rewrite pass",
+          publicFixSummary: "Tighten failing row responses.",
+          amountUsd: 250,
+          estimatedHours: 2,
+          source: "package",
+        },
+      ],
+    });
+    buildValidatorEmailContentMock.mockReturnValue({
+      subject: "Validator result",
+      text: "validator text",
+      html: "<p>validator html</p>",
+    });
+    sendValidatorResultsEmailMock.mockResolvedValue({
+      ok: true,
+      status: "sent",
+    });
+    recordEstimateCompanionMock.mockResolvedValue({ id: "estimate_companion_123" });
+    syncZohoInvoiceEstimateMock.mockResolvedValue({
+      ok: true,
+      status: "created",
+      contactId: "contact_123",
+      estimateId: "estimate_123",
+      estimateNumber: "EST-000123",
+      referenceNumber: "rulepack_ftr",
+    });
     entitlementFindFirstMock.mockRejectedValue(new Error("lookup failed"));
     creditBalanceFindManyMock.mockResolvedValue([{ remainingUses: 12 }]);
     auditCreateMock.mockRejectedValue(new Error("audit unavailable"));
@@ -182,6 +264,46 @@ describe("zokorp validator route", () => {
       reviewedWorkbookMimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       remainingUses: 6,
       adminBypass: false,
+      emailDeliveryStatus: "sent",
+      estimate: {
+        quoteUsd: 625,
+        estimatedHoursTotal: 4.5,
+        slaLabel: "2-4 business days",
+        summary: "Bounded remediation estimate.",
+        nextStep: "Tighten the reviewer-facing evidence and rerun.",
+        lineItems: [
+          {
+            catalogKey: "FTR::scope",
+            ruleId: "scope",
+            title: "Scope and objectives are defined",
+            status: "MISSING",
+            severity: "CRITICAL",
+            serviceLineLabel: "Gap memo",
+            publicFixSummary: "Clarify scope boundaries and objectives.",
+            amountUsd: 375,
+            estimatedHours: 2.5,
+            source: "catalog",
+          },
+          {
+            catalogKey: "FTR::control-row-review",
+            ruleId: "control-row-review",
+            title: "Control-row rewrite pass",
+            status: "PARTIAL",
+            severity: "PACKAGE",
+            serviceLineLabel: "Rewrite pass",
+            publicFixSummary: "Tighten failing row responses.",
+            amountUsd: 250,
+            estimatedHours: 2,
+            source: "package",
+          },
+        ],
+      },
+      quoteCompanion: {
+        status: "created",
+        provider: "zoho-invoice",
+        estimateId: "estimate_123",
+        estimateNumber: "EST-000123",
+      },
     });
     expect(decrementUsesAtomicallyMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -195,6 +317,17 @@ describe("zokorp validator route", () => {
       expect.objectContaining({
         data: expect.objectContaining({
           action: "tool.zokorp_validator_run",
+          metadataJson: expect.objectContaining({
+            estimateReferenceCode: "ZK-VAL-20260329-ABC123-A1B2",
+            deliveryStatus: "sent",
+            estimateQuoteUsd: 625,
+            estimateHoursTotal: 4.5,
+            estimateSla: "2-4 business days",
+            quoteCompanionStatus: "created",
+            quoteCompanionProvider: "zoho-invoice",
+            quoteCompanionReference: "EST-000123",
+            quoteCompanionError: null,
+          }),
         }),
       }),
     );

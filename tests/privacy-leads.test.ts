@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const dbMocks = vi.hoisted(() => ({
   create: vi.fn(),
@@ -14,24 +14,46 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-import { buildEstimateReferenceCode, hashSubmissionFingerprint, recordLeadEvent } from "@/lib/privacy-leads";
+import {
+  buildEstimateReferenceCode,
+  buildUniqueEstimateReferenceCode,
+  hashSubmissionFingerprint,
+  recordLeadEvent,
+} from "@/lib/privacy-leads";
 
 describe("privacy lead helpers", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("builds a stable estimate reference code from the tool and email", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-03-24T14:00:00.000Z"));
 
     const code = buildEstimateReferenceCode({
-      source: "landing-zone",
+      source: "architecture-review",
       email: "Owner@AcmeCloud.com",
     });
 
-    expect(code).toMatch(/^ZK-LZ-20260324-[A-F0-9]{6}$/);
+    expect(code).toMatch(/^ZK-ARCH-20260324-[A-F0-9]{6}$/);
+  });
+
+  it("builds a run-scoped unique estimate reference code when a run key is present", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-24T14:00:00.000Z"));
+
+    const code = buildUniqueEstimateReferenceCode({
+      source: "zokorp-validator",
+      email: "Owner@AcmeCloud.com",
+      runKey: "validator-run-123",
+    });
+
+    expect(code).toMatch(/^ZK-VAL-20260324-[A-F0-9]{6}-[A-F0-9]{4}$/);
   });
 
   it("creates the same fingerprint hash for the same logical submission payload", () => {
     const first = hashSubmissionFingerprint({
-      toolName: "landing-zone",
+      toolName: "architecture-review",
       email: "owner@acmecloud.com",
       payload: {
         companyName: "Acme Cloud",
@@ -43,7 +65,7 @@ describe("privacy lead helpers", () => {
     });
 
     const second = hashSubmissionFingerprint({
-      toolName: "landing-zone",
+      toolName: "architecture-review",
       email: "OWNER@ACMECLOUD.COM",
       payload: {
         answers: {
@@ -92,7 +114,7 @@ describe("privacy lead helpers", () => {
     const result = await recordLeadEvent({
       leadId: "lead_2",
       aggregate: {
-        source: "cloud-cost",
+        source: "architecture-review",
         deliveryState: "sent",
         crmSyncState: "pending",
         saveForFollowUp: false,

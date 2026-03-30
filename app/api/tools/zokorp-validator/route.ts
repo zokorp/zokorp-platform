@@ -8,9 +8,13 @@ import { decrementUsesAtomically, requireEntitlement } from "@/lib/entitlements"
 import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { maxUploadBytes, isAllowedFileType } from "@/lib/security";
+import { buildUniqueEstimateReferenceCode } from "@/lib/privacy-leads";
 import { parseValidatorInput } from "@/lib/validator";
+import { buildValidatorEmailContent, buildValidatorEstimate, sendValidatorResultsEmail } from "@/lib/validator-delivery";
 import { getValidatorTargetOptions, resolveValidatorTargetContext } from "@/lib/validator-library";
 import { VALIDATION_PROFILES } from "@/lib/zokorp-validator-engine";
+import { syncZohoInvoiceEstimate } from "@/lib/zoho-invoice";
+import { recordEstimateCompanion } from "@/lib/estimate-companions";
 import { CreditTier, EntitlementStatus } from "@prisma/client";
 
 export const runtime = "nodejs";
@@ -135,6 +139,106 @@ export async function POST(request: Request) {
       target: selectedTarget,
       additionalContext: parsedForm.data.additionalContext,
     });
+    const estimate = buildValidatorEstimate(result.report);
+    const estimateReferenceCode =
+      user.email
+        ? buildUniqueEstimateReferenceCode({
+            source: "zokorp-validator",
+            email: user.email,
+            generatedAtISO: new Date().toISOString(),
+            runKey: `${user.id}:${file.name}:${buffer.length}:${result.report.rulepack.id}`,
+          })
+        : result.report.rulepack.id;
+    const quoteCompanionResult =
+      estimate.quoteUsd > 0 && user.email
+        ? await syncZohoInvoiceEstimate({
+            email: user.email,
+            fullName: user.name ?? null,
+            serviceLabel: `${result.report.profileLabel} remediation estimate`,
+            referenceNumber: estimateReferenceCode,
+            notes: [
+              `Profile: ${parsedForm.data.validationProfile}`,
+              `Score: ${result.report.score}%`,
+              selectedTarget ? `Checklist target: ${selectedTarget.label}` : "Checklist target: default",
+              `Estimated effort: ${estimate.estimatedHoursTotal} hours`,
+              ...estimate.lineItems.map(
+                (lineItem) =>
+                  `Scope: ${lineItem.serviceLineLabel} (${lineItem.status}, ${lineItem.estimatedHours}h, $${lineItem.amountUsd})`,
+              ),
+            ],
+            lineItems: estimate.lineItems.map((lineItem) => ({
+              name: lineItem.serviceLineLabel,
+              description: lineItem.publicFixSummary,
+              rate: lineItem.amountUsd,
+            })),
+          })
+        : {
+            ok: false as const,
+            status: "not_configured" as const,
+            error: "QUOTE_COMPANION_SKIPPED",
+            referenceNumber: estimateReferenceCode,
+          };
+    const quoteCompanion = quoteCompanionResult.ok
+      ? {
+          status: "created" as const,
+          provider: "zoho-invoice" as const,
+          estimateId: quoteCompanionResult.estimateId,
+          estimateNumber: quoteCompanionResult.estimateNumber ?? quoteCompanionResult.referenceNumber,
+        }
+      : {
+          status: quoteCompanionResult.status === "timeout" ? "failed" : quoteCompanionResult.status,
+          provider: quoteCompanionResult.status === "not_configured" ? null : ("zoho-invoice" as const),
+          estimateId: "estimateId" in quoteCompanionResult ? quoteCompanionResult.estimateId : undefined,
+          estimateNumber: null,
+          error: quoteCompanionResult.error,
+        };
+    const emailContent = buildValidatorEmailContent({
+      report: result.report,
+      estimate,
+      toEmail: user.email ?? "",
+      officialEstimateReference: quoteCompanion.status === "created" ? quoteCompanion.estimateNumber : null,
+    });
+    const emailDelivery = user.email
+      ? await sendValidatorResultsEmail({
+          to: user.email,
+          subject: emailContent.subject,
+          text: emailContent.text,
+          html: emailContent.html,
+        })
+      : {
+          ok: false,
+          status: "not_configured" as const,
+          error: "USER_EMAIL_MISSING",
+        };
+
+    if (user.email) {
+      try {
+        await recordEstimateCompanion({
+          userId: user.id,
+          source: "zokorp-validator",
+          sourceRecordKey: estimateReferenceCode,
+          sourceLabel: `${result.report.profileLabel} remediation estimate`,
+          provider: quoteCompanion.provider,
+          status: quoteCompanion.status,
+          referenceCode: estimateReferenceCode,
+          customerEmail: user.email,
+          customerName: user.name ?? null,
+          amountUsd: estimate.quoteUsd,
+          externalId: quoteCompanion.estimateId,
+          externalNumber: quoteCompanion.estimateNumber ?? null,
+          summary: estimate.summary,
+          metadata: {
+            profile: parsedForm.data.validationProfile,
+            targetId: selectedTarget?.id ?? null,
+            targetLabel: selectedTarget?.label ?? null,
+            estimatedHoursTotal: estimate.estimatedHoursTotal,
+            slaLabel: estimate.slaLabel,
+          },
+        });
+      } catch (error) {
+        console.error("Failed to persist validator estimate companion", error);
+      }
+    }
 
     const decrementResult = await decrementUsesAtomically({
       userId: user.id,
@@ -196,6 +300,15 @@ export async function POST(request: Request) {
             targetLabel: selectedTarget?.label ?? null,
             score: result.report.score,
             rulepackId: result.report.rulepack.id,
+            estimateReferenceCode,
+            deliveryStatus: emailDelivery.status,
+            estimateQuoteUsd: estimate.quoteUsd,
+            estimateHoursTotal: estimate.estimatedHoursTotal,
+            estimateSla: estimate.slaLabel,
+            quoteCompanionStatus: quoteCompanion.status,
+            quoteCompanionProvider: quoteCompanion.provider,
+            quoteCompanionReference: quoteCompanion.status === "created" ? quoteCompanion.estimateNumber : null,
+            quoteCompanionError: quoteCompanion.status === "failed" ? quoteCompanion.error : null,
             redactions: result.meta?.redactions ?? null,
             controlCalibrationTotal: result.report.controlCalibration?.totalControls ?? null,
             adminBypass: entitlementAccess.adminBypass,
@@ -215,6 +328,9 @@ export async function POST(request: Request) {
       reviewedWorkbookMimeType: result.reviewedWorkbookMimeType,
       remainingUses: remainingUsesForProfile,
       adminBypass: entitlementAccess.adminBypass,
+      emailDeliveryStatus: emailDelivery.status,
+      estimate,
+      quoteCompanion,
     });
   } catch (error) {
     if (error instanceof Error) {

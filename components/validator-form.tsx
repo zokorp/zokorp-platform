@@ -28,6 +28,33 @@ type ValidatorResponse = {
   reviewedWorkbookMimeType?: string;
   remainingUses?: number;
   adminBypass?: boolean;
+  emailDeliveryStatus?: "sent" | "failed" | "not_configured";
+  estimate?: {
+    quoteUsd: number;
+    estimatedHoursTotal: number;
+    slaLabel: string;
+    summary: string;
+    nextStep: string;
+    lineItems: Array<{
+      catalogKey: string;
+      ruleId: string;
+      title: string;
+      status: "PARTIAL" | "MISSING";
+      severity: "CRITICAL" | "IMPORTANT" | "ADVISORY" | "PACKAGE";
+      serviceLineLabel: string;
+      publicFixSummary: string;
+      amountUsd: number;
+      estimatedHours: number;
+      source: "catalog" | "package";
+    }>;
+  };
+  quoteCompanion?: {
+    status: "created" | "failed" | "not_configured";
+    provider: "zoho-invoice" | null;
+    estimateId?: string;
+    estimateNumber?: string | null;
+    error?: string;
+  };
   error?: string;
 };
 
@@ -75,6 +102,12 @@ function statusVariant(status: ValidationCheckStatus): "success" | "warning" | "
     case "MISSING":
       return "danger";
   }
+}
+
+function formatHours(value: number) {
+  const rounded = Math.round(value * 10) / 10;
+  const label = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+  return `${label} hour${rounded === 1 ? "" : "s"}`;
 }
 
 export function ValidatorForm({
@@ -465,7 +498,7 @@ export function ValidatorForm({
               <Button type="submit" loading={isLoading} disabled={!canSubmitNow}>
                 {isLoading ? "Processing..." : "Process File"}
               </Button>
-              <p className="text-xs text-slate-500">Results stay on this page and include downloadable edit guidance when available.</p>
+              <p className="text-xs text-slate-500">Results stay on screen and also attempt email delivery when platform email is configured.</p>
             </div>
           </form>
         </CardContent>
@@ -524,6 +557,87 @@ export function ValidatorForm({
                   </Button>
                 </div>
               </Alert>
+            ) : null}
+
+            {result?.estimate ? (
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-2xl border border-border bg-white/90 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Estimate</p>
+                  <p className="mt-2 font-display text-3xl font-semibold text-slate-900">
+                    {new Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: "USD",
+                      maximumFractionDigits: 0,
+                    }).format(result.estimate.quoteUsd)}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">Target SLA: {result.estimate.slaLabel}</p>
+                  <p className="mt-1 text-xs text-slate-500">Estimated effort: {formatHours(result.estimate.estimatedHoursTotal)}</p>
+                </div>
+                <div className="rounded-2xl border border-border bg-white/90 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Delivery status</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900">
+                    {result.emailDeliveryStatus === "sent"
+                      ? "Results emailed to your account"
+                      : result.emailDeliveryStatus === "failed"
+                        ? "Email delivery failed, but the report is still on screen"
+                        : "Email delivery is not configured in this environment"}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">{result.estimate.nextStep}</p>
+                </div>
+                <div className="rounded-2xl border border-border bg-white/90 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Formal quote companion</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900">
+                    {result.quoteCompanion?.status === "created"
+                      ? `Zoho estimate ${result.quoteCompanion.estimateNumber ?? result.quoteCompanion.estimateId}`
+                      : result.quoteCompanion?.status === "failed"
+                        ? "Zoho estimate creation failed"
+                        : "Zoho estimate is not configured in this environment"}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {result.quoteCompanion?.status === "created"
+                      ? "The remediation estimate was mirrored into Zoho Invoice for follow-up."
+                      : result.quoteCompanion?.status === "failed"
+                        ? result.quoteCompanion.error ?? "Zoho estimate creation failed."
+                        : "Customer-facing report delivery still succeeded independently."}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
+            {result?.estimate?.lineItems.length ? (
+              <Card className="rounded-3xl p-5">
+                <CardHeader>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Estimated Scope</p>
+                  <h5 className="font-display text-2xl font-semibold text-slate-900">What the remediation estimate covers</h5>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {result.estimate.lineItems.map((lineItem) => (
+                    <article key={lineItem.catalogKey} className="rounded-2xl border border-border bg-white p-4 shadow-[var(--shadow-soft)]">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold text-slate-900">{lineItem.serviceLineLabel}</p>
+                          <p className="text-sm leading-6 text-slate-600">{lineItem.publicFixSummary}</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant={lineItem.status === "MISSING" ? "danger" : "warning"}>{lineItem.status}</Badge>
+                          <Badge variant={lineItem.severity === "PACKAGE" ? "secondary" : "info"}>{lineItem.severity}</Badge>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-4 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        <span>
+                          {new Intl.NumberFormat("en-US", {
+                            style: "currency",
+                            currency: "USD",
+                            maximumFractionDigits: 0,
+                          }).format(lineItem.amountUsd)}
+                        </span>
+                        <span>{formatHours(lineItem.estimatedHours)}</span>
+                        <span>{lineItem.ruleId}</span>
+                      </div>
+                    </article>
+                  ))}
+                </CardContent>
+              </Card>
             ) : null}
 
             <div className="grid gap-3 md:grid-cols-3">

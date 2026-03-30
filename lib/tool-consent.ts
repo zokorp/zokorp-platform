@@ -1,11 +1,6 @@
 import { z } from "zod";
 
-export const TOOL_EVENT_SOURCES = [
-  "architecture-review",
-  "landing-zone",
-  "cloud-cost",
-  "ai-decider",
-] as const;
+export const TOOL_EVENT_SOURCES = ["architecture-review", "zokorp-validator"] as const;
 
 export type ToolEventSource = (typeof TOOL_EVENT_SOURCES)[number];
 
@@ -97,19 +92,11 @@ export function scoreBandForScore(score: number | null | undefined) {
     return "90-100";
   }
 
-  if (rounded >= 75) {
-    return "75-89";
+  if (rounded >= 60) {
+    return "60-89";
   }
 
-  if (rounded >= 50) {
-    return "50-74";
-  }
-
-  if (rounded >= 25) {
-    return "25-49";
-  }
-
-  return "0-24";
+  return "0-59";
 }
 
 export function estimateBandForRange(low: number | null | undefined, high: number | null | undefined) {

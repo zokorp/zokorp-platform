@@ -22,10 +22,10 @@ describe("tool consent and retention policy", () => {
 
   it("derives stable score bands from numeric scores", () => {
     expect(scoreBandForScore(96)).toBe("90-100");
-    expect(scoreBandForScore(78)).toBe("75-89");
-    expect(scoreBandForScore(54)).toBe("50-74");
-    expect(scoreBandForScore(31)).toBe("25-49");
-    expect(scoreBandForScore(8)).toBe("0-24");
+    expect(scoreBandForScore(78)).toBe("60-89");
+    expect(scoreBandForScore(54)).toBe("0-59");
+    expect(scoreBandForScore(31)).toBe("0-59");
+    expect(scoreBandForScore(8)).toBe("0-59");
   });
 
   it("derives an estimate band from a low/high range", () => {
