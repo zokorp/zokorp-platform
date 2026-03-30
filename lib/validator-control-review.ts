@@ -6,6 +6,7 @@ import type {
   ValidationTargetContext,
   ValidationReport,
 } from "@/lib/zokorp-validator-engine";
+import { getFtrLaunchV1SafeRewrite } from "@/lib/validator-ftr-launch-v1-catalog";
 import { encodeCellReference, readXlsxWorkbookRows } from "@/lib/workbook";
 
 type ControlConfidence = "HIGH" | "MEDIUM" | "LOW";
@@ -27,6 +28,16 @@ const SIGNAL_PATTERNS = {
   metric: /\b\d+(?:\.\d+)?\s*(%|percent|hours?|days?|weeks?|months?|tickets?|incidents?|controls?|findings?|items?)\b/i,
   scope: /\b(scope|in[\s-]?scope|out[\s-]?of[\s-]?scope|boundary|environment|workload|region|account)\b/i,
 };
+
+const CREDENTIAL_LIKE_PATTERNS = [
+  /\bAKIA[0-9A-Z]{16}\b/g,
+  /\bASIA[0-9A-Z]{16}\b/g,
+  /\bAWS_ACCESS_KEY_ID\s*=\s*[^\s|;]+/gi,
+  /\bAWS_SECRET_ACCESS_KEY\s*=\s*[^\s|;]+/gi,
+  /\bSECRET_ACCESS_KEY\s*=\s*[^\s|;]+/gi,
+  /\bpassword\s*=\s*[^\s|;]+/gi,
+  /\btoken\s*=\s*[^\s|;]+/gi,
+];
 
 type ColumnHints = {
   id: number | null;
@@ -281,17 +292,110 @@ function normalizeResponseForSuggestion(response: string): string {
   return clampCellValue(cleaned, 2200);
 }
 
+function standardMissingEvidencePlaceholder() {
+  return (
+    getFtrLaunchV1SafeRewrite("rw_standardize_evidence_pointers")?.placeholder_policy ??
+    'MISSING EVIDENCE: Evidence pointer (doc/page/section/paragraph). This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.'
+  );
+}
+
+function normalizeEvidencePointerSuggestion(response: string) {
+  const normalized = normalizeResponseForSuggestion(response);
+  if (/doc:\s*/i.test(normalized) && /page:\s*/i.test(normalized)) {
+    return normalized;
+  }
+
+  return `Doc: [TBD], Page: [TBD], Section: [TBD], Paragraph: [TBD]. ${standardMissingEvidencePlaceholder()}`;
+}
+
+function sanitizeCredentialExamples(response: string) {
+  let sanitized = response;
+
+  for (const pattern of CREDENTIAL_LIKE_PATTERNS) {
+    sanitized = sanitized.replace(pattern, (match) => {
+      const upper = match.toUpperCase();
+      if (upper.includes("AWS_ACCESS_KEY_ID")) {
+        return "AWS_ACCESS_KEY_ID=<REDACTED_AWS_ACCESS_KEY_ID>";
+      }
+      if (upper.includes("AWS_SECRET_ACCESS_KEY") || upper.includes("SECRET_ACCESS_KEY")) {
+        return "AWS_SECRET_ACCESS_KEY=<REDACTED_AWS_SECRET_ACCESS_KEY>";
+      }
+      if (upper.startsWith("AKIA") || upper.startsWith("ASIA")) {
+        return "<REDACTED_AWS_ACCESS_KEY_ID>";
+      }
+      if (upper.includes("PASSWORD")) {
+        return "password=<REDACTED_PASSWORD>";
+      }
+      if (upper.includes("TOKEN")) {
+        return "token=<REDACTED_TOKEN>";
+      }
+      return "<REDACTED_SECRET>";
+    });
+  }
+
+  return `${normalizeResponseForSuggestion(sanitized)}\nDo not hardcode credentials. Use IAM roles or a centralized secret store.`;
+}
+
+function containsCredentialLikePattern(response: string) {
+  return CREDENTIAL_LIKE_PATTERNS.some((pattern) => {
+    pattern.lastIndex = 0;
+    return pattern.test(response);
+  });
+}
+
+function looksLikeIncidentPlanRequirement(requirement: string) {
+  return /\bincident|severity|on-?call|triage|post-incident|customer communication\b/i.test(requirement);
+}
+
+function buildIncidentPlanTemplate() {
+  return [
+    "## Incident Management Plan",
+    "- Severity levels: [TBD]",
+    "- Roles/on-call: [TBD]",
+    "- Triage steps: [TBD]",
+    "- Customer communication: [TBD]",
+    "MISSING EVIDENCE: Incident plan operational details (roles/steps/maintenance). This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+  ].join("\n");
+}
+
+function looksLikeArchitectureFactRewrite(requirement: string, response: string) {
+  return (
+    /\bhosting|deployment model|aws-native|run on aws|component type\b/i.test(requirement) &&
+    /\brewrite|make it sound|say everything runs on aws|aws-native\b/i.test(response)
+  );
+}
+
 function buildSuggestedEdit(input: {
+  profile: ValidationProfile;
+  requirement: string;
   response: string;
   missingSignals: string[];
 }): string {
+  if (input.profile === "FTR" && looksLikeArchitectureFactRewrite(input.requirement, input.response)) {
+    return "Rewrite refused. MISSING EVIDENCE: factual hosting/deployment model confirmation. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.";
+  }
+
+  if (input.profile === "FTR" && containsCredentialLikePattern(input.response)) {
+    return clampCellValue(sanitizeCredentialExamples(input.response), 30000);
+  }
+
+  if (input.profile === "FTR" && looksLikeIncidentPlanRequirement(input.requirement) && input.response.trim().length < 160) {
+    return clampCellValue(buildIncidentPlanTemplate(), 30000);
+  }
+
   if (!input.response.trim()) {
+    if (input.profile === "FTR" && looksLikeIncidentPlanRequirement(input.requirement)) {
+      return clampCellValue(buildIncidentPlanTemplate(), 30000);
+    }
+
     return "No response provided. Add factual evidence only from your own records: [scope], [owner], [evidence reference], [date], and [metric where available].";
   }
 
   const base = normalizeResponseForSuggestion(input.response);
   if (input.missingSignals.length === 0) {
-    return base;
+    return input.profile === "FTR" && /page|section|paragraph|evidence pointer/i.test(input.requirement)
+      ? normalizeEvidencePointerSuggestion(base)
+      : base;
   }
 
   const addOns: string[] = [];
@@ -315,10 +419,17 @@ function buildSuggestedEdit(input: {
   }
 
   if (addOns.length === 0) {
-    return base;
+    return input.profile === "FTR" && input.missingSignals.includes("evidence_ref")
+      ? normalizeEvidencePointerSuggestion(base)
+      : base;
   }
 
-  return clampCellValue(`${base} | Strengthen with: ${addOns.join(" ")}`, 30000);
+  const strengthenedBase =
+    input.profile === "FTR" && input.missingSignals.includes("evidence_ref")
+      ? normalizeEvidencePointerSuggestion(base)
+      : base;
+
+  return clampCellValue(`${strengthenedBase} | Strengthen with: ${addOns.join(" ")}`, 30000);
 }
 
 function evaluateControl(input: {
@@ -343,7 +454,12 @@ function evaluateControl(input: {
       confidence: "HIGH",
       missingSignals: missing,
       recommendation: recommendationForMissingSignals(missing),
-      suggestedEdit: buildSuggestedEdit({ response, missingSignals: missing }),
+      suggestedEdit: buildSuggestedEdit({
+        profile: input.profile,
+        requirement,
+        response,
+        missingSignals: missing,
+      }),
     };
   }
 
@@ -408,7 +524,12 @@ function evaluateControl(input: {
     confidence,
     missingSignals: uniqueMissing,
     recommendation: recommendationForMissingSignals(uniqueMissing),
-    suggestedEdit: buildSuggestedEdit({ response, missingSignals: uniqueMissing }),
+    suggestedEdit: buildSuggestedEdit({
+      profile: input.profile,
+      requirement,
+      response,
+      missingSignals: uniqueMissing,
+    }),
   };
 }
 

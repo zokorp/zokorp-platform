@@ -1,3 +1,4 @@
+import { FTR_LAUNCH_V1_RULES, type FtrEstimatePolicyBand } from "@/lib/validator-ftr-launch-v1-catalog";
 import type {
   ValidationCheckStatus,
   ValidationProfile,
@@ -38,6 +39,9 @@ type ValidatorEstimateCatalogEntry = {
   pricingBand: PricingBand;
   serviceLineLabel: string;
   publicFixSummary: string;
+  estimatePolicyBand?: FtrEstimatePolicyBand;
+  remediationHoursLow?: number;
+  remediationHoursHigh?: number;
 };
 
 type RateCard = {
@@ -100,11 +104,30 @@ function createCatalogEntry(input: {
   pricingBand: PricingBand;
   serviceLineLabel: string;
   publicFixSummary: string;
+  estimatePolicyBand?: FtrEstimatePolicyBand;
+  remediationHoursLow?: number;
+  remediationHoursHigh?: number;
 }) {
   return {
     ...input,
     catalogKey: buildCatalogKey(input.profile, input.ruleId),
   } satisfies ValidatorEstimateCatalogEntry;
+}
+
+function ftrPricingBandForRule(rule: (typeof FTR_LAUNCH_V1_RULES)[number]): PricingBand {
+  if (rule.estimate_policy_band === "consultation_only") {
+    return "critical";
+  }
+
+  if (rule.launch_priority === "critical") {
+    return "critical";
+  }
+
+  if (rule.launch_priority === "high") {
+    return "important";
+  }
+
+  return "advisory";
 }
 
 const SDP_SRP_SHARED_RULES = [
@@ -159,60 +182,25 @@ const SDP_SRP_SHARED_RULES = [
 ] as const;
 
 export const VALIDATOR_ESTIMATE_CATALOG: ValidatorEstimateCatalogEntry[] = [
-  createCatalogEntry({
-    profile: "FTR",
-    ruleId: "scope",
-    title: "Scope and objectives are defined",
-    severity: "CRITICAL",
-    pricingBand: "critical",
-    serviceLineLabel: "Scope and objectives rewrite",
-    publicFixSummary: "Clarify the objective, in-scope systems, and out-of-scope boundaries so the reviewer knows exactly what is being submitted.",
-  }),
-  createCatalogEntry({
-    profile: "FTR",
-    ruleId: "architecture",
-    title: "Architecture context is documented",
-    severity: "CRITICAL",
-    pricingBand: "critical",
-    serviceLineLabel: "Architecture context evidence package",
-    publicFixSummary: "Explain the architecture and integration flow clearly enough that the reviewer can trace the technical story without guessing.",
-  }),
-  createCatalogEntry({
-    profile: "FTR",
-    ruleId: "security",
-    title: "Security controls are referenced",
-    severity: "CRITICAL",
-    pricingBand: "critical",
-    serviceLineLabel: "Security control evidence cleanup",
-    publicFixSummary: "Document IAM, encryption, logging, and control ownership in concrete reviewer-facing terms.",
-  }),
-  createCatalogEntry({
-    profile: "FTR",
-    ruleId: "testing",
-    title: "Testing evidence is present",
-    severity: "IMPORTANT",
-    pricingBand: "important",
-    serviceLineLabel: "Testing evidence hardening",
-    publicFixSummary: "Add explicit test cases, outcomes, and validation criteria instead of generic testing claims.",
-  }),
-  createCatalogEntry({
-    profile: "FTR",
-    ruleId: "risks",
-    title: "Risks and mitigations are tracked",
-    severity: "IMPORTANT",
-    pricingBand: "important",
-    serviceLineLabel: "Risk register cleanup",
-    publicFixSummary: "Capture material risks, ownership, and mitigation status in a format the reviewer can verify quickly.",
-  }),
-  createCatalogEntry({
-    profile: "FTR",
-    ruleId: "approval",
-    title: "Review/approval trail exists",
-    severity: "IMPORTANT",
-    pricingBand: "hygiene",
-    serviceLineLabel: "Approval trail cleanup",
-    publicFixSummary: "Add sign-off, dates, and reviewer ownership so the package reads like a governed document instead of a draft.",
-  }),
+  ...FTR_LAUNCH_V1_RULES.map((rule) =>
+    createCatalogEntry({
+      profile: "FTR",
+      ruleId: rule.id,
+      title: rule.control_name,
+      severity:
+        rule.launch_priority === "critical"
+          ? "CRITICAL"
+          : rule.launch_priority === "high"
+            ? "IMPORTANT"
+            : "ADVISORY",
+      pricingBand: ftrPricingBandForRule(rule),
+      serviceLineLabel: rule.estimate_line_item_label,
+      publicFixSummary: rule.remediation_summary,
+      estimatePolicyBand: rule.estimate_policy_band,
+      remediationHoursLow: rule.remediation_hours_low,
+      remediationHoursHigh: rule.remediation_hours_high,
+    }),
+  ),
   ...(["SDP", "SRP"] as const).flatMap((profile) =>
     SDP_SRP_SHARED_RULES.map((entry) =>
       createCatalogEntry({
@@ -415,6 +403,138 @@ function fallbackCatalogEntry(
   });
 }
 
+function midpointHours(low?: number, high?: number) {
+  if (typeof low !== "number" && typeof high !== "number") {
+    return 1;
+  }
+
+  if (typeof low === "number" && typeof high === "number") {
+    return roundHours((low + high) / 2);
+  }
+
+  return roundHours(low ?? high ?? 1);
+}
+
+function ftrLineItemHours(
+  entry: ValidatorEstimateCatalogEntry,
+  status: Exclude<ValidationCheckStatus, "PASS">,
+) {
+  if (status === "PARTIAL") {
+    return roundHours(entry.remediationHoursLow ?? 1);
+  }
+
+  return midpointHours(entry.remediationHoursLow, entry.remediationHoursHigh);
+}
+
+function ftrLineItemAmount(hours: number) {
+  return Math.max(100, roundToNearest(hours * 125, 25));
+}
+
+function ftrConsultationOnlySummary(report: ValidationReport) {
+  return {
+    quoteUsd: 0,
+    estimatedHoursTotal: 0,
+    slaLabel: "Consultation required",
+    summary:
+      "The package is not safely auto-scopeable. The current gaps point to missing core evidence, contradictions, or risky technical/security issues that should not be turned into a blind payable remediation quote.",
+    nextStep:
+      report.score < 60
+        ? "Book a consultation and rebuild the submission pack before asking for remediation pricing."
+        : "Resolve the consultation-only blockers first, then rerun ZoKorpValidator for a bounded remediation estimate.",
+    lineItems: [] as ValidatorEstimateLineItem[],
+  };
+}
+
+function ftrSummaryForScore(report: ValidationReport, lineItems: ValidatorEstimateLineItem[]) {
+  if (report.score >= 90) {
+    return {
+      summary:
+        "The package is strong. Any quote here is for polish, packaging consistency, and reviewer-facing cleanup rather than deeper FTR remediation.",
+      nextStep:
+        "Use the remaining suggestions to tighten presentation quality, then submit or rerun the validator after the last cleanup pass.",
+    };
+  }
+
+  return {
+    summary: `The package has documentation-bounded gaps across ${lineItems.length} scoped remediation area${lineItems.length === 1 ? "" : "s"}. This estimate assumes the architecture and factual evidence are fundamentally stable.`,
+    nextStep:
+      "Fix the listed evidence and wording gaps, then rerun the validator before submitting the package.",
+  };
+}
+
+function buildFtrValidatorEstimate(report: ValidationReport): ValidatorEstimate {
+  const actionableChecks = report.checks.filter((check) => check.status !== "PASS");
+  const hasConsultationOnlyBlocker = actionableChecks.some((check) => {
+    const entry = getValidatorEstimateCatalogEntry("FTR", check.id);
+    return entry?.estimatePolicyBand === "consultation_only" && check.status === "MISSING";
+  });
+
+  if (hasConsultationOnlyBlocker || report.score < 60) {
+    return ftrConsultationOnlySummary(report);
+  }
+
+  const lineItems: ValidatorEstimateLineItem[] = actionableChecks.map((check) => {
+    const status = check.status as Exclude<ValidationCheckStatus, "PASS">;
+    const catalogEntry = getValidatorEstimateCatalogEntry("FTR", check.id) ?? fallbackCatalogEntry("FTR", check);
+    const estimatedHours = ftrLineItemHours(catalogEntry, status);
+
+    return {
+      catalogKey: catalogEntry.catalogKey,
+      ruleId: check.id,
+      title: catalogEntry.title,
+      status,
+      severity: catalogEntry.severity,
+      serviceLineLabel: catalogEntry.serviceLineLabel,
+      publicFixSummary: catalogEntry.publicFixSummary,
+      amountUsd: ftrLineItemAmount(estimatedHours),
+      estimatedHours,
+      source: "catalog",
+    };
+  });
+
+  const calibrationItem = controlCalibrationLineItem(report);
+  if (calibrationItem) {
+    lineItems.push(calibrationItem);
+  }
+
+  lineItems.sort((left, right) => {
+    const statusDelta = statusRank(right.status) - statusRank(left.status);
+    if (statusDelta !== 0) {
+      return statusDelta;
+    }
+
+    const severityDelta = severityRank(right.severity) - severityRank(left.severity);
+    if (severityDelta !== 0) {
+      return severityDelta;
+    }
+
+    return right.estimatedHours - left.estimatedHours;
+  });
+
+  let quoteUsd = lineItems.reduce((sum, item) => sum + item.amountUsd, 0);
+  let estimatedHoursTotal = roundHours(lineItems.reduce((sum, item) => sum + item.estimatedHours, 0));
+
+  if (report.score >= 90) {
+    const polishItem = polishGapLineItem("FTR", quoteUsd, estimatedHoursTotal);
+    if (polishItem) {
+      lineItems.push(polishItem);
+      quoteUsd += polishItem.amountUsd;
+      estimatedHoursTotal = roundHours(estimatedHoursTotal + polishItem.estimatedHours);
+    }
+  }
+
+  const summary = ftrSummaryForScore(report, lineItems);
+
+  return {
+    quoteUsd,
+    estimatedHoursTotal,
+    slaLabel: slaLabelForHours(estimatedHoursTotal),
+    summary: summary.summary,
+    nextStep: summary.nextStep,
+    lineItems,
+  };
+}
+
 function polishGapLineItem(profile: ValidationProfile, currentUsd: number, currentHours: number) {
   const polishFloor = PROFILE_POLISH_FLOOR[profile];
   if (currentUsd >= polishFloor.quoteUsd) {
@@ -508,6 +628,10 @@ export function getValidatorEstimateCatalogEntry(profile: ValidationProfile, rul
 }
 
 export function buildValidatorEstimate(report: ValidationReport): ValidatorEstimate {
+  if (report.profile === "FTR") {
+    return buildFtrValidatorEstimate(report);
+  }
+
   const lineItems: ValidatorEstimateLineItem[] = report.checks
     .filter((check) => check.status !== "PASS")
     .map((check) => {

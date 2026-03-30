@@ -281,6 +281,7 @@ export function ValidatorForm({
       : "Download Reviewed Excel";
 
   const report = result?.report ?? null;
+  const consultationOnlyEstimate = Boolean(result?.estimate && result.estimate.quoteUsd === 0 && result.estimate.lineItems.length === 0);
   const hasReviewedWorkbook = Boolean(result?.reviewedWorkbookBase64 && result?.reviewedWorkbookFileName);
   const remainingUses = result?.remainingUses;
   const rawOutput = result?.output ?? "";
@@ -592,11 +593,13 @@ export function ValidatorForm({
                 <div className="rounded-2xl border border-border bg-white/90 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Estimate</p>
                   <p className="mt-2 font-display text-3xl font-semibold text-slate-900">
-                    {new Intl.NumberFormat("en-US", {
-                      style: "currency",
-                      currency: "USD",
-                      maximumFractionDigits: 0,
-                    }).format(result.estimate.quoteUsd)}
+                    {consultationOnlyEstimate
+                      ? "Consultation only"
+                      : new Intl.NumberFormat("en-US", {
+                          style: "currency",
+                          currency: "USD",
+                          maximumFractionDigits: 0,
+                        }).format(result.estimate.quoteUsd)}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">Target SLA: {result.estimate.slaLabel}</p>
                   <p className="mt-1 text-xs text-slate-500">Estimated effort: {formatHours(result.estimate.estimatedHoursTotal)}</p>
@@ -615,14 +618,18 @@ export function ValidatorForm({
                 <div className="rounded-2xl border border-border bg-white/90 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Formal quote companion</p>
                   <p className="mt-2 text-sm font-semibold text-slate-900">
-                    {result.quoteCompanion?.status === "created"
+                    {consultationOnlyEstimate
+                      ? "No auto-quote generated"
+                      : result.quoteCompanion?.status === "created"
                       ? `Zoho estimate ${result.quoteCompanion.estimateNumber ?? result.quoteCompanion.estimateId}`
                       : result.quoteCompanion?.status === "failed"
                         ? "Zoho estimate creation failed"
                         : "Zoho estimate is not configured in this environment"}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
-                    {result.quoteCompanion?.status === "created"
+                    {consultationOnlyEstimate
+                      ? "This run stayed consultation-first because the current submission is not safe to auto-scope as a payable remediation quote."
+                      : result.quoteCompanion?.status === "created"
                       ? "The remediation estimate was mirrored into Zoho Invoice for follow-up."
                       : result.quoteCompanion?.status === "failed"
                         ? result.quoteCompanion.error ?? "Zoho estimate creation failed."

@@ -1,0 +1,84 @@
+[
+  {
+    "id": "rw_standardize_evidence_pointers",
+    "applies_to_rule_ids": [
+      "self_assessment_complete_no_blanks",
+      "cd_intro_use_cases_present",
+      "cd_intro_deployment_overview_and_resources"
+    ],
+    "scenario": "Checklist items require link + page/section/paragraph but the customer used inconsistent formats.",
+    "rewrite_allowed": true,
+    "allowed_transformations": [
+      "Normalize evidence pointers into a consistent format: \"Doc: <name>, Page: <n>, Section: <title>, Paragraph: <n>\"",
+      "Fix grammar and punctuation without changing meaning"
+    ],
+    "forbidden_transformations": [
+      "Invent page numbers or sections",
+      "Claim evidence exists if it does not"
+    ],
+    "placeholder_policy": "If a pointer is missing, insert: \"MISSING EVIDENCE: Evidence pointer (doc/page/section/paragraph). This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.\"",
+    "example_bad_input": "See deployment guide for details.",
+    "example_safe_output": "Doc: Deployment Guide, Page: [TBD], Section: [TBD], Paragraph: [TBD]. MISSING EVIDENCE: Evidence pointer (doc/page/section/ paragraph). This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "reviewer_warning": "Do not guess references. If missing, use placeholders and mark as incomplete."
+  },
+  {
+    "id": "rw_sanitize_secrets_in_examples",
+    "applies_to_rule_ids": [
+      "ph_no_embedded_credentials"
+    ],
+    "scenario": "Docs contain credential-like strings in examples (keys/tokens/ passwords).",
+    "rewrite_allowed": true,
+    "allowed_transformations": [
+      "Replace credential-like tokens with placeholders (e.g., \"<REDACTED_AWS_ACCESS_KEY_ID>\")",
+      "Add an explicit warning: \"Do not hardcode credentials\""
+    ],
+    "forbidden_transformations": [
+      "Replace with different real-looking keys",
+      "Change authentication approach (e.g., switching to roles) unless the docs already describe it"
+    ],
+    "placeholder_policy": "If the correct secure mechanism is not described, add: \"MISSING EVIDENCE: Secure credential delivery mechanism. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.\"",
+    "example_bad_input": "AWS_ACCESS_KEY_ID=AKIA... AWS_SECRET_ACCESS_KEY=abcd1234",
+    "example_safe_output": "AWS_ACCESS_KEY_ID=<REDACTED_AWS_ACCESS_KEY_ID>\nAWS_SECRET_ACCESS_KEY=<REDACTED_AWS_SECRET_ACCESS_KEY>\nDo not hardcode credentials. Use IAM roles or a centralized secret store.",
+    "reviewer_warning": "If real secrets were present, that is a security incident. Rotate immediately; do not store/echo them."
+  },
+  {
+    "id": "rw_structure_incident_plan_template",
+    "applies_to_rule_ids": [
+      "ph_incident_management_plan_exists"
+    ],
+    "scenario": "Incident plan exists but is a wall of text with unclear roles/ steps.",
+    "rewrite_allowed": true,
+    "allowed_transformations": [
+      "Reformat into headings and bullet steps",
+      "Extract existing role names and place under 'Roles/On-call'",
+      "Add placeholders for missing sections"
+    ],
+    "forbidden_transformations": [
+      "Invent escalation contacts, phone numbers, or tools",
+      "Claim on-call coverage if not stated"
+    ],
+    "placeholder_policy": "Insert placeholders using the standard 'MISSING EVIDENCE' string for missing roles/steps/maintenance date.",
+    "example_bad_input": "We handle incidents quickly and notify customers as needed.",
+    "example_safe_output": "## Incident Management Plan\n- Severity levels: [TBD]\n- Roles/on-call: [TBD]\n- Triage steps: [TBD]\n- Customer communication: [TBD]\nMISSING EVIDENCE: Incident plan operational details (roles/steps/ maintenance). This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "reviewer_warning": "If the plan is missing operational detail, treat as incomplete, not compliant."
+  },
+  {
+    "id": "rw_refuse_rewrite_for_architecture_facts",
+    "applies_to_rule_ids": [
+      "ph_hosting_model_all_critical_on_aws",
+      "component_type_classified"
+    ],
+    "scenario": "Customer asks for rewrite that would change hosting model facts (e.g., 'make it sound AWS-native').",
+    "rewrite_allowed": false,
+    "allowed_transformations": [],
+    "forbidden_transformations": [
+      "Changing hosting/deployment facts",
+      "Adding AWS services not present",
+      "Asserting critical components run on AWS if not true"
+    ],
+    "placeholder_policy": "Refuse and request factual clarification: \"MISSING EVIDENCE: factual hosting/deployment model confirmation.\"",
+    "example_bad_input": "Rewrite this to say everything runs on AWS.",
+    "example_safe_output": "Rewrite refused. MISSING EVIDENCE: factual hosting/ deployment model confirmation. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "reviewer_warning": "Changing architecture facts is hallucination risk. Always refuse."
+  }
+]

@@ -1,0 +1,1070 @@
+[
+  {
+    "id": "component_type_classified",
+    "control_family": "evidence_completeness",
+    "control_name": "Solution component type is classified and correct public checklist path is selected",
+    "launch_priority": "critical",
+    "rule_type": "required",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "customer_facing_description",
+      "architecture_diagram",
+      "deployment_guide",
+      "other"
+    ],
+    "applies_to": "All submissions.",
+    "description": "Determine whether the submission is Partner-Hosted, Customer-Deployed, Marketplace AMI/Container, Data/ML, etc., and select the corresponding public FTR checklist path.",
+    "why_it_matters": "AWS publishes different FTR checklists by component type; validating the wrong one produces wrong findings and unsafe estimates.",
+    "required_evidence": [
+      "A statement of deployment/hosting model (who operates the software and where it runs)",
+      "At least one architecture diagram or deployment description sufficient to classify component type"
+    ],
+    "pass_signals": [
+      "Submission explicitly states hosting model and matches the selected checklist type",
+      "Architecture matches the stated model (e.g., Customer-Deployed runs in customer account)"
+    ],
+    "fail_signals": [
+      "Hosting/deployment model cannot be determined from uploaded docs",
+      "Docs strongly suggest one model but self-assessment is for a different model"
+    ],
+    "partial_credit_logic": "pass=4; partial=2 if classification is probable but not explicit; fail=0 if cannot classify or is clearly mismatched.",
+    "score_weight": 4,
+    "max_partial_credit": 2,
+    "rewrite_allowed": false,
+    "rewrite_policy": "No rewrite. Classification requires factual input from customer.",
+    "rewrite_template": "",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Add a one-page 'Solution Overview' stating hosting model, where components run, and who operates them; align the checklist type.",
+    "remediation_hours_low": 1,
+    "remediation_hours_high": 4,
+    "estimate_line_item_label": "Classify solution type + select correct FTR checklist",
+    "estimate_policy_band": "consultation_only",
+    "official_source_links": [
+      "https://apn-checklists.s3.amazonaws.com/foundational/index/all/ CGFp311uG.html"
+    ],
+    "reviewer_explanation_template": "I could not reliably classify your solution type from the uploaded materials. Evidence needed: {{required_evidence}}. Without the correct checklist path, any pass/fail and any estimate is guesswork.",
+    "customer_summary_snippet": "Your submission does not clearly state which FTR checklist applies, so the package is not safely validateable yet.",
+    "evidence_strength": "strong",
+    "notes": "Implement as a deterministic classifier with a 'cannot determine' outcome; do not guess."
+  },
+  {
+    "id": "checklist_version_in_validity_window",
+    "control_family": "evidence_completeness",
+    "control_name": "Checklist/self-assessment version is within the public validity window",
+    "launch_priority": "high",
+    "rule_type": "document_quality",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "test_evidence",
+      "other"
+    ],
+    "applies_to": "All submissions that include an FTR checklist/spreadsheet or reference a checklist version.",
+    "description": "Detect checklist version/date and confirm it is within the published validity/submission windows.",
+    "why_it_matters": "AWS publishes checklist versions on a schedule and allows submission of previous versions only until specific dates; outdated versions create rework risk.",
+    "required_evidence": [
+      "Checklist or self-assessment file name/version/date OR explicit statement of version used"
+    ],
+    "pass_signals": [
+      "Checklist version aligns to current published validity period or explicitly allowed previous window"
+    ],
+    "fail_signals": [
+      "Checklist is clearly older than the allowed submission window",
+      "Version cannot be determined"
+    ],
+    "partial_credit_logic": "pass=2; partial=1 if version not provable but appears current; fail=0 if clearly outdated.",
+    "score_weight": 2,
+    "max_partial_credit": 1,
+    "rewrite_allowed": false,
+    "rewrite_policy": "No rewrite. Requires correct file selection.",
+    "rewrite_template": "",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Replace checklist/self-assessment with the current public version (or explicitly permitted previous version).",
+    "remediation_hours_low": 1,
+    "remediation_hours_high": 6,
+    "estimate_line_item_label": "Update to current FTR checklist version",
+    "estimate_policy_band": "remediation_estimate",
+    "official_source_links": [
+      "https://apn-checklists.s3.amazonaws.com/foundational/index/all/ CGFp311uG.html"
+    ],
+    "reviewer_explanation_template": "Your checklist version appears to be {{observed_version}}. The public index shows versioning/submission windows; using an out-of-window checklist increases rejection/rework risk.",
+    "customer_summary_snippet": "Use the current public checklist version (or an explicitly permitted previous version) to avoid rework.",
+    "evidence_strength": "strong",
+    "notes": "Parse dates from checklist HTML, filenames, and embedded metadata when possible."
+  },
+  {
+    "id": "required_artifacts_present_for_path",
+    "control_family": "evidence_completeness",
+    "control_name": "Minimum artifact pack for the selected checklist path is present",
+    "launch_priority": "critical",
+    "rule_type": "required",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "architecture_diagram",
+      "deployment_guide",
+      "security_overview",
+      "operations_runbook",
+      "backup_dr_document",
+      "monitoring_logging_document",
+      "support_escalation_plan",
+      "incident_response_document",
+      "test_evidence",
+      "other"
+    ],
+    "applies_to": "All submissions.",
+    "description": "Enforce that core artifacts required or repeatedly referenced by the public checklists are uploaded (at minimum: self-assessment + architecture diagram; plus deployment guide for Customer-Deployed).",
+    "why_it_matters": "AWS Partner Central guidance says you upload self- assessment checklist and architecture diagrams plus other required/supplemental docs; Customer-Deployed requires deployment guide references for many items.",
+    "required_evidence": [
+      "Self-assessment checklist/spreadsheet",
+      "Architecture diagram(s)",
+      "If Customer-Deployed: deployment guide (or equivalent) with page/section references"
+    ],
+    "pass_signals": [
+      "All minimum artifacts for the identified checklist path are uploaded"
+    ],
+    "fail_signals": [
+      "Missing self-assessment checklist/spreadsheet",
+      "Missing architecture diagram(s)",
+      "Customer-Deployed submission missing deployment guide"
+    ],
+    "partial_credit_logic": "pass=6; partial=3 if one non-core supporting doc is missing but core artifacts exist; fail=0 if any core artifact is missing.",
+    "score_weight": 6,
+    "max_partial_credit": 3,
+    "rewrite_allowed": false,
+    "rewrite_policy": "No rewrite. Missing artifacts must be uploaded.",
+    "rewrite_template": "",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Upload the missing core artifacts (self-assessment, architecture diagram, and deployment guide if Customer-Deployed).",
+    "remediation_hours_low": 0,
+    "remediation_hours_high": 2,
+    "estimate_line_item_label": "Assemble minimum FTR submission artifacts",
+    "estimate_policy_band": "consultation_only",
+    "official_source_links": [
+      "https://docs.aws.amazon.com/partner-central/latest/builder-guide/ requesting-ftr.html",
+      "https://apn-checklists.s3.amazonaws.com/foundational/customer-deployed/ customer-deployed/C0hfGvKGP.html",
+      "https://apn-checklists.s3.amazonaws.com/foundational/partner-hosted/ partner-hosted/CVLHEC5X7.html"
+    ],
+    "reviewer_explanation_template": "Core submission artifacts are missing: {{missing_list}}. AWS requires self-assessment + architecture diagrams, and Customer-Deployed controls require deployment-guide references. Without these, a pass/fail review is not honest.",
+    "customer_summary_snippet": "Your package is missing required artifacts, so it cannot be validated for FTR readiness yet.",
+    "evidence_strength": "strong",
+    "notes": "Treat missing core artifacts as hard-stop. Do not quote payable remediation."
+  },
+  {
+    "id": "self_assessment_complete_no_blanks",
+    "control_family": "documentation_quality",
+    "control_name": "Self-assessment is complete (required fields answered; links/page refs provided when requested)",
+    "launch_priority": "high",
+    "rule_type": "document_quality",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "other"
+    ],
+    "applies_to": "All submissions containing a self-assessment spreadsheet/ checklist.",
+    "description": "Check that all required self-assessment items are answered and that any required pointers (links/page/section/paragraph) are provided.",
+    "why_it_matters": "Public checklists repeatedly request explicit page/ section/paragraph pointers for evidence; missing answers create rework and often block review.",
+    "required_evidence": [
+      "Completed self-assessment spreadsheet/checklist with no blank required responses",
+      "Where checklist asks for link + page/section, those fields are filled"
+    ],
+    "pass_signals": [
+      "No blank required fields",
+      "Evidence pointers are present where required"
+    ],
+    "fail_signals": [
+      "Blank required fields",
+      "Evidence pointers missing on items that request them"
+    ],
+    "partial_credit_logic": "pass=4; partial=2 if <=10% of required fields are missing; fail=0 if >10% missing or key sections blank.",
+    "score_weight": 4,
+    "max_partial_credit": 2,
+    "rewrite_allowed": true,
+    "rewrite_policy": "Allowed: normalize formatting of responses, standardize how page/section references are written, and insert placeholders for missing pointers. Not allowed: invent answers or evidence.",
+    "rewrite_template": "For each checklist item with missing pointer, add: \"{{missing_evidence_placeholder}}\" and keep existing factual responses unchanged.",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Fill missing checklist responses and add precise evidence pointers (link + page/section/paragraph).",
+    "remediation_hours_low": 2,
+    "remediation_hours_high": 12,
+    "estimate_line_item_label": "Complete FTR self-assessment with evidence pointers",
+    "estimate_policy_band": "remediation_estimate",
+    "official_source_links": [
+      "https://apn-checklists.s3.amazonaws.com/foundational/customer-deployed/ customer-deployed/C0hfGvKGP.html"
+    ],
+    "reviewer_explanation_template": "Your self-assessment has missing or unreferenced items: {{missing_items}}. The checklist expects specific pointers (page/section/paragraph) so an AWS reviewer can verify quickly.",
+    "customer_summary_snippet": "Several checklist items are incomplete or lack the required evidence pointers.",
+    "evidence_strength": "strong",
+    "notes": "Implement by parsing spreadsheet/CSV/structured fields; do not rely on LLM guesses."
+  },
+  {
+    "id": "architecture_diagram_present_and_aws_services_named",
+    "control_family": "documentation_quality",
+    "control_name": "Architecture diagram(s) clearly show AWS services/resources and how they connect",
+    "launch_priority": "critical",
+    "rule_type": "required",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "architecture_diagram",
+      "deployment_guide"
+    ],
+    "applies_to": "All submissions.",
+    "description": "Ensure architecture diagrams detail how the solution interacts with AWS and name the AWS services used; for Customer-Deployed, diagrams in the guide must include all AWS services/resources in a typical deployment.",
+    "why_it_matters": "Public checklists state architecture diagrams must detail AWS services/tools used and illustrate connections; missing clarity blocks validation.",
+    "required_evidence": [
+      "Architecture diagram(s) that label AWS services and key data flows",
+      "For Customer-Deployed: diagram in deployment guide representing typical deployment"
+    ],
+    "pass_signals": [
+      "AWS services/resources are labeled (not just boxes)",
+      "Connections/flows between major components are depicted"
+    ],
+    "fail_signals": [
+      "Diagram is missing AWS service labels",
+      "Diagram is too abstract to infer deployed resources"
+    ],
+    "partial_credit_logic": "pass=5; partial=3 if services are present but some major flows unlabeled; fail=0 if diagram is essentially non-informative.",
+    "score_weight": 5,
+    "max_partial_credit": 3,
+    "rewrite_allowed": false,
+    "rewrite_policy": "No rewrite. Diagrams must be corrected by the customer.",
+    "rewrite_template": "",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Create/update architecture diagrams: label AWS services, show connections, and include a typical deployment for Customer- Deployed.",
+    "remediation_hours_low": 4,
+    "remediation_hours_high": 16,
+    "estimate_line_item_label": "Fix architecture diagrams for FTR clarity",
+    "estimate_policy_band": "remediation_estimate",
+    "official_source_links": [
+      "https://apn-checklists.s3.amazonaws.com/foundational/customer-deployed/ customer-deployed/C0hfGvKGP.html",
+      "https://apn-checklists.s3.amazonaws.com/foundational/partner-hosted/ partner-hosted/CVLHEC5X7.html"
+    ],
+    "reviewer_explanation_template": "Your diagrams don\u2019t clearly identify the AWS services/resources and how they connect. For FTR, diagrams must show how the solution uses AWS services in a typical deployment.",
+    "customer_summary_snippet": "Your architecture diagrams are not yet detailed enough to validate the deployed AWS resources and connections.",
+    "evidence_strength": "strong",
+    "notes": "You can implement diagram parsing lightly (OCR/labels) but keep conservative: if ambiguous, mark as missing/partial."
+  },
+  {
+    "id": "no_material_contradictions_across_documents",
+    "control_family": "evidence_completeness",
+    "control_name": "No material contradictions across uploaded documents (model, data location, public exposure, support)",
+    "launch_priority": "critical",
+    "rule_type": "contradiction_check",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "architecture_diagram",
+      "deployment_guide",
+      "security_overview",
+      "operations_runbook",
+      "customer_facing_description",
+      "other"
+    ],
+    "applies_to": "All submissions with multiple artifacts.",
+    "description": "Detect contradictions that change risk posture or checklist applicability (e.g., hosting model, where sensitive data lives, whether public resources exist, support SLA claims).",
+    "why_it_matters": "Contradictory submissions cannot be honestly validated and are unsafe to auto-remediate or estimate.",
+    "required_evidence": [
+      "Consistent statements across docs about hosting model, data stores, encryption, public endpoints/resources, and support tiers"
+    ],
+    "pass_signals": [
+      "Narrative and diagrams align on component ownership and data flows",
+      "Security and support claims match the architecture model"
+    ],
+    "fail_signals": [
+      "Docs disagree on whether deployment is customer vs partner hosted",
+      "Docs claim 'no public resources' but also describe public buckets/ endpoints",
+      "Docs claim one support tier/SLA but another doc conflicts"
+    ],
+    "partial_credit_logic": "pass=6; partial=3 if only minor wording conflicts exist; fail=0 if any material contradiction exists.",
+    "score_weight": 6,
+    "max_partial_credit": 3,
+    "rewrite_allowed": false,
+    "rewrite_policy": "No rewrite. Contradictions require factual resolution by the customer.",
+    "rewrite_template": "",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Resolve contradictions and update documents so model, data flows, and claims match 1:1.",
+    "remediation_hours_low": 2,
+    "remediation_hours_high": 16,
+    "estimate_line_item_label": "Resolve contradictions across FTR artifacts",
+    "estimate_policy_band": "consultation_only",
+    "official_source_links": [
+      "https://apn-checklists.s3.amazonaws.com/foundational/index/all/ CGFp311uG.html",
+      "https://docs.aws.amazon.com/partner-central/latest/builder-guide/ requesting-ftr.html"
+    ],
+    "reviewer_explanation_template": "Your documents contradict each other on: {{contradictions}}. Until those are resolved, producing a payable remediation quote would be irresponsible.",
+    "customer_summary_snippet": "Your submission contains material contradictions that must be fixed before any reliable FTR readiness validation or estimate.",
+    "evidence_strength": "strong",
+    "notes": "Make contradictions a hard gate to consultation_only."
+  },
+  {
+    "id": "unsupported_claims_flagged",
+    "control_family": "documentation_quality",
+    "control_name": "Unsupported or unverifiable claims are explicitly flagged (no fake evidence)",
+    "launch_priority": "critical",
+    "rule_type": "anti_pattern",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "security_overview",
+      "customer_facing_description",
+      "deployment_guide",
+      "test_evidence",
+      "other"
+    ],
+    "applies_to": "All submissions.",
+    "description": "If a document asserts a control/outcome (e.g., 'CIS passed', 'encrypted', 'compliant', 'no public resources') without evidence in the uploaded pack, flag it as unsupported instead of guessing.",
+    "why_it_matters": "AWS checklists require specific evidence; fabricating or overstating readiness destroys trust and can create partner program risk.",
+    "required_evidence": [
+      "For each major security/reliability/compliance claim: a supporting section, config excerpt, or uploaded report (e.g., Security Hub export)"
+    ],
+    "pass_signals": [
+      "Major claims include citations/pointers to where substantiation exists in the pack",
+      "Claims are phrased conservatively when evidence is not included"
+    ],
+    "fail_signals": [
+      "Claims are definite but evidence is absent from the uploaded documents",
+      "Compliance claims appear with no internal validation process described"
+    ],
+    "partial_credit_logic": "pass=4; partial=2 if a small number of claims lack support; fail=0 if multiple high-stakes claims are unsupported.",
+    "score_weight": 4,
+    "max_partial_credit": 2,
+    "rewrite_allowed": true,
+    "rewrite_policy": "Allowed: rewrite claims into evidence-linked language or add explicit placeholders. Not allowed: add new facts, results, certifications, or 'passed' statements.",
+    "rewrite_template": "Replace unsupported definitive claims with: \"Claim requires evidence: {{missing_evidence_placeholder}}\" and keep the claim as a stated intent only if clearly labeled as intent.",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Either upload evidence (reports/screenshots) or rewrite claims to be conditional and evidence-linked.",
+    "remediation_hours_low": 2,
+    "remediation_hours_high": 12,
+    "estimate_line_item_label": "Fix unsupported claims (evidence-link or downgrade language)",
+    "estimate_policy_band": "remediation_estimate",
+    "official_source_links": [
+      "https://apn-checklists.s3.amazonaws.com/foundational/partner-hosted/ partner-hosted/CVLHEC5X7.html",
+      "https://apn-checklists.s3.amazonaws.com/foundational/customer-deployed/ customer-deployed/C0hfGvKGP.html"
+    ],
+    "reviewer_explanation_template": "You state \"{{claim}}\" but I could not find supporting evidence in the uploaded pack. This is flagged as unsupported, not assumed true.",
+    "customer_summary_snippet": "Some claims in the submission are not backed by evidence in the uploaded documents.",
+    "evidence_strength": "strong",
+    "notes": "Implement via claim-pattern detection + evidence lookup. Default to 'unsupported' not 'fail' unless contradicted."
+  },
+  {
+    "id": "ph_hosting_model_all_critical_on_aws",
+    "control_family": "architecture_fit",
+    "control_name": "Partner-Hosted: Hosting model runs entirely on AWS for critical components (HOST-001)",
+    "launch_priority": "critical",
+    "rule_type": "required",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "architecture_diagram",
+      "customer_facing_description",
+      "security_overview",
+      "other"
+    ],
+    "applies_to": "Partner-Hosted submissions (SaaS hosted/operated by partner).",
+    "description": "Validate that the docs state all critical application components run on AWS, with only the listed exceptions (edge CDNs, DNS, corporate IdP) and that third-party services processing application data are on AWS per checklist.",
+    "why_it_matters": "The public Partner-Hosted checklist requires the product to run entirely on AWS (application and control planes) with limited exceptions.",
+    "required_evidence": [
+      "Architecture diagram showing control plane and application plane locations",
+      "Narrative listing any third-party services that transmit/store/process application data"
+    ],
+    "pass_signals": [
+      "Docs explicitly state critical planes are on AWS and diagrams support this",
+      "Any exceptions match the checklist categories"
+    ],
+    "fail_signals": [
+      "Docs state critical components run on non-AWS infrastructure (not an allowed exception)",
+      "Third-party services process application data outside AWS without clear exception"
+    ],
+    "partial_credit_logic": "pass=6; partial=3 if mostly on AWS but one component location is unclear; fail=0 if critical components are clearly outside AWS.",
+    "score_weight": 6,
+    "max_partial_credit": 3,
+    "rewrite_allowed": false,
+    "rewrite_policy": "No rewrite. This is a factual architecture constraint.",
+    "rewrite_template": "",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Clarify hosting model and move critical components onto AWS (or re-scope offering so it matches the correct checklist type).",
+    "remediation_hours_low": 6,
+    "remediation_hours_high": 80,
+    "estimate_line_item_label": "Align hosting model to Partner-Hosted FTR requirements",
+    "estimate_policy_band": "consultation_only",
+    "official_source_links": [
+      "https://apn-checklists.s3.amazonaws.com/foundational/partner-hosted/ partner-hosted/CVLHEC5X7.html"
+    ],
+    "reviewer_explanation_template": "Partner-Hosted FTR expects critical components to run on AWS. Your docs show: {{observed}}. This is not safely fixable via a blind documentation rewrite if the architecture is actually out of scope.",
+    "customer_summary_snippet": "Your Partner-Hosted submission must run critical components on AWS; current evidence is missing or contradicts this.",
+    "evidence_strength": "strong",
+    "notes": "Treat clear non-AWS critical hosting as consultation_only."
+  },
+  {
+    "id": "ph_support_plan_business_or_action_plan",
+    "control_family": "support",
+    "control_name": "Partner-Hosted: AWS Business Support (or Partner-led Support) or action plan exists (SUP-001)",
+    "launch_priority": "high",
+    "rule_type": "required",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "support_escalation_plan",
+      "operations_runbook",
+      "other"
+    ],
+    "applies_to": "Partner-Hosted submissions; also referenced by Customer- Deployed prerequisites.",
+    "description": "Verify docs show AWS Business Support (or higher / Partner- led Support) for production accounts OR a written action plan for issues requiring AWS Support.",
+    "why_it_matters": "Public checklists require Business Support tier (or action plan) for production accounts.",
+    "required_evidence": [
+      "Support plan statement (Business Support / Partner-led Support) OR an action plan for AWS Support escalation",
+      "List of what is considered 'production accounts' for the offering"
+    ],
+    "pass_signals": [
+      "Explicit statement of support coverage or a concrete action plan",
+      "Escalation path and ownership are named"
+    ],
+    "fail_signals": [
+      "No mention of AWS support coverage and no action plan"
+    ],
+    "partial_credit_logic": "pass=3; partial=1 if support coverage stated but no actionable escalation plan; fail=0 if absent.",
+    "score_weight": 3,
+    "max_partial_credit": 1,
+    "rewrite_allowed": true,
+    "rewrite_policy": "Allowed: structure the support plan text and add missing fields as placeholders. Not allowed: claim subscription level without evidence.",
+    "rewrite_template": "## AWS Support Coverage\n- Current plan: {{plan_or_placeholder}}\n- Production accounts in scope: {{accounts_or_placeholder}}\n- Escalation procedure when AWS Support is required: {{procedure_or_placeholder}}",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Document AWS support tier or create an action plan for issues requiring AWS Support, with escalation owners and steps.",
+    "remediation_hours_low": 2,
+    "remediation_hours_high": 8,
+    "estimate_line_item_label": "Document AWS support coverage + escalation plan",
+    "estimate_policy_band": "remediation_estimate",
+    "official_source_links": [
+      "https://apn-checklists.s3.amazonaws.com/foundational/partner-hosted/ partner-hosted/CVLHEC5X7.html",
+      "https://apn-checklists.s3.amazonaws.com/foundational/customer-deployed/ customer-deployed/C0hfGvKGP.html"
+    ],
+    "reviewer_explanation_template": "Support coverage is required (Business Support or an action plan). I found: {{evidence}}. Missing: {{missing_items}}.",
+    "customer_summary_snippet": "Your package needs a clear AWS support/ escalation plan for production accounts.",
+    "evidence_strength": "strong",
+    "notes": "Do not accept vague statements like 'we can contact AWS if needed' without steps/owners."
+  },
+  {
+    "id": "ph_architecture_review_program",
+    "control_family": "operations",
+    "control_name": "Partner-Hosted: Periodic architecture review program exists and references AWS shared responsibility (WAFR-001/WAFR-002)",
+    "launch_priority": "medium",
+    "rule_type": "recommended",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "operations_runbook",
+      "security_overview",
+      "other"
+    ],
+    "applies_to": "Partner-Hosted submissions.",
+    "description": "Verify docs state periodic architecture reviews (at least annually) using a documented standard (Well-Architected is recommended) and that shared responsibility for security/resiliency is acknowledged and addressed.",
+    "why_it_matters": "Public Partner-Hosted checklist requires annual reviews and explicitly references AWS shared responsibility models.",
+    "required_evidence": [
+      "Statement of review cadence (>= yearly) and standard used",
+      "Document section mapping operational responsibilities between partner and customers"
+    ],
+    "pass_signals": [
+      "Annual review cadence is stated",
+      "A standard is named (e.g., Well-Architected) and shared responsibility is addressed"
+    ],
+    "fail_signals": [
+      "No review cadence/process is documented",
+      "Shared responsibility is ignored"
+    ],
+    "partial_credit_logic": "pass=3; partial=1 if cadence exists but shared responsibility not addressed (or vice versa); fail=0 if neither exists.",
+    "score_weight": 3,
+    "max_partial_credit": 1,
+    "rewrite_allowed": true,
+    "rewrite_policy": "Allowed: reorganize existing text into a standard template and add placeholders. Not allowed: claim a review happened if no evidence.",
+    "rewrite_template": "## Architecture Review Program\n- Cadence: {{cadence_or_placeholder}}\n- Standard used: {{standard_or_placeholder}}\n## Shared Responsibility\n- Partner responsibilities: {{partner_resp_or_placeholder}}\n- Customer responsibilities: {{customer_resp_or_placeholder}}",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Add an architecture review policy (annual cadence) and include an explicit shared-responsibility section.",
+    "remediation_hours_low": 3,
+    "remediation_hours_high": 12,
+    "estimate_line_item_label": "Establish architecture review + shared responsibility documentation",
+    "estimate_policy_band": "remediation_estimate",
+    "official_source_links": [
+      "https://apn-checklists.s3.amazonaws.com/foundational/partner-hosted/ partner-hosted/CVLHEC5X7.html",
+      "https://aws.amazon.com/compliance/shared-responsibility-model/",
+      "https://docs.aws.amazon.com/whitepapers/latest/disaster-recovery- workloads-on-aws/shared-responsibility-model-for-resiliency.html"
+    ],
+    "reviewer_explanation_template": "The Partner-Hosted checklist expects at least annual architecture reviews and explicit shared responsibility coverage. I found: {{evidence}}. Missing: {{missing_items}}.",
+    "customer_summary_snippet": "Add an annual architecture review cadence and document partner vs customer responsibilities for security and resiliency.",
+    "evidence_strength": "strong",
+    "notes": "Accept internal standards if documented; do not require Well- Architected explicitly."
+  },
+  {
+    "id": "ph_incident_management_plan_exists",
+    "control_family": "operations",
+    "control_name": "Partner-Hosted: Incident management plan exists and is maintained (ARC-005)",
+    "launch_priority": "high",
+    "rule_type": "required",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "incident_response_document",
+      "operations_runbook",
+      "other"
+    ],
+    "applies_to": "Partner-Hosted submissions.",
+    "description": "Verify an incident management plan exists with roles/steps and evidence it is maintained current.",
+    "why_it_matters": "Public checklist requires developing incident management plans.",
+    "required_evidence": [
+      "Incident management plan document (roles, triage steps, communications, post-incident process)",
+      "Last updated date or change log"
+    ],
+    "pass_signals": [
+      "Plan exists with clear roles and steps",
+      "Plan includes a maintenance signal (updated date, revision history)"
+    ],
+    "fail_signals": [
+      "No incident plan in the uploaded pack",
+      "Plan is a one-liner with no operational detail"
+    ],
+    "partial_credit_logic": "pass=4; partial=2 if plan exists but lacks maintenance signal; fail=0 if absent.",
+    "score_weight": 4,
+    "max_partial_credit": 2,
+    "rewrite_allowed": true,
+    "rewrite_policy": "Allowed: restructure the plan for clarity and add placeholders for missing sections. Not allowed: invent incident procedures or contacts.",
+    "rewrite_template": "## Incident Management Plan\n- Severity levels: {{levels_or_placeholder}}\n- On-call/roles: {{roles_or_placeholder}}\n- Detection signals: {{signals_or_placeholder}}\n- Triage/containment steps: {{steps_or_placeholder}}\n- Customer comms: {{comms_or_placeholder}}\n- Post- incident review: {{pir_or_placeholder}}\n- Last updated: {{date_or_placeholder}}",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Create or expand an incident management plan and add revision history/ ownership.",
+    "remediation_hours_low": 4,
+    "remediation_hours_high": 20,
+    "estimate_line_item_label": "Write/update incident management plan",
+    "estimate_policy_band": "remediation_estimate",
+    "official_source_links": [
+      "https://apn-checklists.s3.amazonaws.com/foundational/partner-hosted/ partner-hosted/CVLHEC5X7.html",
+      "https://docs.aws.amazon.com/wellarchitected/latest/framework/ sec_incident_response.html"
+    ],
+    "reviewer_explanation_template": "Incident management is required. I found {{evidence}}. Missing or too thin: {{missing_items}}.",
+    "customer_summary_snippet": "You need an actionable incident management plan (roles, steps, and maintenance), not just a statement that you handle incidents.",
+    "evidence_strength": "strong",
+    "notes": "Treat absence as high impact; if combined with other gaps, consider consultation_only."
+  },
+  {
+    "id": "ph_cis_or_securityhub_report_provided",
+    "control_family": "evidence_completeness",
+    "control_name": "Partner-Hosted: CIS/Security Hub evidence is provided for automated-account-scan controls",
+    "launch_priority": "high",
+    "rule_type": "recommended",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "test_evidence",
+      "security_overview",
+      "other"
+    ],
+    "applies_to": "Partner-Hosted submissions, especially when claiming strong security posture.",
+    "description": "Check whether a CIS AWS Foundations Benchmark report / Security Hub export (or equivalent) is uploaded to substantiate CIS-linked controls.",
+    "why_it_matters": "AWS public guidance describes automated validation using Security Hub (or equivalent). Without a report, document-only claims about account configuration are not reliable.",
+    "required_evidence": [
+      "Security Hub export (CSV) or CIS benchmark report, or screenshots showing benchmark status for in-scope accounts"
+    ],
+    "pass_signals": [
+      "A Security Hub/CIS report is uploaded and clearly in-scope"
+    ],
+    "fail_signals": [
+      "No automated-scan evidence is included but docs make strong claims like 'CIS compliant' or 'all controls passed'"
+    ],
+    "partial_credit_logic": "pass=4; partial=2 if screenshots exist but not exportable/complete; fail=0 if absent and strong claims exist.",
+    "score_weight": 4,
+    "max_partial_credit": 2,
+    "rewrite_allowed": false,
+    "rewrite_policy": "No rewrite. Evidence must be uploaded.",
+    "rewrite_template": "",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Export Security Hub/CIS results (or provide screenshots) for in-scope accounts and include in the submission pack.",
+    "remediation_hours_low": 2,
+    "remediation_hours_high": 8,
+    "estimate_line_item_label": "Generate and attach CIS/Security Hub evidence",
+    "estimate_policy_band": "remediation_estimate",
+    "official_source_links": [
+      "https://aws.amazon.com/blogs/apn/new-foundational-technical-review- process-for-partner-hosted-solutions/",
+      "https://docs.aws.amazon.com/securityhub/latest/userguide/cis-aws- foundations-benchmark.html",
+      "https://aws.amazon.com/blogs/security/how-to-export-aws-security-hub- findings-to-csv-format/"
+    ],
+    "reviewer_explanation_template": "Partner-Hosted validation often relies on automated account checks. I did not find a CIS/Security Hub report in your upload, so I cannot credibly validate CIS-linked configuration controls.",
+    "customer_summary_snippet": "Upload CIS/Security Hub evidence if you want configuration-related controls validated from documents.",
+    "evidence_strength": "strong",
+    "notes": "Do not require this for every case, but treat it as necessary for high-confidence security posture claims."
+  },
+  {
+    "id": "ph_no_embedded_credentials",
+    "control_family": "security",
+    "control_name": "Partner-Hosted: Credentials are not embedded in code or documentation (IAM-009)",
+    "launch_priority": "critical",
+    "rule_type": "required",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "deployment_guide",
+      "security_overview",
+      "operations_runbook",
+      "other"
+    ],
+    "applies_to": "Partner-Hosted submissions; also relevant to Customer- Deployed docs if they instruct customers.",
+    "description": "Detect any instructions or examples that embed long-term access keys, passwords, or secrets directly in code/config files or documentation.",
+    "why_it_matters": "Public Partner-Hosted checklist explicitly requires not embedding credentials in application code; AWS IAM best practices discourage long-term keys and poor secret handling.",
+    "required_evidence": [
+      "Documentation examples sanitized of real secrets",
+      "Stated approach for providing credentials at runtime without embedding"
+    ],
+    "pass_signals": [
+      "No embedded credentials in docs/examples",
+      "Docs instruct using roles/secret stores rather than hardcoding"
+    ],
+    "fail_signals": [
+      "Docs instruct customers/operators to paste access keys into config files",
+      "Actual secrets appear in uploaded materials"
+    ],
+    "partial_credit_logic": "pass=6; partial=3 if examples exist but are clearly placeholders and emphasize not committing secrets; fail=0 if any real secret or instruction to hardcode long-term creds exists.",
+    "score_weight": 6,
+    "max_partial_credit": 3,
+    "rewrite_allowed": true,
+    "rewrite_policy": "Allowed: sanitize examples (replace with placeholders) and add warnings. Not allowed: change the underlying auth approach or claim a secure mechanism exists if not described.",
+    "rewrite_template": "Replace any credential-like strings with placeholders (e.g., \"<AWS_ACCESS_KEY_ID>\") and add: \"Do not hardcode credentials. Use IAM roles or a secret store.\"",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Remove credential hardcoding from docs and adopt a role/secret-store based approach; scrub any leaked secrets immediately.",
+    "remediation_hours_low": 2,
+    "remediation_hours_high": 24,
+    "estimate_line_item_label": "Remove embedded credentials from docs/code examples",
+    "estimate_policy_band": "consultation_only",
+    "official_source_links": [
+      "https://apn-checklists.s3.amazonaws.com/foundational/partner-hosted/ partner-hosted/CVLHEC5X7.html",
+      "https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html"
+    ],
+    "reviewer_explanation_template": "I found embedded credentials or instructions to hardcode them: {{evidence}}. This is a hard-stop security issue; it cannot be fixed safely by wording tweaks alone.",
+    "customer_summary_snippet": "Your docs must not embed or encourage hardcoding credentials; this is a hard-stop security issue.",
+    "evidence_strength": "strong",
+    "notes": "Treat discovery of real secrets as incident: advise rotation; do not store them."
+  },
+  {
+    "id": "ph_secrets_stored_securely",
+    "control_family": "security",
+    "control_name": "Partner-Hosted: Secrets are stored securely with encryption and access controls (IAM-010)",
+    "launch_priority": "high",
+    "rule_type": "required",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "security_overview",
+      "operations_runbook",
+      "deployment_guide",
+      "other"
+    ],
+    "applies_to": "Partner-Hosted submissions; relevant when product uses secrets (DB creds, tokens, keys).",
+    "description": "Check that docs describe secure centralized secret storage (e.g., Secrets Manager or Parameter Store SecureString) with encryption and access controls, and auditability.",
+    "why_it_matters": "Public checklist recommends purpose-built secret management and requires encryption/access control/auditability properties.",
+    "required_evidence": [
+      "Named secret store approach (service/feature) and how secrets are accessed",
+      "Statement that secrets are encrypted at rest and transmitted over TLS"
+    ],
+    "pass_signals": [
+      "Docs explicitly describe centralized secret storage and access controls",
+      "Encryption-at-rest and TLS-in-transit are stated"
+    ],
+    "fail_signals": [
+      "Secrets are stored in plaintext files or ad-hoc stores without access controls",
+      "No description of secret handling exists"
+    ],
+    "partial_credit_logic": "pass=4; partial=2 if a secure store is named but access control/audit details are missing; fail=0 if secrets are plaintext or undocumented.",
+    "score_weight": 4,
+    "max_partial_credit": 2,
+    "rewrite_allowed": true,
+    "rewrite_policy": "Allowed: reorganize existing secret-handling description and add placeholders for missing details. Not allowed: claim a secret store exists if not described.",
+    "rewrite_template": "## Secrets Handling\n- Secret store used: {{store_or_placeholder}}\n- Encryption at rest: {{kms_or_placeholder}}\n- Access control: {{iam_or_placeholder}}\n- Retrieval method: {{runtime_or_placeholder}} \n- Audit logging: {{logging_or_placeholder}}",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Document and implement secure secret storage (Secrets Manager or Parameter Store SecureString) with least-privilege access and audit trail.",
+    "remediation_hours_low": 4,
+    "remediation_hours_high": 40,
+    "estimate_line_item_label": "Document/implement secure secrets management",
+    "estimate_policy_band": "remediation_estimate",
+    "official_source_links": [
+      "https://apn-checklists.s3.amazonaws.com/foundational/partner-hosted/ partner-hosted/CVLHEC5X7.html",
+      "https://docs.aws.amazon.com/secretsmanager/latest/userguide/best- practices.html",
+      "https://docs.aws.amazon.com/systems-manager/latest/userguide/systems- manager-parameter-store.html"
+    ],
+    "reviewer_explanation_template": "Secrets must be stored securely (encrypted, access-controlled, auditable). I found: {{evidence}}. Missing: {{missing_items}}.",
+    "customer_summary_snippet": "Your submission should clearly explain how secrets are stored and accessed securely (not ad-hoc plaintext).",
+    "evidence_strength": "strong",
+    "notes": "If secrets approach implies product changes, keep estimate conservative or move to consultation_only."
+  },
+  {
+    "id": "ph_network_security_no_open_ssh_rdp",
+    "control_family": "security",
+    "control_name": "Partner-Hosted: No unrestricted SSH/RDP exposure in security groups (NETSEC-001)",
+    "launch_priority": "critical",
+    "rule_type": "required",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "test_evidence",
+      "security_overview",
+      "architecture_diagram",
+      "other"
+    ],
+    "applies_to": "Partner-Hosted submissions with VPC/EC2 usage or managed compute where SGs apply.",
+    "description": "Validate evidence shows no security group allows ingress from 0.0.0.0/0 to port 22 or 3389; and default security groups restrict all traffic (as referenced by the Partner-Hosted checklist).",
+    "why_it_matters": "Public checklist mandates least-permissive security group rules and explicitly calls out open SSH/RDP as unacceptable; Security Hub also treats these as high severity controls.",
+    "required_evidence": [
+      "Security Hub or CIS benchmark results showing relevant controls pass OR screenshots/config excerpts proving restrictions"
+    ],
+    "pass_signals": [
+      "Uploaded report shows no unrestricted 22/3389 ingress",
+      "Docs explicitly state admin access is restricted and evidence is provided"
+    ],
+    "fail_signals": [
+      "Report shows failing controls for unrestricted 22/3389",
+      "Docs explicitly instruct opening 22/3389 to the world"
+    ],
+    "partial_credit_logic": "pass=6; partial=3 if evidence is partial (screenshots) but indicates restriction; fail=0 if report shows fail or docs encourage open access.",
+    "score_weight": 6,
+    "max_partial_credit": 3,
+    "rewrite_allowed": false,
+    "rewrite_policy": "No rewrite. This is a security posture issue.",
+    "rewrite_template": "",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Close unrestricted SSH/RDP exposure; restrict admin access paths and provide evidence (Security Hub export or equivalent).",
+    "remediation_hours_low": 4,
+    "remediation_hours_high": 24,
+    "estimate_line_item_label": "Fix unrestricted SSH/RDP exposure evidence",
+    "estimate_policy_band": "consultation_only",
+    "official_source_links": [
+      "https://apn-checklists.s3.amazonaws.com/foundational/partner-hosted/ partner-hosted/CVLHEC5X7.html",
+      "https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub- controls-reference.html",
+      "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security- groups.html"
+    ],
+    "reviewer_explanation_template": "The Partner-Hosted checklist expects least-permissive SG rules (no 0.0.0.0/0 to 22/3389). Evidence found: {{evidence}}. This is a hard-stop if failing.",
+    "customer_summary_snippet": "Unrestricted SSH/RDP exposure is a hard-stop. Provide Security Hub/CIS evidence showing it\u2019s not present.",
+    "evidence_strength": "strong",
+    "notes": "Prefer structured reports; screenshots are partial credit only."
+  },
+  {
+    "id": "ph_backups_and_restore_testing",
+    "control_family": "reliability",
+    "control_name": "Partner-Hosted: Automatic backups exist and restores are periodically tested (BAR-001/BAR-002)",
+    "launch_priority": "critical",
+    "rule_type": "required",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "backup_dr_document",
+      "operations_runbook",
+      "test_evidence",
+      "other"
+    ],
+    "applies_to": "Partner-Hosted submissions that store any stateful data.",
+    "description": "Check docs describe automated backups for stateful stores and include evidence of periodic recovery/restore tests aligned to RTO/RPO.",
+    "why_it_matters": "Public checklist requires automatic backups and periodic recovery testing to verify backup integrity and objectives.",
+    "required_evidence": [
+      "Backup policy/procedure describing what is backed up and how often",
+      "At least one restore/recovery test record (date + outcome) OR explicit procedure and schedule"
+    ],
+    "pass_signals": [
+      "Automated backup mechanism is documented and covers stateful stores",
+      "Restore/recovery testing is documented with at least one completed test"
+    ],
+    "fail_signals": [
+      "No backup approach is documented for stateful data",
+      "Backups exist but no restore test evidence and no schedule"
+    ],
+    "partial_credit_logic": "pass=6; partial=3 if backups are documented but restore testing evidence is missing; fail=0 if backups are absent or explicitly not done.",
+    "score_weight": 6,
+    "max_partial_credit": 3,
+    "rewrite_allowed": true,
+    "rewrite_policy": "Allowed: improve structure and add placeholders for missing test evidence. Not allowed: invent test results or claim restores were tested.",
+    "rewrite_template": "## Backup and Restore\n- Data stores in scope: {{stores_or_placeholder}}\n- Backup frequency: {{freq_or_placeholder}}\n- Restore test cadence: {{cadence_or_placeholder}}\n- Last restore test: {{test_or_placeholder}}",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Document automated backups and run at least one restore test; capture evidence (date, steps, outcome).",
+    "remediation_hours_low": 6,
+    "remediation_hours_high": 40,
+    "estimate_line_item_label": "Backup/restore documentation + test evidence",
+    "estimate_policy_band": "consultation_only",
+    "official_source_links": [
+      "https://apn-checklists.s3.amazonaws.com/foundational/partner-hosted/ partner-hosted/CVLHEC5X7.html"
+    ],
+    "reviewer_explanation_template": "Backups and restore testing are required. I found: {{evidence}}. Missing: {{missing_items}}. If you can\u2019t restore, you can\u2019t claim reliability.",
+    "customer_summary_snippet": "Backups must be automated and restores must be tested; missing either is a hard readiness gap.",
+    "evidence_strength": "strong",
+    "notes": "If stateful stores are unclear, mark missing and prompt for inventory."
+  },
+  {
+    "id": "ph_recovery_objectives_and_resilience_test",
+    "control_family": "reliability",
+    "control_name": "Partner-Hosted: RTO/RPO are defined and resilience testing is performed (RES-001/RES-002/RES-004)",
+    "launch_priority": "high",
+    "rule_type": "required",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "backup_dr_document",
+      "operations_runbook",
+      "test_evidence",
+      "other"
+    ],
+    "applies_to": "Partner-Hosted submissions.",
+    "description": "Verify RTO and RPO are explicitly stated and that resilience testing includes at least AZ impairments, performed at least annually and prior to approval per checklist.",
+    "why_it_matters": "Public checklist requires RTO/RPO and a resilience test cadence, including a completed test prior to approval.",
+    "required_evidence": [
+      "RTO value",
+      "RPO value",
+      "Resilience test evidence (date + scope + results) or documented test plan and last completion"
+    ],
+    "pass_signals": [
+      "RTO and RPO are stated with units",
+      "At least one resilience test is documented with date and scope"
+    ],
+    "fail_signals": [
+      "RTO/RPO missing",
+      "No resilience test evidence or plan"
+    ],
+    "partial_credit_logic": "pass=5; partial=3 if RTO/RPO are defined but resilience test evidence is missing; partial=2 if resilience test exists but only one of RTO/RPO exists; fail=0 if none exist.",
+    "score_weight": 5,
+    "max_partial_credit": 3,
+    "rewrite_allowed": true,
+    "rewrite_policy": "Allowed: reformat RTO/RPO and test-plan sections; add placeholders for missing test evidence. Not allowed: invent test execution results.",
+    "rewrite_template": "## Recovery Objectives\n- RPO: {{rpo_or_placeholder}} \n- RTO: {{rto_or_placeholder}}\n## Resilience Testing\n- Required failure modes: AZ impairment (+ others relevant)\n- Last test date/result: {{test_or_placeholder}}\n- Next scheduled test: {{next_or_placeholder}}",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Define RTO/RPO and complete a resilience test (at minimum AZ impairment). Document results.",
+    "remediation_hours_low": 6,
+    "remediation_hours_high": 60,
+    "estimate_line_item_label": "Define RTO/RPO + run resilience test",
+    "estimate_policy_band": "consultation_only",
+    "official_source_links": [
+      "https://apn-checklists.s3.amazonaws.com/foundational/partner-hosted/ partner-hosted/CVLHEC5X7.html",
+      "https://docs.aws.amazon.com/resilience-hub/latest/userguide/ security.html"
+    ],
+    "reviewer_explanation_template": "RTO/RPO and resilience testing are expected. I found: {{evidence}}. Missing: {{missing_items}}. Without tested resilience, reliability claims are not credible.",
+    "customer_summary_snippet": "Define RTO/RPO and provide evidence of resilience testing; otherwise reliability posture is unproven.",
+    "evidence_strength": "strong",
+    "notes": "Treat 'we are highly available' without RTO/RPO and tests as unsupported."
+  },
+  {
+    "id": "ph_cross_account_access_controls",
+    "control_family": "security",
+    "control_name": "Partner-Hosted (conditional): Cross-account access uses roles + external ID/issuer URL + least privilege (CAA-001/CAA-002/CAA-007 etc.)",
+    "launch_priority": "high",
+    "rule_type": "required",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "deployment_guide",
+      "security_overview",
+      "operations_runbook",
+      "other"
+    ],
+    "applies_to": "Only if the solution accesses customer AWS accounts (assume- role, web identity, or similar).",
+    "description": "Validate docs specify cross-account role-based access (not customer-provided static creds), use external ID or dedicated issuer URL to prevent confused deputy, and provide least-privilege role/policy setup guidance or automation (e.g., CloudFormation).",
+    "why_it_matters": "Public Partner-Hosted checklist specifies cross-account role usage and external ID/issuer URL requirements to prevent confused deputy risks.",
+    "required_evidence": [
+      "Role-based access description (AssumeRole/AssumeRoleWithWebIdentity)",
+      "External ID or issuer URL approach (partner-generated, unique, not customer editable)",
+      "Provisioning guidance or automation for least-privilege policies"
+    ],
+    "pass_signals": [
+      "Customer access is via cross-account roles",
+      "External ID/issuer URL is described and is partner-generated + unique + view-only",
+      "Least-privilege setup guidance exists"
+    ],
+    "fail_signals": [
+      "Docs request customers provide static IAM user access keys for integration",
+      "No external ID/issuer URL mentioned for role assumption",
+      "Policies appear overly broad with no least-privilege guidance"
+    ],
+    "partial_credit_logic": "N/A=3; pass=3; partial=1 if roles exist but external ID/issuer URL details are missing; fail=0 if static customer-provided credentials are required or external ID is customer-controlled.",
+    "score_weight": 3,
+    "max_partial_credit": 1,
+    "rewrite_allowed": false,
+    "rewrite_policy": "No rewrite. This is an integration security design requirement.",
+    "rewrite_template": "",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Redesign cross-account access to use roles + external ID/issuer URL + least privilege; update docs and automation accordingly.",
+    "remediation_hours_low": 12,
+    "remediation_hours_high": 120,
+    "estimate_line_item_label": "Fix cross-account access design (roles + external ID + least privilege)",
+    "estimate_policy_band": "consultation_only",
+    "official_source_links": [
+      "https://apn-checklists.s3.amazonaws.com/foundational/partner-hosted/ partner-hosted/CVLHEC5X7.html"
+    ],
+    "reviewer_explanation_template": "Your solution integrates with customer AWS accounts. The checklist expects roles plus external ID/issuer URL protections (confused deputy). Evidence found: {{evidence}}. Gaps: {{gaps}}.",
+    "customer_summary_snippet": "If you access customer AWS accounts, you must use cross-account roles with external ID/issuer URL protections and least- privilege setup guidance.",
+    "evidence_strength": "strong",
+    "notes": "Only apply if documents indicate cross-account integration."
+  },
+  {
+    "id": "cd_intro_use_cases_present",
+    "control_family": "documentation_quality",
+    "control_name": "Customer-Deployed: Introductory material includes use cases (INT-001)",
+    "launch_priority": "high",
+    "rule_type": "required",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "deployment_guide",
+      "customer_facing_description"
+    ],
+    "applies_to": "Customer-Deployed submissions.",
+    "description": "Verify the deployment guide (or intro material) describes concrete use cases for the solution and the submission points to where it is documented.",
+    "why_it_matters": "Customer-Deployed checklist explicitly requires use cases in introductory material with evidence pointers.",
+    "required_evidence": [
+      "Deployment guide section describing use cases",
+      "Pointer: page number + section title + paragraph (or equivalent stable reference)"
+    ],
+    "pass_signals": [
+      "Use cases are described clearly",
+      "Pointers are provided"
+    ],
+    "fail_signals": [
+      "No use cases described",
+      "No pointers provided"
+    ],
+    "partial_credit_logic": "pass=2; partial=1 if use case exists but pointers are missing; fail=0 if missing.",
+    "score_weight": 2,
+    "max_partial_credit": 1,
+    "rewrite_allowed": true,
+    "rewrite_policy": "Allowed: improve clarity and structure of use-case description, without adding new use cases or claims.",
+    "rewrite_template": "## Use Cases\n- Primary use case: {{existing_text}}\n- Secondary use case(s): {{existing_text}} \n{{missing_evidence_placeholder_if_needed}}",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Add a clear use-cases section to the deployment guide and reference it precisely in the checklist.",
+    "remediation_hours_low": 1,
+    "remediation_hours_high": 6,
+    "estimate_line_item_label": "Add use-cases section to deployment guide",
+    "estimate_policy_band": "remediation_estimate",
+    "official_source_links": [
+      "https://apn-checklists.s3.amazonaws.com/foundational/customer-deployed/ customer-deployed/C0hfGvKGP.html"
+    ],
+    "reviewer_explanation_template": "Customer-Deployed packages must include use cases in the deployment guide. I found: {{evidence}}. Missing: {{missing_items}}.",
+    "customer_summary_snippet": "Your deployment guide needs a clear use-cases section with precise evidence pointers.",
+    "evidence_strength": "strong",
+    "notes": "This is doc-only and safe to estimate."
+  },
+  {
+    "id": "cd_intro_deployment_overview_and_resources",
+    "control_family": "documentation_quality",
+    "control_name": "Customer-Deployed: Intro includes typical deployment overview and resource list (INT-002)",
+    "launch_priority": "high",
+    "rule_type": "required",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "deployment_guide",
+      "architecture_diagram"
+    ],
+    "applies_to": "Customer-Deployed submissions.",
+    "description": "Verify intro includes an overview of a typical customer deployment and lists the resources set up after deployment, with evidence pointers.",
+    "why_it_matters": "Customer-Deployed checklist explicitly requires a typical deployment overview and list of resources created.",
+    "required_evidence": [
+      "Deployment guide overview section",
+      "List/table of AWS resources created (by service/type)",
+      "Pointer: page/section/paragraph"
+    ],
+    "pass_signals": [
+      "Deployment overview exists and is concrete",
+      "Resources created are listed"
+    ],
+    "fail_signals": [
+      "No resource list",
+      "Only vague text ('deploys infrastructure')"
+    ],
+    "partial_credit_logic": "pass=3; partial=1 if overview exists but resource list is incomplete; fail=0 if both missing.",
+    "score_weight": 3,
+    "max_partial_credit": 1,
+    "rewrite_allowed": true,
+    "rewrite_policy": "Allowed: restructure into a clear list/table and normalize AWS service naming, using only already-mentioned resources.",
+    "rewrite_template": "## Typical Deployment Overview\n{{existing_text}}\n## Resources Created\n- {{resource_list_from_existing_text_or_placeholder}}",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Add a typical deployment overview and a concrete resource inventory to the deployment guide.",
+    "remediation_hours_low": 2,
+    "remediation_hours_high": 10,
+    "estimate_line_item_label": "Add deployment overview + resource inventory",
+    "estimate_policy_band": "remediation_estimate",
+    "official_source_links": [
+      "https://apn-checklists.s3.amazonaws.com/foundational/customer-deployed/ customer-deployed/C0hfGvKGP.html"
+    ],
+    "reviewer_explanation_template": "The checklist expects a typical deployment overview and a list of resources created. I found: {{evidence}}. Missing: {{missing_items}}.",
+    "customer_summary_snippet": "Document what gets deployed (and what resources are created), in concrete AWS terms.",
+    "evidence_strength": "strong",
+    "notes": "If the architecture diagram conflicts with the resource list, also fail contradiction rule."
+  },
+  {
+    "id": "cd_arch_diagrams_complete_and_use_aws_icons",
+    "control_family": "documentation_quality",
+    "control_name": "Customer-Deployed: Architecture diagrams include AWS services/resources, connections, VPC/subnets, integrations; use AWS icons (ARCH-001/ARCH-004/ARCH-005/ARCH-006)",
+    "launch_priority": "high",
+    "rule_type": "required",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "deployment_guide",
+      "architecture_diagram"
+    ],
+    "applies_to": "Customer-Deployed submissions.",
+    "description": "Validate the deployment guide includes diagrams showing all deployed AWS services/resources and how they connect, plus network diagrams showing VPCs/subnets and integration points; diagrams use AWS Architecture Icons.",
+    "why_it_matters": "Customer-Deployed checklist explicitly requires these diagram properties and references AWS Architecture Icons.",
+    "required_evidence": [
+      "Diagram(s) in deployment guide",
+      "Evidence pointers to the diagram pages",
+      "Use of AWS Architecture Icons (or explicit statement with link)"
+    ],
+    "pass_signals": [
+      "Diagrams show AWS resources and connections",
+      "VPC/subnets present when networking is non-trivial",
+      "Integrations shown",
+      "AWS icons used"
+    ],
+    "fail_signals": [
+      "Diagrams omit major AWS services",
+      "No VPC/subnet depiction where relevant",
+      "No integration points shown despite being referenced",
+      "Non-AWS icons and no mapping/legend"
+    ],
+    "partial_credit_logic": "pass=4; partial=2 if diagrams exist but fail one sub-requirement (e.g., icons); fail=0 if diagrams are missing or too incomplete.",
+    "score_weight": 4,
+    "max_partial_credit": 2,
+    "rewrite_allowed": false,
+    "rewrite_policy": "No rewrite. Diagrams must be regenerated by customer.",
+    "rewrite_template": "",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Update deployment guide diagrams to meet checklist requirements and use official AWS icons.",
+    "remediation_hours_low": 4,
+    "remediation_hours_high": 20,
+    "estimate_line_item_label": "Fix Customer-Deployed architecture diagrams",
+    "estimate_policy_band": "remediation_estimate",
+    "official_source_links": [
+      "https://apn-checklists.s3.amazonaws.com/foundational/customer-deployed/ customer-deployed/C0hfGvKGP.html",
+      "https://aws.amazon.com/architecture/icons/"
+    ],
+    "reviewer_explanation_template": "Customer-Deployed diagrams must show AWS resources/connections, VPC/subnets, and integrations, and use AWS icons. I found: {{evidence}}. Missing: {{missing_items}}.",
+    "customer_summary_snippet": "Your deployment guide diagrams must be complete and use AWS icons; right now they are missing required elements.",
+    "evidence_strength": "strong",
+    "notes": "Treat missing diagrams as hard-stop via required_artifacts rule."
+  },
+  {
+    "id": "cd_security_no_root_and_least_privilege_guidance",
+    "control_family": "security",
+    "control_name": "Customer-Deployed: Guide warns against root use and provides least-privilege guidance (DSEC-002/DSEC-003)",
+    "launch_priority": "critical",
+    "rule_type": "required",
+    "aws_program_scope": "FTR",
+    "artifact_types": [
+      "deployment_guide",
+      "security_overview"
+    ],
+    "applies_to": "Customer-Deployed submissions.",
+    "description": "Verify deployment guide explicitly warns customers not to use root for deployment/operations and provides prescriptive least-privilege guidance for access granted during deployment.",
+    "why_it_matters": "Customer-Deployed checklist requires these security guidance items; AWS root-user best practices recommend avoiding root for daily tasks.",
+    "required_evidence": [
+      "Deployment guide section warning against root usage",
+      "Deployment guide section on least privilege for roles/policies created"
+    ],
+    "pass_signals": [
+      "Explicit warning against root usage",
+      "Concrete least-privilege guidance (scoped actions/resources/conditions)"
+    ],
+    "fail_signals": [
+      "Docs instruct using root for deployment",
+      "No least-privilege guidance"
+    ],
+    "partial_credit_logic": "pass=5; partial=2 if root warning exists but least- privilege guidance is weak (or vice versa); fail=0 if docs require root or omit both.",
+    "score_weight": 5,
+    "max_partial_credit": 2,
+    "rewrite_allowed": true,
+    "rewrite_policy": "Allowed: strengthen wording and structure of the warning and least-privilege guidance using existing facts. Not allowed: claim the product does not require root if docs indicate it does.",
+    "rewrite_template": "## Security: Do Not Use Root\nDo not use the AWS account root user for deployment or operations.\n## Security: Least Privilege\nGrant only the permissions required for deployment and operation. {{existing_details_or_placeholder}}",
+    "missing_evidence_placeholder": "MISSING EVIDENCE: {{missing_item}}. This was not found in the uploaded files. Add it (or upload a document) before claiming FTR readiness.",
+    "remediation_summary": "Add explicit root-user warning and prescriptive least-privilege guidance to the deployment guide.",
+    "remediation_hours_low": 2,
+    "remediation_hours_high": 12,
+    "estimate_line_item_label": "Add root/least-privilege security guidance",
+    "estimate_policy_band": "consultation_only",
+    "official_source_links": [
+      "https://apn-checklists.s3.amazonaws.com/foundational/customer-deployed/ customer-deployed/C0hfGvKGP.html",
+      "https://docs.aws.amazon.com/IAM/latest/UserGuide/root-user-best- practices.html"
+    ],
+    "reviewer_explanation_template": "Customer-Deployed guidance must warn against root usage and explain least privilege. I found: {{evidence}}. Missing: {{missing_items}}.",
+    "customer_summary_snippet": "If your deployment requires root or lacks least-privilege guidance, it\u2019s not safely FTR-ready.",
+    "evidence_strength": "strong",
+    "notes": "If docs require root privileges, treat as consultation_only (likely product change)."
+  }
+]

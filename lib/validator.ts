@@ -135,6 +135,7 @@ export async function parseValidatorInput(input: {
     profile: input.profile,
     rawText: sanitized.text,
     target: input.target,
+    controlCalibration: controlReview.controlCalibration,
     context: {
       sourceType: "spreadsheet",
       filename: input.filename,
@@ -143,7 +144,6 @@ export async function parseValidatorInput(input: {
       processingNotes,
     },
   });
-  report.controlCalibration = controlReview.controlCalibration;
 
   return {
     output: formatValidationReport(report),
