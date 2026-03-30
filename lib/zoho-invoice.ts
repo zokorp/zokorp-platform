@@ -151,8 +151,20 @@ function zohoInvoiceAccountsDomain(env: RuntimeEnv = process.env) {
   return resolveZohoInvoiceRuntimeConfig(env).accountsDomain;
 }
 
-function zohoInvoiceAccessToken(env: RuntimeEnv = process.env) {
-  return resolveZohoInvoiceRuntimeConfig(env).accessToken;
+function directInvoiceAccessToken(env: RuntimeEnv = process.env) {
+  return envValue(env, "ZOHO_INVOICE_ACCESS_TOKEN");
+}
+
+function directCrmAccessToken(env: RuntimeEnv = process.env) {
+  return envValue(env, "ZOHO_CRM_ACCESS_TOKEN");
+}
+
+function hasDedicatedInvoiceRefreshCredentials(env: RuntimeEnv = process.env) {
+  return Boolean(
+    envValue(env, "ZOHO_INVOICE_REFRESH_TOKEN") &&
+      envValue(env, "ZOHO_INVOICE_CLIENT_ID") &&
+      envValue(env, "ZOHO_INVOICE_CLIENT_SECRET"),
+  );
 }
 
 function hasZohoInvoiceRefreshCredentials(env: RuntimeEnv = process.env) {
@@ -227,9 +239,21 @@ async function refreshZohoInvoiceAccessToken() {
 }
 
 async function getZohoInvoiceBearerToken() {
-  const direct = zohoInvoiceAccessToken();
-  if (direct) {
-    return direct;
+  const invoiceDirect = directInvoiceAccessToken();
+  if (invoiceDirect) {
+    return invoiceDirect;
+  }
+
+  if (hasDedicatedInvoiceRefreshCredentials()) {
+    const refreshed = await refreshZohoInvoiceAccessToken();
+    if (refreshed) {
+      return refreshed;
+    }
+  }
+
+  const crmDirect = directCrmAccessToken();
+  if (crmDirect) {
+    return crmDirect;
   }
 
   return await refreshZohoInvoiceAccessToken();
