@@ -59,7 +59,30 @@
   - password reset request recorded `deliveryOk: true`
 
 ## Remaining external proof
-- The main external proof still missing before a stronger soft-launch claim is one real founder-controlled Calendly booking from `/services`, with the resulting ingestion artifact confirmed in ZoKorp records.
+- No major external ops proof gaps remain for the current soft-launch claim.
+
+## Confirmed real Calendly booking proof
+- Verified on March 30, 2026 for the founder-controlled booking created from `/services` with `consulting@zokorp.com`.
+- Browser confirmation proved:
+  - `/services` primary CTA opened Calendly
+  - tracking tags were present:
+    - `utm_source=zokorp`
+    - `utm_medium=services-page`
+    - `utm_campaign=architecture-follow-up`
+  - real booking created for:
+    - `7:30am - 8:00am, Tuesday, March 31, 2026`
+- Production record proof confirmed after manual Calendly sync workflow dispatch:
+  - `LeadInteraction.action = call_booked`
+  - `provider = calendly`
+  - booked time stored as `2026-03-31T12:30:00.000000Z`
+  - linked `ServiceRequest` created:
+    - tracking code: `SR-260330-Y55CZ`
+    - type: `CONSULTATION`
+    - status: `SCHEDULED`
+    - title: `Architecture Review Follow-up`
+  - matching ingest audit log recorded:
+    - `integration.calendly_call_booked`
+- Atlas could not verify admin screens directly because founder admin access was not supplied in-browser, but CLI verification confirmed the records.
 
 ## Last verified state
-- This repo now carries repeatable CLI evidence for provider health, signed-in browser flow, validator credit consumption, internal booked-call ingest verification, and confirmed monitored inbox delivery.
+- This repo now carries repeatable CLI evidence for provider health, signed-in browser flow, validator credit consumption, internal booked-call ingest verification, confirmed monitored inbox delivery, and one real external Calendly booking with confirmed ZoKorp ingestion.
