@@ -15,6 +15,24 @@
   - this page is secret-safe and does not expose values
   - it cannot verify masked dashboard values, GitHub workflow URL targets, Stripe webhook bindings, or live response headers
 
+## 2a) Run the full production provider audit from CLI
+- Command:
+  - `npm run ops:audit:production`
+- What it verifies:
+  - production Vercel env pull succeeds
+  - canonical site smoke checks pass on `https://app.zokorp.com`
+  - core security headers are present on the live site
+  - Stripe webhook endpoint is enabled and pointed at `/api/stripe/webhook`
+  - Zoho Invoice refresh-token flow works and can read the configured organization
+  - the latest GitHub scheduled runs for queue drain, follow-ups, Calendly sync, Zoho lead sync, and estimate sync all succeeded
+- Prerequisites on the operator machine:
+  - Vercel CLI is authenticated and linked to `leggoboyos-projects/zokorp-web`
+  - GitHub CLI is authenticated with access to `leggoboyo/zokorp-platform`
+  - the machine can reach Stripe, Zoho, GitHub, and `app.zokorp.com`
+- Output:
+  - human-readable pass/fail lines
+  - JSON summary for copy/paste into incident notes or handoff messages
+
 ## 3) Add or update Stripe prices
 - Open `/admin/prices` as an admin user.
 - Attach Stripe `price_...` IDs to products.

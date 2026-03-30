@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "smoke:production": "node scripts/production_smoke_check.mjs",
+    "ops:audit:production": "node scripts/production_provider_audit.mjs",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",

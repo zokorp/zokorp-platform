@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
-const baseUrl = process.env.SMOKE_BASE_URL ?? "https://zokorp-web.vercel.app";
-const timeoutMs = Number(process.env.SMOKE_TIMEOUT_MS ?? 15000);
+import { fileURLToPath } from "node:url";
+
+const defaultBaseUrl = process.env.SMOKE_BASE_URL ?? "https://zokorp-web.vercel.app";
+const defaultTimeoutMs = Number(process.env.SMOKE_TIMEOUT_MS ?? 15000);
 
 const routeChecks = [
   {
@@ -59,7 +61,7 @@ const networkErrorCodes = new Set([
   "UND_ERR_SOCKET",
 ]);
 
-function withTimeoutFetch(url) {
+function withTimeoutFetch(url, timeoutMs) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   return fetch(url, {
@@ -82,10 +84,10 @@ function classifySeverity(check, reason) {
   return "P2";
 }
 
-async function probeRoute(check) {
+async function probeRoute(check, baseUrl, timeoutMs) {
   const url = new URL(check.path, baseUrl).toString();
   try {
-    const response = await withTimeoutFetch(url);
+    const response = await withTimeoutFetch(url, timeoutMs);
     const body = await response.text();
     const markerFound = body.includes(check.marker);
     return {
@@ -112,9 +114,9 @@ async function probeRoute(check) {
   }
 }
 
-async function probeControlHost(url) {
+async function probeControlHost(url, timeoutMs) {
   try {
-    const response = await withTimeoutFetch(url);
+    const response = await withTimeoutFetch(url, timeoutMs);
     return { url, ok: true, status: response.status, failureCode: null };
   } catch (error) {
     const failureCode =
@@ -221,15 +223,18 @@ function printHumanReport(summary) {
   }
 }
 
-async function main() {
+export async function runProductionSmokeCheck({
+  baseUrl = defaultBaseUrl,
+  timeoutMs = defaultTimeoutMs,
+} = {}) {
   const routeResults = [];
   for (const check of routeChecks) {
-    routeResults.push(await probeRoute(check));
+    routeResults.push(await probeRoute(check, baseUrl, timeoutMs));
   }
 
   const controlResults = [];
   for (const host of controlHosts) {
-    controlResults.push(await probeControlHost(host));
+    controlResults.push(await probeControlHost(host, timeoutMs));
   }
 
   const regressions = buildRegressions(routeResults);
@@ -245,21 +250,28 @@ async function main() {
     outcome,
   };
 
+  return summary;
+}
+
+async function main() {
+  const summary = await runProductionSmokeCheck();
   printHumanReport(summary);
   console.log("");
   console.log("JSON summary:");
   console.log(JSON.stringify(summary, null, 2));
 
-  if (outcome === "pass") {
+  if (summary.outcome === "pass") {
     process.exit(0);
   }
-  if (outcome === "blocked") {
+  if (summary.outcome === "blocked") {
     process.exit(2);
   }
   process.exit(1);
 }
 
-main().catch((error) => {
-  console.error("Smoke check runner crashed:", error);
-  process.exit(3);
-});
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  main().catch((error) => {
+    console.error("Smoke check runner crashed:", error);
+    process.exit(3);
+  });
+}
