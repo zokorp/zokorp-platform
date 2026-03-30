@@ -66,8 +66,7 @@ export default async function PricingPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-200">Pricing</p>
         <h1 className="font-display mt-2 text-balance text-4xl font-semibold">Clear access models for software and services</h1>
         <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-100 md:text-base">
-          ZoKorp uses a mix of free tools, credit-based software, and pilot subscription surfaces. Services are
-          scoped separately when the work goes beyond self-serve usage, and public subscription pricing stays hidden until commercial terms are approved.
+          ZoKorp uses a mix of free tools, credit-based software, and pilot subscription surfaces. Architecture Diagram Reviewer stays free, ZoKorpValidator is publicly calibrated for FTR first, and MLOps remains a forecasting beta while subscription posture is finalized.
         </p>
       </section>
 

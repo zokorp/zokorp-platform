@@ -21,7 +21,7 @@ const supportTopics = [
   },
   {
     title: "Tool usage",
-    detail: "Use support for upload problems, entitlement questions, or unexpected product behavior.",
+    detail: "Use support for upload problems, entitlement questions, result-delivery issues, or unexpected product behavior.",
   },
   {
     title: "Security concerns",
@@ -54,9 +54,12 @@ export default function SupportPage() {
         <p className="mt-3 text-sm leading-6 text-slate-600">
           Email <span className="font-medium text-slate-900">zkhawaja@zokorp.com</span> with the product name,
           your account email, and a short description of the issue. For billing issues, include the product and
-          purchase context. For security issues, mark the subject line as urgent.
+          purchase context. For security issues, mark the subject line as urgent. For Architecture Reviewer or Validator follow-up, include the estimate reference if one was generated.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
+          <Link href="/refunds" className={buttonVariants({ variant: "secondary" })}>
+            Refund posture
+          </Link>
           <Link href="/security" className={buttonVariants({ variant: "secondary" })}>
             Security overview
           </Link>

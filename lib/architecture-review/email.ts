@@ -4,6 +4,7 @@ import type {
   ArchitectureReviewReport,
 } from "@/lib/architecture-review/types";
 import { buildFallbackArchitectureEstimateSnapshot } from "@/lib/architecture-review/rule-catalog";
+import { buildEmailPreferenceFooter } from "@/lib/email-preferences";
 import { getSiteUrl } from "@/lib/site";
 
 function providerLabel(provider: ArchitectureReviewReport["provider"]) {
@@ -92,7 +93,11 @@ function confidenceStyles(confidence: ArchitectureReviewReport["analysisConfiden
   };
 }
 
-function nextStepNote(report: ArchitectureReviewReport) {
+function nextStepNote(report: ArchitectureReviewReport, estimateSnapshot: ArchitectureEstimateSnapshot) {
+  if (estimateSnapshot.policy.band === "consultation-only") {
+    return estimateSnapshot.policy.nextStep;
+  }
+
   if (report.analysisConfidence === "low") {
     return "The estimate below is limited to the issues visible in the submitted material. Use the booking link to confirm whether any hidden dependencies would change scope.";
   }
@@ -101,7 +106,39 @@ function nextStepNote(report: ArchitectureReviewReport) {
     return "The estimate below covers the fixes visible in this review. If the follow-up uncovers a broader redesign or rollout program, that extra scope is handled separately.";
   }
 
-  return "The estimate below covers the implementation work implied by the detected findings in this review. The free review itself stays free.";
+  return estimateSnapshot.policy.nextStep;
+}
+
+function estimateSectionTitle(estimateSnapshot: ArchitectureEstimateSnapshot) {
+  if (estimateSnapshot.policy.band === "consultation-only") {
+    return "Consultation Path";
+  }
+
+  if (estimateSnapshot.policy.band === "optional-polish") {
+    return "Optional Polish Scope";
+  }
+
+  return "Implementation Estimate";
+}
+
+function estimateSectionTextLabel(estimateSnapshot: ArchitectureEstimateSnapshot) {
+  if (estimateSnapshot.policy.band === "consultation-only") {
+    return "Consultation path";
+  }
+
+  return "Implementation estimate";
+}
+
+function ctaLabel(estimateSnapshot: ArchitectureEstimateSnapshot) {
+  if (estimateSnapshot.policy.band === "consultation-only") {
+    return "Book consultation";
+  }
+
+  if (estimateSnapshot.policy.band === "optional-polish") {
+    return "Book polish follow-up";
+  }
+
+  return "Book implementation follow-up";
 }
 
 function buildHtmlEmail(
@@ -109,6 +146,7 @@ function buildHtmlEmail(
   estimateSnapshot: ArchitectureEstimateSnapshot,
   ctaLinks: EmailCtaLinks,
   officialEstimateReference?: string | null,
+  emailPreferenceFooterHtml?: string,
 ) {
   const mandatoryFindings = report.findings.filter((finding) => finding.pointsDeducted > 0);
   const optionalRecommendations = report.findings.filter((finding) => finding.pointsDeducted === 0);
@@ -159,9 +197,19 @@ function buildHtmlEmail(
             (lineItem) => `
               <tr>
                 <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;color:#0f172a;font-size:13px;">
-                  <div style="font-weight:700;">${escapeHtml(lineItem.ruleId)} · ${escapeHtml(lineItem.serviceLineLabel)}</div>
-                  <div style="margin-top:4px;color:#334155;">${escapeHtml(lineItem.publicFixSummary)}</div>
-                </td>
+                      <div style="font-weight:700;">${escapeHtml(lineItem.ruleId)} · ${escapeHtml(lineItem.serviceLineLabel)}</div>
+                      <div style="margin-top:4px;color:#334155;">${escapeHtml(lineItem.publicFixSummary)}</div>
+                      ${
+                        lineItem.officialSourceLinks.length > 0
+                          ? `<div style="margin-top:4px;color:#475569;">Official references: ${lineItem.officialSourceLinks
+                              .map(
+                                (link) =>
+                                  `<a href="${escapeHtml(link.url)}" style="color:#0f5c7a;text-decoration:none;">${escapeHtml(link.label)}</a>`,
+                              )
+                              .join(" · ")}</div>`
+                          : ""
+                      }
+                    </td>
                 <td align="right" style="padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;color:#0f172a;font-size:14px;font-weight:800;white-space:nowrap;">
                   ${escapeHtml(toUsd(lineItem.amountUsd))}
                   <div style="margin-top:4px;font-size:11px;font-weight:600;color:#475569;">${escapeHtml(formatHours(lineItem.estimatedHours))}</div>
@@ -170,7 +218,11 @@ function buildHtmlEmail(
             `,
           )
           .join("")
-      : `<tr><td colspan="2" style="padding:10px 12px;color:#334155;font-size:13px;">No implementation estimate was produced because no mandatory fix scope was detected.</td></tr>`;
+      : `<tr><td colspan="2" style="padding:10px 12px;color:#334155;font-size:13px;">${
+          estimateSnapshot.policy.band === "consultation-only"
+            ? "No payable remediation quote is attached at this score band. Use the booking link to move into consultation."
+            : "No implementation estimate was produced because no mandatory fix scope was detected."
+        }</td></tr>`;
 
   const optionalRows =
     optionalRecommendations.length > 0
@@ -226,9 +278,11 @@ function buildHtmlEmail(
                       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #dbe3ef;border-radius:10px;">
                         <tr>
                           <td style="padding:10px 12px;">
-                            <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">Implementation Estimate</div>
-                            <div style="margin-top:4px;font-size:24px;font-weight:800;color:#0f172a;">${escapeHtml(
-                              toUsd(estimateSnapshot.totalUsd),
+                            <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">${escapeHtml(
+                              estimateSectionTitle(estimateSnapshot),
+                            )}</div>
+                      <div style="margin-top:4px;font-size:24px;font-weight:800;color:#0f172a;">${escapeHtml(
+                              estimateSnapshot.policy.payableQuoteEnabled ? toUsd(estimateSnapshot.totalUsd) : "Consultation first",
                             )}</div>
                           </td>
                         </tr>
@@ -285,9 +339,11 @@ function buildHtmlEmail(
                   <tr>
                     <td style="padding:14px;">
                       <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">Next Step</div>
-                      <div style="margin-top:8px;line-height:1.5;font-size:14px;color:#0f172a;">${escapeHtml(nextStepNote(report))}</div>
+                      <div style="margin-top:8px;line-height:1.5;font-size:14px;color:#0f172a;">${escapeHtml(nextStepNote(report, estimateSnapshot))}</div>
                       <div style="margin-top:12px;">
-                        <a href="${escapeHtml(ctaLinks.bookArchitectureCallUrl)}" style="display:inline-block;border-radius:8px;background:#0f172a;color:#ffffff;padding:10px 14px;font-size:13px;font-weight:700;text-decoration:none;">Book implementation follow-up</a>
+                        <a href="${escapeHtml(ctaLinks.bookArchitectureCallUrl)}" style="display:inline-block;border-radius:8px;background:#0f172a;color:#ffffff;padding:10px 14px;font-size:13px;font-weight:700;text-decoration:none;">${escapeHtml(
+                          ctaLabel(estimateSnapshot),
+                        )}</a>
                       </div>
                     </td>
                   </tr>
@@ -302,7 +358,7 @@ function buildHtmlEmail(
                   ${topDeductionsHtml}
                 </table>
 
-                <div style="margin-top:22px;font-size:18px;font-weight:700;color:#0f172a;">Implementation Estimate</div>
+                <div style="margin-top:22px;font-size:18px;font-weight:700;color:#0f172a;">${escapeHtml(estimateSectionTitle(estimateSnapshot))}</div>
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;border-collapse:collapse;border:1px solid #dbe3ef;border-radius:10px;overflow:hidden;">
                   <tr>
                     <td style="padding:9px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:12px;font-weight:700;color:#334155;">Service Line</td>
@@ -312,7 +368,7 @@ function buildHtmlEmail(
                   <tr>
                     <td style="padding:12px;font-size:14px;font-weight:800;color:#0f172a;">Estimated total (based on submitted materials)</td>
                     <td align="right" style="padding:12px;font-size:16px;font-weight:900;color:#0f172a;">${escapeHtml(
-                      toUsd(estimateSnapshot.totalUsd),
+                      estimateSnapshot.policy.payableQuoteEnabled ? toUsd(estimateSnapshot.totalUsd) : "Consultation first",
                     )}</td>
                   </tr>
                 </table>
@@ -351,6 +407,7 @@ function buildHtmlEmail(
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;border-collapse:collapse;border:1px solid #dbe3ef;border-radius:10px;overflow:hidden;">
                   ${optionalRows}
                 </table>
+                ${emailPreferenceFooterHtml ?? ""}
               </td>
             </tr>
           </table>
@@ -368,6 +425,10 @@ export function buildArchitectureReviewEmailContent(
     ctaLinks?: Partial<EmailCtaLinks>;
     estimateSnapshot?: ArchitectureEstimateSnapshot;
     officialEstimateReference?: string | null;
+    emailPreferenceLinks?: {
+      manageUrl: string;
+      marketingUnsubscribeUrl: string;
+    } | null;
   },
 ) {
   const defaults = resolveDefaultCtaLinks();
@@ -385,6 +446,9 @@ export function buildArchitectureReviewEmailContent(
     typeof options?.officialEstimateReference === "string" && options.officialEstimateReference.trim()
       ? options.officialEstimateReference.trim()
       : null;
+  const emailPreferenceFooter = options?.emailPreferenceLinks
+    ? buildEmailPreferenceFooter(options.emailPreferenceLinks)
+    : null;
 
   const lines = [
     `Architecture Diagram Review (${providerLabel(report.provider)})`,
@@ -396,28 +460,38 @@ export function buildArchitectureReviewEmailContent(
     `Recommended work path: ${quoteTierLabel(report.quoteTier)}`,
     `Estimate reference: ${estimateSnapshot.referenceCode}`,
     ...(officialEstimateReference ? [`Formal estimate reference: ${officialEstimateReference}`] : []),
-    `Implementation estimate: ${toUsd(estimateSnapshot.totalUsd)}`,
+    `${estimateSectionTextLabel(estimateSnapshot)}: ${
+      estimateSnapshot.policy.payableQuoteEnabled ? toUsd(estimateSnapshot.totalUsd) : "Consultation first"
+    }`,
     "",
     "Flow narrative:",
     report.flowNarrative,
     "",
     "Next step:",
-    nextStepNote(report),
-    `Book implementation follow-up: ${ctaLinks.bookArchitectureCallUrl}`,
+    nextStepNote(report, estimateSnapshot),
+    `${ctaLabel(estimateSnapshot)}: ${ctaLinks.bookArchitectureCallUrl}`,
     "",
     "Top deductions:",
     ...(mandatoryFindings.length > 0
       ? mandatoryFindings.slice(0, 6).map((finding) => `- ${finding.ruleId} | -${finding.pointsDeducted} points | ${finding.message}`)
       : ["No mandatory deductions."]),
     "",
-    "Implementation estimate:",
+    `${estimateSectionTextLabel(estimateSnapshot)}:`,
     ...(estimateSnapshot.lineItems.length > 0
       ? estimateSnapshot.lineItems.map(
           (lineItem) =>
-            `- ${lineItem.ruleId} | ${lineItem.serviceLineLabel} | ${toUsd(lineItem.amountUsd)} | ${formatHours(lineItem.estimatedHours)} | ${lineItem.publicFixSummary}`,
+            `- ${lineItem.ruleId} | ${lineItem.serviceLineLabel} | ${toUsd(lineItem.amountUsd)} | ${formatHours(lineItem.estimatedHours)} | ${lineItem.publicFixSummary}${
+              lineItem.officialSourceLinks.length > 0
+                ? ` | References: ${lineItem.officialSourceLinks.map((link) => `${link.label} (${link.url})`).join(", ")}`
+                : ""
+            }`,
         )
-      : ["No implementation estimate was produced because no mandatory fix scope was detected."]),
-    `Estimated total (based on submitted materials): ${toUsd(estimateSnapshot.totalUsd)}`,
+      : estimateSnapshot.policy.band === "consultation-only"
+        ? ["No payable remediation quote is attached at this score band. Use the consultation link to confirm the real target-state scope."]
+        : ["No implementation estimate was produced because no mandatory fix scope was detected."]),
+    `Estimated total (based on submitted materials): ${
+      estimateSnapshot.policy.payableQuoteEnabled ? toUsd(estimateSnapshot.totalUsd) : "Consultation first"
+    }`,
     "",
     "Estimate assumptions:",
     ...estimateSnapshot.assumptions.map((line) => `- ${line}`),
@@ -429,11 +503,15 @@ export function buildArchitectureReviewEmailContent(
     ...(optionalRecommendations.length > 0
       ? optionalRecommendations.map((finding) => `- ${finding.ruleId} | ${finding.message}`)
       : ["No optional recommendations."]),
+    ...(emailPreferenceFooter ? ["", emailPreferenceFooter.text] : []),
   ];
 
-  const subject = `[ZoKorp] ${providerLabel(report.provider)} architecture estimate ${report.overallScore}/100`;
+  const subject =
+    estimateSnapshot.policy.band === "consultation-only"
+      ? `[ZoKorp] ${providerLabel(report.provider)} architecture review ${report.overallScore}/100`
+      : `[ZoKorp] ${providerLabel(report.provider)} architecture estimate ${report.overallScore}/100`;
   const text = lines.join("\n");
-  const html = buildHtmlEmail(report, estimateSnapshot, ctaLinks, officialEstimateReference);
+  const html = buildHtmlEmail(report, estimateSnapshot, ctaLinks, officialEstimateReference, emailPreferenceFooter?.html);
 
   return {
     subject,

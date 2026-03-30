@@ -13,6 +13,7 @@ const staticRoutes = [
   "/media",
   "/pricing",
   "/privacy",
+  "/refunds",
   "/security",
   "/services",
   "/software",

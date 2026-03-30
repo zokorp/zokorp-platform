@@ -259,6 +259,61 @@ describe("architecture rule catalog", () => {
     expect(snapshot.lineItems[0]?.amountUsd).toBe(report.findings[0]?.fixCostUSD);
   });
 
+  it("suppresses payable quotes for low-score consultation-first reviews", async () => {
+    const report = buildArchitectureReviewReport({
+      provider: "aws",
+      flowNarrative: "Traffic path is unclear and the submission is missing security, reliability, and operations details.",
+      findings: [
+        {
+          ruleId: "PILLAR-SECURITY",
+          category: "security",
+          pointsDeducted: 12,
+          message: "Security controls are missing.",
+          fix: "Add IAM, secret-management, and encryption details.",
+          evidence: "No security controls were described.",
+        },
+        {
+          ruleId: "PILLAR-RELIABILITY",
+          category: "reliability",
+          pointsDeducted: 10,
+          message: "Recovery controls are missing.",
+          fix: "Add backup, restore, and failover coverage.",
+          evidence: "No reliability controls were described.",
+        },
+        {
+          ruleId: "PILLAR-OPERATIONS",
+          category: "operations",
+          pointsDeducted: 8,
+          message: "Operational controls are missing.",
+          fix: "Add logs, metrics, alerts, and runbook ownership.",
+          evidence: "No observability controls were described.",
+        },
+        {
+          ruleId: "CLAR-BOUNDARY-EXPLICIT",
+          category: "clarity",
+          pointsDeducted: 12,
+          message: "Trust boundaries are not explicit.",
+          fix: "Label external, application, and data trust boundaries directly on the diagram.",
+          evidence: "The diagram does not make the boundary changes obvious.",
+        },
+      ],
+      userEmail: "architect@zokorp.com",
+      generatedAtISO: "2026-03-24T00:00:00.000Z",
+    });
+
+    const { snapshot } = await loadArchitectureEstimateSnapshot(report, {
+      bookingUrl: "https://book.zokorp.com/architecture",
+    });
+
+    expect(snapshot.policy).toMatchObject({
+      band: "consultation-only",
+      scoreBandLabel: "0-59",
+      payableQuoteEnabled: false,
+    });
+    expect(snapshot.totalUsd).toBe(0);
+    expect(snapshot.lineItems).toHaveLength(0);
+  });
+
   it("syncs missing rules and marks changed or removed rules as stale", async () => {
     state.catalogs.push(
       state.createCatalog({

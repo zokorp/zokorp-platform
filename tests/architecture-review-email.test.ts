@@ -133,4 +133,28 @@ describe("architecture review email content", () => {
     expect(content.html).toContain("SEC-BASELINE-MISSING");
     expect(content.html).toContain("Compliance baseline mapping");
   });
+
+  it("renders official source links for quoted architecture findings", () => {
+    const report = buildArchitectureReviewReport({
+      provider: "aws",
+      flowNarrative: "Requests traverse edge, application, and data tiers but security controls are still thin.",
+      findings: [
+        {
+          ruleId: "PILLAR-SECURITY",
+          category: "security",
+          pointsDeducted: 12,
+          message: "Document security controls for identity, secrets, and encryption.",
+          fix: "Name IAM boundaries, secret storage, and encryption points.",
+          evidence: "Security controls are not explicit in the current narrative.",
+        },
+      ],
+      userEmail: "architect@zokorp.com",
+      generatedAtISO: "2026-03-09T02:30:00.000Z",
+    });
+
+    const content = buildArchitectureReviewEmailContent(report);
+
+    expect(content.text).toContain("AWS Security Reference Architecture");
+    expect(content.html).toContain("AWS Security Reference Architecture");
+  });
 });

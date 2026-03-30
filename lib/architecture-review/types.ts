@@ -59,6 +59,19 @@ export type ArchitectureRuleCatalogPricingMode = z.infer<typeof architectureRule
 export const architectureRuleCatalogReviewStatusSchema = z.enum(["UNREVIEWED", "DRAFT", "PUBLISHED", "STALE"]);
 export type ArchitectureRuleCatalogReviewStatus = z.infer<typeof architectureRuleCatalogReviewStatusSchema>;
 
+export const architectureSourceLinkSchema = z.object({
+  label: z.string().trim().min(1).max(120),
+  url: z.string().trim().url(),
+});
+export type ArchitectureSourceLink = z.infer<typeof architectureSourceLinkSchema>;
+
+export const architectureEstimatePolicyBandSchema = z.enum([
+  "consultation-only",
+  "remediation-estimate",
+  "optional-polish",
+]);
+export type ArchitectureEstimatePolicyBand = z.infer<typeof architectureEstimatePolicyBandSchema>;
+
 export const architectureFindingSchema = z.object({
   ruleId: z.string().trim().min(1).max(80),
   category: architectureCategorySchema,
@@ -103,6 +116,11 @@ export const architectureEstimateLineItemSchema = z.object({
   publicFixSummary: z.string().trim().min(1).max(240),
   amountUsd: z.number().int().min(0),
   estimatedHours: z.number().min(0).max(200),
+  remediationHoursLow: z.number().min(0).max(200),
+  remediationHoursHigh: z.number().min(0).max(200),
+  officialSourceLinks: z.array(architectureSourceLinkSchema).max(4),
+  confidenceGuidance: z.string().trim().min(1).max(240),
+  partialCreditGuidance: z.string().trim().min(1).max(240),
   source: z.enum(["published", "fallback"]),
   publishedRevisionId: z.string().cuid().nullable().optional(),
 });
@@ -112,6 +130,13 @@ export const architectureEstimateSnapshotSchema = z.object({
   referenceCode: z.string().trim().min(1).max(40),
   bookingUrl: z.string().trim().url(),
   totalUsd: z.number().int().min(0),
+  policy: z.object({
+    band: architectureEstimatePolicyBandSchema,
+    scoreBandLabel: z.enum(["0-59", "60-89", "90-100"]),
+    headline: z.string().trim().min(1).max(180),
+    nextStep: z.string().trim().min(1).max(280),
+    payableQuoteEnabled: z.boolean(),
+  }),
   lineItems: z.array(architectureEstimateLineItemSchema).max(20),
   assumptions: z.array(z.string().trim().min(1).max(220)).min(1).max(6),
   exclusions: z.array(z.string().trim().min(1).max(220)).min(1).max(6),

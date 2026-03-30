@@ -36,7 +36,7 @@ export default function AboutPage() {
         <h1 className="font-display mt-2 text-balance text-4xl font-semibold">ZoKorp is built for practical delivery work</h1>
         <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-100 md:text-base">
           ZoKorp combines AWS-focused advisory work, productized validation tooling, and account-linked
-          software delivery so customers can move from discovery to execution without changing systems.
+          software delivery so customers can move from discovery to execution without changing systems. The current public launch stays intentionally narrow: Architecture Diagram Reviewer, FTR-first Validator, and a forecasting beta.
         </p>
       </section>
 

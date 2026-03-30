@@ -49,7 +49,7 @@ const FALLBACK_PUBLIC_CATALOG: CatalogProduct[] = [
     id: "fallback-zokorp-validator",
     slug: "zokorp-validator",
     name: "ZoKorpValidator",
-    description: "ValidationChecklistValidator for FTR, SDP/SRP, and Competency workflows.",
+    description: "FTR-first validation workflow with deterministic scoring, safe rewrite guidance, email delivery, and estimate-first follow-up.",
     accessModel: AccessModel.ONE_TIME_CREDIT,
     active: true,
     prices: [
@@ -61,26 +61,6 @@ const FALLBACK_PUBLIC_CATALOG: CatalogProduct[] = [
         kind: PriceKind.CREDIT_PACK,
         creditsGranted: 1,
         creditTier: CreditTier.FTR,
-        active: true,
-      },
-      {
-        id: "fallback-sdp-srp",
-        stripePriceId: "fallback-sdp-srp",
-        amount: 15000,
-        currency: "usd",
-        kind: PriceKind.CREDIT_PACK,
-        creditsGranted: 1,
-        creditTier: CreditTier.SDP_SRP,
-        active: true,
-      },
-      {
-        id: "fallback-competency",
-        stripePriceId: "fallback-competency",
-        amount: 50000,
-        currency: "usd",
-        kind: PriceKind.CREDIT_PACK,
-        creditsGranted: 1,
-        creditTier: CreditTier.COMPETENCY,
         active: true,
       },
     ],
@@ -100,7 +80,7 @@ const FALLBACK_PUBLIC_CATALOG: CatalogProduct[] = [
     slug: "mlops-foundation-platform",
     name: "ZoKorp MLOps Foundation Platform",
     description:
-      "Forecasting workspace for SMB teams: upload spreadsheet data, run practical revenue forecasts, review outputs, and add only the modules you need.",
+      "Forecasting beta for SMB teams: upload spreadsheet data, run practical revenue forecasts, review outputs, and expand later with paid add-ons.",
     accessModel: AccessModel.SUBSCRIPTION,
     active: true,
     prices: [],
@@ -131,6 +111,27 @@ function loadFallbackCatalog(reason: string, cause?: unknown): CatalogProduct[] 
   return cloneFallbackCatalog();
 }
 
+function sanitizePublicProduct(product: CatalogProduct): CatalogProduct {
+  if (product.slug === "zokorp-validator") {
+    return {
+      ...product,
+      description:
+        "FTR-first validation workflow with deterministic scoring, safe rewrite guidance, email delivery, and estimate-first follow-up.",
+      prices: product.prices.filter((price) => price.creditTier === null || price.creditTier === CreditTier.FTR),
+    };
+  }
+
+  if (product.slug === "mlops-foundation-platform") {
+    return {
+      ...product,
+      description:
+        "Forecasting beta for SMB teams: upload spreadsheet data, run practical revenue forecasts, review outputs, and expand later with paid add-ons.",
+    };
+  }
+
+  return product;
+}
+
 export async function getSoftwareCatalog(): Promise<CatalogProduct[]> {
   if (!process.env.DATABASE_URL) {
     return loadFallbackCatalog("DATABASE_URL is not configured");
@@ -148,7 +149,7 @@ export async function getSoftwareCatalog(): Promise<CatalogProduct[]> {
       orderBy: { name: "asc" },
     });
 
-    return products.filter((product) => PUBLIC_PRODUCT_SLUGS.has(product.slug));
+    return products.filter((product) => PUBLIC_PRODUCT_SLUGS.has(product.slug)).map((product) => sanitizePublicProduct(product));
   } catch (error) {
     console.error("Failed to load software catalog from database.", error);
     return loadFallbackCatalog("database-backed catalog query failed", error);
@@ -161,7 +162,8 @@ export async function getProductBySlug(slug: string): Promise<CatalogProduct | n
   }
 
   if (!process.env.DATABASE_URL) {
-    return cloneFallbackCatalog().find((product) => product.slug === slug) ?? null;
+    const fallback = cloneFallbackCatalog().find((product) => product.slug === slug);
+    return fallback ? sanitizePublicProduct(fallback) : null;
   }
 
   try {
@@ -179,10 +181,11 @@ export async function getProductBySlug(slug: string): Promise<CatalogProduct | n
       return null;
     }
 
-    return product;
+    return sanitizePublicProduct(product);
   } catch (error) {
     console.error("Failed to load product by slug from database.", { slug, error });
-    return cloneFallbackCatalog().find((product) => product.slug === slug) ?? null;
+    const fallback = cloneFallbackCatalog().find((product) => product.slug === slug);
+    return fallback ? sanitizePublicProduct(fallback) : null;
   }
 }
 

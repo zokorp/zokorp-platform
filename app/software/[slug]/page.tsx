@@ -50,24 +50,6 @@ const validatorFallbackPrices: DisplayPrice[] = [
     creditsGranted: 1,
     creditTier: CreditTier.FTR,
   },
-  {
-    id: "fallback-sdp-srp",
-    stripePriceId: "unconfigured-sdp-srp",
-    kind: PriceKind.CREDIT_PACK,
-    amount: 15000,
-    currency: "usd",
-    creditsGranted: 1,
-    creditTier: CreditTier.SDP_SRP,
-  },
-  {
-    id: "fallback-competency",
-    stripePriceId: "unconfigured-competency",
-    kind: PriceKind.CREDIT_PACK,
-    amount: 50000,
-    currency: "usd",
-    creditsGranted: 1,
-    creditTier: CreditTier.COMPETENCY,
-  },
 ];
 
 function formatAmount(amount: number, currency: string) {
@@ -345,9 +327,13 @@ export default async function SoftwareDetailPage({
   const productDescription = isArchitectureReviewer
     ? "AWS-only architecture review for PNG, JPG, PDF, or SVG uploads with deterministic findings, source links, and estimate-first follow-up."
     : isMLOpsPlatform
-      ? "Forecasting workspace for SMB teams. Upload CSV or XLSX revenue history, review a deterministic forecast, and keep the run in your account activity."
-      : product.description;
-  const validatorTargets = isValidator ? getValidatorTargetOptions() : [];
+      ? "Forecasting beta for SMB teams. Upload CSV or XLSX revenue history, review a deterministic forecast, and keep temporary run history in your account."
+      : isValidator
+        ? "FTR-first validation workflow with deterministic scoring, safe rewrite guidance, email delivery, and estimate-first follow-up."
+        : product.description;
+  const validatorTargets = isValidator
+    ? getValidatorTargetOptions().filter((target) => isAdminTester || target.profile === "FTR")
+    : [];
   let validatorProfileCredits: Record<ValidationProfile, number> = {
     FTR: 0,
     SDP: 0,
@@ -420,8 +406,9 @@ export default async function SoftwareDetailPage({
   }
 
   const pricesFromDb = product.prices.filter((price) => price.active !== false);
-  const displayPrices =
-    pricesFromDb.length > 0 ? pricesFromDb : isValidator ? validatorFallbackPrices : [];
+  const displayPrices = (
+    pricesFromDb.length > 0 ? pricesFromDb : isValidator ? validatorFallbackPrices : []
+  ).filter((price) => !isValidator || isAdminTester || getValidatorPriceTier(price) === CreditTier.FTR);
   const publicPricingHidden = shouldHidePublicProductPricing(product.accessModel);
 
   const authUnavailable = !authRuntimeReady;
@@ -465,8 +452,9 @@ export default async function SoftwareDetailPage({
             : "Account optional"}
       </Badge>
       {isValidator ? <Badge variant="outline">1 credit per run</Badge> : null}
+      {isValidator && !isAdminTester ? <Badge variant="outline">FTR public launch</Badge> : null}
       {isArchitectureReviewer ? <Badge variant="outline">Email-only review</Badge> : null}
-      {isMLOpsPlatform ? <Badge variant="outline">Forecasting workspace</Badge> : null}
+      {isMLOpsPlatform ? <Badge variant="outline">Forecasting beta</Badge> : null}
       {!isValidator && !isArchitectureReviewer && !isMLOpsPlatform ? (
         <Badge variant="outline">Account-linked access</Badge>
       ) : null}
@@ -628,6 +616,14 @@ export default async function SoftwareDetailPage({
             <AlertTitle>Access status</AlertTitle>
             <AlertDescription>{message.text}</AlertDescription>
           </Alert>
+          {isValidator && !isAdminTester ? (
+            <Alert tone="info">
+              <AlertTitle>Public launch is FTR-first</AlertTitle>
+              <AlertDescription>
+                SDP, SRP, and Competency remain internal calibration tracks until their rulepacks, estimate logic, and customer output meet the same launch bar.
+              </AlertDescription>
+            </Alert>
+          ) : null}
           <CheckoutFlashBanner state={checkoutState} />
         </div>
       }
@@ -661,6 +657,7 @@ export default async function SoftwareDetailPage({
           validationTargets={validatorTargets}
           profileCredits={validatorProfileCredits}
           adminBypass={isAdminTester}
+          allowExperimentalProfiles={isAdminTester}
         />
       ) : isArchitectureReviewer ? (
         <FreeToolAccessGate

@@ -64,6 +64,7 @@ type ValidatorFormProps = {
   validationTargets?: ValidationTargetOption[];
   profileCredits?: Record<ValidationProfile, number>;
   adminBypass?: boolean;
+  allowExperimentalProfiles?: boolean;
 };
 
 const profileOptions: Array<{
@@ -116,6 +117,7 @@ export function ValidatorForm({
   validationTargets = [],
   profileCredits = { FTR: 0, SDP: 0, SRP: 0, COMPETENCY: 0 },
   adminBypass = false,
+  allowExperimentalProfiles = false,
 }: ValidatorFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<ValidatorResponse | null>(null);
@@ -138,6 +140,10 @@ export function ValidatorForm({
 
     return grouped;
   }, [validationTargets]);
+  const visibleProfileOptions = useMemo(
+    () => (allowExperimentalProfiles ? profileOptions : profileOptions.filter((option) => option.value === "FTR")),
+    [allowExperimentalProfiles],
+  );
 
   const activeTargets = targetsByProfile[selectedProfile];
   const adminModeActive = adminBypass || result?.adminBypass === true;
@@ -153,6 +159,13 @@ export function ValidatorForm({
       return haystack.includes(q);
     });
   }, [activeTargets, targetSearch]);
+
+  useEffect(() => {
+    if (!visibleProfileOptions.some((option) => option.value === selectedProfile)) {
+      setSelectedProfile("FTR");
+      setTargetSearch("");
+    }
+  }, [selectedProfile, visibleProfileOptions]);
 
   useEffect(() => {
     if (activeTargets.length === 0) {
@@ -324,7 +337,7 @@ export function ValidatorForm({
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Validation Workflow</p>
               <h3 className="font-display text-3xl font-semibold text-slate-900">Run ZoKorpValidator</h3>
               <p className="max-w-3xl text-sm leading-6 text-slate-600">
-                Upload one PDF or Excel file (.pdf, .xlsx). Processing runs server-side with entitlement checks.
+                Upload one PDF or Excel file (.pdf, .xlsx). Public launch is calibrated for FTR only. Processing runs server-side with entitlement checks.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -332,9 +345,15 @@ export function ValidatorForm({
                 {adminModeActive ? "Admin test bypass active" : `Selected credits: ${selectedProfileCredits}`}
               </Badge>
               <Badge variant="outline">FTR {profileCredits.FTR}</Badge>
-              <Badge variant="outline">SDP {profileCredits.SDP}</Badge>
-              <Badge variant="outline">SRP {profileCredits.SRP}</Badge>
-              <Badge variant="outline">Competency {profileCredits.COMPETENCY}</Badge>
+              {allowExperimentalProfiles ? (
+                <>
+                  <Badge variant="outline">SDP {profileCredits.SDP}</Badge>
+                  <Badge variant="outline">SRP {profileCredits.SRP}</Badge>
+                  <Badge variant="outline">Competency {profileCredits.COMPETENCY}</Badge>
+                </>
+              ) : (
+                <Badge variant="secondary">SDP/SRP and Competency remain internal calibration tracks</Badge>
+              )}
             </div>
           </div>
           <p className="text-xs leading-5 text-slate-500">
@@ -346,6 +365,15 @@ export function ValidatorForm({
         </CardHeader>
 
         <CardContent className="space-y-4">
+          {!allowExperimentalProfiles ? (
+            <Alert tone="info">
+              <AlertTitle>FTR is the public launch track</AlertTitle>
+              <AlertDescription>
+                SDP, SRP, and Competency stay internal until their rulepacks, pricing, and rewrite behavior reach the same launch bar.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <label className="space-y-2">
@@ -361,14 +389,14 @@ export function ValidatorForm({
                   }}
                   required
                 >
-                  {profileOptions.map((option) => (
+                  {visibleProfileOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
                   ))}
                 </Select>
                 <p className="text-xs leading-5 text-slate-500">
-                  {profileOptions.find((option) => option.value === selectedProfile)?.help}
+                  {visibleProfileOptions.find((option) => option.value === selectedProfile)?.help}
                 </p>
               </label>
 

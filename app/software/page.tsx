@@ -20,9 +20,9 @@ export const metadata = buildPageMetadata({
 const spotlightItems = [
   {
     title: "ZoKorp MLOps Foundation Platform",
-    status: "Forecasting workspace",
+    status: "Forecasting beta",
     summary:
-      "Upload spreadsheet data, run a narrow revenue-forecast workflow, and add only the modules your team actually needs.",
+      "Upload spreadsheet data, run a narrow revenue-forecast workflow, and expand only if your team actually needs more modules.",
     cta: "Open product",
     href: "/software/mlops-foundation-platform",
   },

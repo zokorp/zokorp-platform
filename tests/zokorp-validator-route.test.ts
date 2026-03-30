@@ -355,4 +355,32 @@ describe("zokorp validator route", () => {
       error: "File is required",
     });
   });
+
+  it("rejects non-FTR profiles for non-admin public runs", async () => {
+    const formData = new FormData();
+    formData.set(
+      "file",
+      new File([Buffer.from("%PDF-1.4")], "validator-report.pdf", {
+        type: "application/pdf",
+      }),
+    );
+    formData.set("validationProfile", "SRP");
+
+    const response = await POST(
+      new Request("https://app.zokorp.com/api/tools/zokorp-validator", {
+        method: "POST",
+        headers: {
+          origin: "https://app.zokorp.com",
+        },
+        body: formData,
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      error: "Only FTR is publicly calibrated today. SDP/SRP and Competency remain internal launch tracks for now.",
+    });
+    expect(requireEntitlementMock).not.toHaveBeenCalled();
+    expect(parseValidatorInputMock).not.toHaveBeenCalled();
+  });
 });

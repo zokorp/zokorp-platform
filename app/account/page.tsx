@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   type ArchitectureReviewJob,
+  type AuditLog,
   CreditTier,
   EntitlementStatus,
   type EstimateCompanion,
@@ -24,7 +25,23 @@ import {
   SERVICE_REQUEST_TYPE_LABEL,
 } from "@/lib/service-requests";
 
+import { saveAccountEmailPreferencesAction } from "./actions";
+
 export const dynamic = "force-dynamic";
+
+type TimelineBadgeVariant = "secondary" | "success" | "warning" | "danger" | "info" | "outline";
+
+type ToolRunTimelineEntry = {
+  id: string;
+  createdAt: Date;
+  title: string;
+  badgeLabel: string;
+  badgeVariant: TimelineBadgeVariant;
+  summary: string;
+  details: string[];
+  href: string;
+  hrefLabel: string;
+};
 
 function isServiceRequestOpen(status: ServiceRequestStatus) {
   return status !== ServiceRequestStatus.DELIVERED && status !== ServiceRequestStatus.CLOSED;
@@ -105,6 +122,172 @@ function auditSummary(metadata: unknown) {
   return parts.length > 0 ? parts.join(" · ") : null;
 }
 
+function asRecord(metadata: unknown) {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return null;
+  }
+
+  return metadata as Record<string, unknown>;
+}
+
+function readString(record: Record<string, unknown> | null, key: string) {
+  const value = record?.[key];
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function readNumber(record: Record<string, unknown> | null, key: string) {
+  const value = record?.[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function architectureReviewBadgeVariant(review: Pick<ArchitectureReviewJob, "status" | "deliveryMode">): TimelineBadgeVariant {
+  if (review.status === "sent" || review.deliveryMode === "sent") {
+    return "success";
+  }
+
+  if (review.status === "fallback") {
+    return "warning";
+  }
+
+  if (review.status === "failed" || review.status === "rejected") {
+    return "danger";
+  }
+
+  return "secondary";
+}
+
+function validatorRunBadgeVariant(score: number | null, deliveryStatus: string | null): TimelineBadgeVariant {
+  if (deliveryStatus === "failed") {
+    return "danger";
+  }
+
+  if (score === null) {
+    return "secondary";
+  }
+
+  if (score >= 90) {
+    return "success";
+  }
+
+  if (score >= 60) {
+    return "info";
+  }
+
+  return "warning";
+}
+
+function mlopsRunBadgeVariant(confidenceScore: number | null): TimelineBadgeVariant {
+  if (confidenceScore === null) {
+    return "secondary";
+  }
+
+  if (confidenceScore >= 75) {
+    return "success";
+  }
+
+  if (confidenceScore >= 50) {
+    return "info";
+  }
+
+  return "warning";
+}
+
+function buildToolRunTimelineEntries(input: {
+  architectureReviews: ArchitectureReviewJob[];
+  auditLogs: AuditLog[];
+}) {
+  const architectureEntries: ToolRunTimelineEntry[] = input.architectureReviews.map((review) => ({
+    id: review.id,
+    createdAt: review.createdAt,
+    title: "Architecture Diagram Reviewer",
+    badgeLabel: humanizeArchitectureJobStatus(review),
+    badgeVariant: architectureReviewBadgeVariant(review),
+    summary: [
+      review.overallScore !== null ? `Score ${review.overallScore}/100` : "Review in progress",
+      review.analysisConfidence ? `${review.analysisConfidence} confidence` : null,
+      review.quoteTier ? review.quoteTier : null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    details: [
+      review.completedAt ? `Completed ${new Date(review.completedAt).toLocaleString()}` : "Email-delivered account-linked review",
+    ],
+    href: "/software/architecture-diagram-reviewer",
+    hrefLabel: "Open reviewer",
+  }));
+
+  const auditEntries: ToolRunTimelineEntry[] = input.auditLogs.flatMap((log) => {
+    const metadata = asRecord(log.metadataJson);
+
+    if (log.action === "tool.zokorp_validator_run") {
+      const profile = readString(metadata, "profile") ?? "FTR";
+      const score = readNumber(metadata, "score");
+      const deliveryStatus = readString(metadata, "deliveryStatus");
+      const estimateQuoteUsd = readNumber(metadata, "estimateQuoteUsd");
+      const estimateSla = readString(metadata, "estimateSla");
+      const targetLabel = readString(metadata, "targetLabel");
+      const quoteReference = readString(metadata, "quoteCompanionReference");
+
+      return [
+        {
+          id: log.id,
+          createdAt: log.createdAt,
+          title: `ZoKorpValidator · ${profile}`,
+          badgeLabel: score !== null ? `${score}%` : "Completed",
+          badgeVariant: validatorRunBadgeVariant(score, deliveryStatus),
+          summary: [
+            targetLabel ?? "Checklist target selected",
+            deliveryStatus ? `Email ${deliveryStatus}` : null,
+            estimateQuoteUsd !== null
+              ? new Intl.NumberFormat("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                  maximumFractionDigits: 0,
+                }).format(estimateQuoteUsd)
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · "),
+          details: [estimateSla ? `Estimated SLA ${estimateSla}` : null, quoteReference ? `Formal estimate ${quoteReference}` : null].filter(
+            (value): value is string => Boolean(value),
+          ),
+          href: "/software/zokorp-validator",
+          hrefLabel: "Open validator",
+        },
+      ];
+    }
+
+    if (log.action === "tool.mlops_forecast_run") {
+      const metadata = asRecord(log.metadataJson);
+      const confidenceScore = readNumber(metadata, "confidenceScore");
+      const sourceName = readString(metadata, "sourceName");
+      const sourceType = readString(metadata, "sourceType");
+      const cadenceLabel = readString(metadata, "cadenceLabel");
+      const demoRun = metadata?.demoRun === true;
+
+      return [
+        {
+          id: log.id,
+          createdAt: log.createdAt,
+          title: "ZoKorp MLOps Forecasting Beta",
+          badgeLabel: confidenceScore !== null ? `Confidence ${confidenceScore}%` : "Completed",
+          badgeVariant: mlopsRunBadgeVariant(confidenceScore),
+          summary: [sourceName ?? "Forecast input", sourceType ? sourceType.toUpperCase() : null, demoRun ? "Demo run" : "Customer run"]
+            .filter(Boolean)
+            .join(" · "),
+          details: [cadenceLabel ? `Cadence ${cadenceLabel}` : null].filter((value): value is string => Boolean(value)),
+          href: "/software/mlops-foundation-platform",
+          hrefLabel: "Open MLOps beta",
+        },
+      ];
+    }
+
+    return [];
+  });
+
+  return [...architectureEntries, ...auditEntries].sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
+}
+
 export default async function AccountPage() {
   const session = await auth();
   const email = session?.user?.email;
@@ -148,12 +331,13 @@ export default async function AccountPage() {
         },
         auditLogs: {
           orderBy: { createdAt: "desc" },
-          take: 20,
+          take: 40,
         },
         architectureReviewJobs: {
           orderBy: { createdAt: "desc" },
           take: 12,
         },
+        emailPreference: true,
       },
     });
 
@@ -247,6 +431,15 @@ export default async function AccountPage() {
   const activeCredits = user.creditBalances.filter((wallet) => wallet.status === EntitlementStatus.ACTIVE);
   const openServiceRequests = serviceRequests.filter((request) => isServiceRequestOpen(request.status));
   const architectureReviews = user.architectureReviewJobs;
+  const toolRunEntries = buildToolRunTimelineEntries({
+    architectureReviews,
+    auditLogs: user.auditLogs,
+  });
+  const emailPreferences = {
+    operationalResultEmails: user.emailPreference?.operationalResultEmails ?? true,
+    marketingFollowUpEmails: user.emailPreference?.marketingFollowUpEmails ?? false,
+    updatedAt: user.emailPreference?.updatedAt ?? null,
+  };
 
   return (
     <div className="space-y-6">
@@ -275,6 +468,11 @@ export default async function AccountPage() {
             {isAdminAccount ? (
               <Link href="/admin/readiness" className={buttonVariants({ variant: "secondary" })}>
                 Runtime readiness
+              </Link>
+            ) : null}
+            {isAdminAccount ? (
+              <Link href="/admin/operations" className={buttonVariants({ variant: "secondary" })}>
+                Admin operations
               </Link>
             ) : null}
             {isAdminAccount ? (
@@ -310,7 +508,7 @@ export default async function AccountPage() {
           { label: "Credit Wallets", value: activeCredits.length },
           { label: "Recent Purchases", value: user.checkoutFulfillments.length },
           { label: "Formal Estimates", value: estimateCompanions.length },
-          { label: "Architecture Reviews", value: architectureReviews.length },
+          { label: "Tool Runs", value: toolRunEntries.length },
         ].map((item) => (
           <Card key={item.label} lift className="rounded-3xl p-4">
             <CardHeader>
@@ -342,7 +540,8 @@ export default async function AccountPage() {
               <TabsTrigger value="entitlements">Entitlements</TabsTrigger>
               <TabsTrigger value="purchases">Purchases</TabsTrigger>
               <TabsTrigger value="estimates">Estimates</TabsTrigger>
-              <TabsTrigger value="reviews">Reviews</TabsTrigger>
+              <TabsTrigger value="tool-runs">Tool Runs</TabsTrigger>
+              <TabsTrigger value="email-preferences">Email Preferences</TabsTrigger>
               <TabsTrigger value="activity">Activity</TabsTrigger>
             </TabsList>
 
@@ -530,41 +729,104 @@ export default async function AccountPage() {
               )}
             </TabsContent>
 
-            <TabsContent value="reviews" className="space-y-4">
-              {architectureReviews.length === 0 ? (
+            <TabsContent value="tool-runs" className="space-y-4">
+              {toolRunEntries.length === 0 ? (
                 <Card tone="muted" className="rounded-3xl p-5">
                   <CardContent>
-                    <p className="text-sm text-slate-600">No architecture reviews have completed on this account yet.</p>
+                    <p className="text-sm text-slate-600">No architecture, validator, or forecasting runs have been recorded on this account yet.</p>
                   </CardContent>
                 </Card>
               ) : (
                 <div className="space-y-3">
-                  {architectureReviews.map((review) => (
+                  {toolRunEntries.map((entry) => (
                     <TimelineCard
-                      key={review.id}
-                      title="Architecture Diagram Reviewer"
-                      meta={new Date(review.createdAt).toLocaleString()}
-                      badge={<Badge variant="secondary">{humanizeArchitectureJobStatus(review)}</Badge>}
-                      summary={
-                        <>
-                          {review.overallScore !== null ? `Score ${review.overallScore}/100` : "Review in progress"}
-                          {review.analysisConfidence ? ` · ${review.analysisConfidence} confidence` : ""}
-                          {review.quoteTier ? ` · ${review.quoteTier}` : ""}
-                        </>
+                      key={entry.id}
+                      title={entry.title}
+                      meta={new Date(entry.createdAt).toLocaleString()}
+                      badge={<Badge variant={entry.badgeVariant}>{entry.badgeLabel}</Badge>}
+                      summary={entry.summary}
+                      details={
+                        entry.details.length > 0 ? (
+                          <>
+                            {entry.details.map((detail) => (
+                              <span key={detail}>{detail}</span>
+                            ))}
+                          </>
+                        ) : undefined
                       }
-                      details={review.completedAt ? <span>Completed {new Date(review.completedAt).toLocaleString()}</span> : undefined}
                       footer={
                         <Link
-                          href="/software/architecture-diagram-reviewer"
+                          href={entry.href}
                           className={buttonVariants({ variant: "secondary", size: "sm" })}
                         >
-                          Open reviewer
+                          {entry.hrefLabel}
                         </Link>
                       }
                     />
                   ))}
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="email-preferences" className="space-y-4">
+              <Card className="rounded-3xl p-5">
+                <CardHeader className="gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Email controls</p>
+                  <h3 className="font-display text-2xl font-semibold text-slate-900">Operational delivery and future follow-up</h3>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm leading-6 text-slate-600">
+                    Keep result-delivery emails separate from future outreach. Marketing follow-up stays off by default until you explicitly enable it.
+                  </p>
+
+                  <form action={saveAccountEmailPreferencesAction} className="space-y-4">
+                    <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                      <input
+                        type="checkbox"
+                        name="operationalResultEmails"
+                        defaultChecked={emailPreferences.operationalResultEmails}
+                        className="mt-1 h-4 w-4 rounded border-slate-300"
+                      />
+                      <span className="space-y-1">
+                        <span className="block text-sm font-semibold text-slate-900">Operational result emails</span>
+                        <span className="block text-sm leading-6 text-slate-600">
+                          Requested tool results, billing-critical notices, and account-linked workflow updates.
+                        </span>
+                      </span>
+                    </label>
+
+                    <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                      <input
+                        type="checkbox"
+                        name="marketingFollowUpEmails"
+                        defaultChecked={emailPreferences.marketingFollowUpEmails}
+                        className="mt-1 h-4 w-4 rounded border-slate-300"
+                      />
+                      <span className="space-y-1">
+                        <span className="block text-sm font-semibold text-slate-900">Future marketing follow-up</span>
+                        <span className="block text-sm leading-6 text-slate-600">
+                          Optional launch announcements, product updates, and advisory follow-up that is not required to operate your account.
+                        </span>
+                      </span>
+                    </label>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button type="submit" className={buttonVariants()}>
+                        Save preferences
+                      </button>
+                      <Link href="/support" className={buttonVariants({ variant: "secondary" })}>
+                        Contact support
+                      </Link>
+                    </div>
+                  </form>
+
+                  <p className="text-xs text-slate-500">
+                    {emailPreferences.updatedAt
+                      ? `Last updated ${emailPreferences.updatedAt.toLocaleString()}`
+                      : "No manual preference changes have been recorded yet."}
+                  </p>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="activity" className="space-y-4">

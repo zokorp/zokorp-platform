@@ -28,8 +28,16 @@ const sections = [
     title: "Email, CRM, and service providers",
     paragraphs: [
       "ZoKorp uses hosted providers for application hosting, database access, authentication, billing, and email delivery. Stripe handles billing workflows, and ZoKorp does not build a custom credit-card storage layer inside this application.",
-      "Diagnostic results are delivered to the verified account email used to run the tool. Optional CRM follow-up is off by default and only runs when you explicitly allow it on a submission.",
+      "Diagnostic results are delivered to the verified account email used to run the tool. Operational result emails and future marketing follow-up are tracked separately in account email preferences.",
+      "Optional CRM follow-up is off by default and only runs when you explicitly allow it on a submission.",
       "If you opt in to archival or CRM follow-up, the relevant workflow data may be transmitted to those providers to complete the requested operation.",
+    ],
+  },
+  {
+    title: "Forecasting beta data handling",
+    paragraphs: [
+      "The ZoKorp MLOps Foundation Platform is currently a forecasting beta. By default, uploaded forecasting files are processed to produce the result and supporting audit metadata, but the raw uploaded dataset is not treated as a long-term platform data warehouse.",
+      "Live data connectors and broad persistent dataset storage are intentionally out of scope for the current beta launch.",
     ],
   },
   {

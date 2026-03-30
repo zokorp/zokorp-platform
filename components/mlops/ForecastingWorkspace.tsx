@@ -112,7 +112,7 @@ export function ForecastingWorkspace({ signedIn, currentEmail, hasAccess }: Fore
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Forecasting Workspace</p>
               <h1 className="font-display mt-1 text-4xl font-semibold text-slate-900">
-                Upload revenue data and get a simple deterministic forecast
+                Upload revenue data and run the forecasting beta
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600 md:text-base">
                 Start with a CSV or XLSX upload, then get a straight-line forecast, confidence notes, and a compact
@@ -121,8 +121,10 @@ export function ForecastingWorkspace({ signedIn, currentEmail, hasAccess }: Fore
             </div>
 
             <div className="flex flex-wrap gap-2">
+              <Badge variant="secondary">Beta</Badge>
               <Badge variant="brand">Upload-first</Badge>
               <Badge variant="secondary">Revenue forecasting</Badge>
+              <Badge variant="outline">Temporary processing by default</Badge>
               <Badge variant={confidenceVariant(displayResult.confidenceScore)}>
                 Confidence {displayResult.confidenceScore}%
               </Badge>
@@ -137,7 +139,7 @@ export function ForecastingWorkspace({ signedIn, currentEmail, hasAccess }: Fore
               </p>
               <p className="mt-1 text-sm">
                 {showLockedState
-                  ? "Sign in and subscribe to run real forecasts."
+                  ? "Sign in and subscribe to run the live beta workflow."
                   : `Signed in as ${currentEmail ?? "your business email"}.`}
               </p>
             </div>
@@ -160,6 +162,7 @@ export function ForecastingWorkspace({ signedIn, currentEmail, hasAccess }: Fore
                   <li>Accepted formats: `.csv` and `.xlsx`</li>
                   <li>Best columns: `date`, `revenue`, `value`, `amount`, or similar</li>
                   <li>Output: 6-step forecast with ranges and confidence notes</li>
+                  <li>Default posture: temporary processing, no live data connectors</li>
                 </ul>
               </CardContent>
             </Card>
@@ -168,7 +171,7 @@ export function ForecastingWorkspace({ signedIn, currentEmail, hasAccess }: Fore
               <Alert tone="warning">
                 <AlertTitle>Subscription required</AlertTitle>
                 <AlertDescription>
-                  This workspace is wired for paid customer use. Subscribe first, then run the live forecast and keep
+                  This beta workspace is wired for paid customer use. Subscribe first, then run the live forecast and keep
                   the output in your account history.
                 </AlertDescription>
               </Alert>

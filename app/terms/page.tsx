@@ -27,6 +27,7 @@ const sections = [
     paragraphs: [
       "Pricing, subscriptions, and credit-based purchases are presented in the platform and processed through Stripe-hosted billing workflows.",
       "Access to paid software depends on successful payment, account status, and the entitlement model configured for the purchased product.",
+      "Refund handling follows the published refund posture and may differ for one-time credits, subscriptions, and scoped consulting work.",
     ],
   },
   {
@@ -39,6 +40,7 @@ const sections = [
     title: "Disclaimers",
     paragraphs: [
       "Unless otherwise agreed in writing, platform materials and tool outputs are provided on an as-is basis for operational guidance and workflow support.",
+      "Architecture and validation outputs are decision-support material, not a guarantee that a customer submission, AWS review package, or target architecture will be accepted without further human review.",
     ],
   },
 ];

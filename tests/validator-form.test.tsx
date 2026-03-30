@@ -259,4 +259,33 @@ describe("ValidatorForm", () => {
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
   });
+
+  it("keeps public launch posture limited to FTR", () => {
+    render(
+      <ValidatorForm
+        validationTargets={[
+          {
+            id: "target-ftr",
+            profile: "FTR",
+            track: "ftr",
+            sourceRow: 1,
+            label: "AWS FTR Checklist",
+          },
+          {
+            id: "target-sdp",
+            profile: "SDP",
+            track: "sdp",
+            sourceRow: 2,
+            label: "AWS SDP Checklist",
+          },
+        ]}
+        profileCredits={{ FTR: 1, SDP: 1, SRP: 1, COMPETENCY: 1 }}
+      />,
+    );
+
+    expect(screen.getByText(/FTR is the public launch track/i)).toBeTruthy();
+    expect(screen.getByRole("option", { name: /Foundational Technical Review/i })).toBeTruthy();
+    expect(screen.queryByRole("option", { name: /Service Delivery Program/i })).toBeNull();
+    expect(screen.queryByText(/^SDP 1$/)).toBeNull();
+  });
 });

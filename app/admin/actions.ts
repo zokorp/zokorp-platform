@@ -43,6 +43,7 @@ function revalidateAdminViews() {
   revalidatePath("/account");
   revalidatePath("/admin/architecture-catalog");
   revalidatePath("/admin/architecture-catalog/[ruleId]", "page");
+  revalidatePath("/admin/operations");
   revalidatePath("/admin/products");
   revalidatePath("/admin/prices");
   revalidatePath("/admin/service-requests");

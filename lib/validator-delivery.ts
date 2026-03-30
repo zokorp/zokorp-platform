@@ -1,4 +1,5 @@
 import { sendToolResultEmail } from "@/lib/architecture-review/sender";
+import { buildEmailPreferenceFooter } from "@/lib/email-preferences";
 import {
   buildValidatorEstimate,
   type ValidatorEstimate,
@@ -72,12 +73,17 @@ export function buildValidatorEmailContent(input: {
   estimate: ValidatorEstimate;
   toEmail: string;
   officialEstimateReference?: string | null;
+  emailPreferenceLinks?: {
+    manageUrl: string;
+    marketingUnsubscribeUrl: string;
+  } | null;
 }) {
   const { report, estimate } = input;
   const officialEstimateReference =
     typeof input.officialEstimateReference === "string" && input.officialEstimateReference.trim()
       ? input.officialEstimateReference.trim()
       : null;
+  const emailPreferenceFooter = input.emailPreferenceLinks ? buildEmailPreferenceFooter(input.emailPreferenceLinks) : null;
   const topRows = emailRows(report);
   const subject = `[ZoKorp] ${report.profileLabel} validation result ${report.score}%`;
   const text = [
@@ -98,6 +104,7 @@ export function buildValidatorEmailContent(input: {
       (lineItem) =>
         `- ${lineItem.serviceLineLabel}: ${toUsd(lineItem.amountUsd)} · ${formatHours(lineItem.estimatedHours)} · ${lineItem.publicFixSummary}`,
     ),
+    ...(emailPreferenceFooter ? ["", emailPreferenceFooter.text] : []),
   ].join("\n");
   const html = `
     <div style="background:#f3f6fb;padding:28px 16px;font-family:Inter,Segoe UI,Arial,sans-serif;color:#0f172a;">
@@ -152,6 +159,7 @@ export function buildValidatorEmailContent(input: {
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #dbe3ef;border-radius:10px;overflow:hidden;">
             ${topRows}
           </table>
+          ${emailPreferenceFooter?.html ?? ""}
         </div>
       </div>
     </div>

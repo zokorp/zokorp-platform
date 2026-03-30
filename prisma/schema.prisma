@@ -95,6 +95,7 @@ model User {
   usageEvents    UsageEvent[]
   serviceRequests ServiceRequest[]
   estimateCompanions EstimateCompanion[]
+  emailPreference UserEmailPreference?
 }
 
 model Product {
@@ -370,6 +371,17 @@ model EstimateCompanion {
   @@index([customerEmail, createdAt])
   @@index([source, sourceRecordKey])
   @@index([status, updatedAt])
+}
+
+model UserEmailPreference {
+  id                       String   @id @default(cuid())
+  userId                   String   @unique
+  operationalResultEmails  Boolean  @default(true)
+  marketingFollowUpEmails  Boolean  @default(false)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  user                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ArchivedToolSubmission {

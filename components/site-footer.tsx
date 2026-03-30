@@ -20,6 +20,7 @@ const resourceLinks = [
 const legalLinks = [
   { href: "/security", label: "Security" },
   { href: "/privacy", label: "Privacy" },
+  { href: "/refunds", label: "Refunds" },
   { href: "/terms", label: "Terms" },
   { href: "/support", label: "Support" },
 ];

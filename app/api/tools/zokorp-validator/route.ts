@@ -15,7 +15,8 @@ import { getValidatorTargetOptions, resolveValidatorTargetContext } from "@/lib/
 import { VALIDATION_PROFILES } from "@/lib/zokorp-validator-engine";
 import { syncZohoInvoiceEstimate } from "@/lib/zoho-invoice";
 import { recordEstimateCompanion } from "@/lib/estimate-companions";
-import { CreditTier, EntitlementStatus } from "@prisma/client";
+import { buildEmailPreferenceLinks } from "@/lib/email-preferences";
+import { CreditTier, EntitlementStatus, Role } from "@prisma/client";
 
 export const runtime = "nodejs";
 
@@ -71,6 +72,16 @@ export async function POST(request: Request) {
       return jsonNoStore(
         { error: "Validation profile is required." },
         { status: 400 },
+      );
+    }
+
+    if (user.role !== Role.ADMIN && parsedForm.data.validationProfile !== "FTR") {
+      return jsonNoStore(
+        {
+          error:
+            "Only FTR is publicly calibrated today. SDP/SRP and Competency remain internal launch tracks for now.",
+        },
+        { status: 403 },
       );
     }
 
@@ -197,6 +208,10 @@ export async function POST(request: Request) {
       estimate,
       toEmail: user.email ?? "",
       officialEstimateReference: quoteCompanion.status === "created" ? quoteCompanion.estimateNumber : null,
+      emailPreferenceLinks: buildEmailPreferenceLinks({
+        userId: user.id,
+        email: user.email ?? null,
+      }),
     });
     const emailDelivery = user.email
       ? await sendValidatorResultsEmail({

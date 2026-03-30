@@ -115,9 +115,9 @@ const INPUT_CHECKLIST = [
 ];
 const QUOTE_METHOD_ITEMS = [
   "Each scored finding maps to a deterministic service line and fix-effort driver",
+  "Scores 0-59 stay consultation-first, 60-89 get a bounded estimate, and 90-100 stay polish-only",
   "Confidence and score bands bound the estimate instead of pretending invoice-level precision",
-  "The email includes a line-item estimate, assumptions, and exclusions",
-  "Low-confidence submissions stay estimate-first instead of inventing a large delivery scope",
+  "The email includes source-backed context, estimate policy, assumptions, and exclusions",
 ];
 const DELIVERY_PACKAGE_ITEMS = [
   "Overall score and analysis-confidence band",
@@ -926,7 +926,11 @@ export function ArchitectureDiagramReviewerForm({
                     Start Dictation (Mobile)
                   </Button>
                 )
-              ) : null}
+              ) : (
+                <p className="text-xs text-slate-500">
+                  Dictation is unavailable in this browser. You can still paste or type the narrative on desktop or mobile.
+                </p>
+              )}
             </div>
 
             {generatedDiagramSummary ? (

@@ -51,6 +51,7 @@ const startPoints = [
 
 const trustLinks = [
   { href: "/pricing", label: "Pricing" },
+  { href: "/refunds", label: "Refunds" },
   { href: "/security", label: "Security" },
   { href: "/privacy", label: "Privacy" },
   { href: "/support", label: "Support" },

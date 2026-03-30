@@ -96,4 +96,19 @@ describe("architecture review pricing catalog", () => {
       }),
     ]);
   });
+
+  it("includes source links, confidence guidance, and remediation ranges in the runtime catalog", () => {
+    expect(getArchitectureReviewPricingCatalogEntry("PILLAR-SECURITY")).toMatchObject({
+      officialSourceLinks: expect.arrayContaining([
+        expect.objectContaining({
+          label: expect.stringContaining("AWS"),
+          url: expect.stringContaining("https://"),
+        }),
+      ]),
+      confidenceGuidance: expect.stringContaining("Confidence"),
+      partialCreditGuidance: expect.stringContaining("Partial credit"),
+      remediationHoursLow: expect.any(Number),
+      remediationHoursHigh: expect.any(Number),
+    });
+  });
 });

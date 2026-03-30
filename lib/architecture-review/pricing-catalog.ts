@@ -1,5 +1,5 @@
 import { calculateFixCostUSD } from "@/lib/architecture-review/quote";
-import type { ArchitectureCategory } from "@/lib/architecture-review/types";
+import type { ArchitectureCategory, ArchitectureSourceLink } from "@/lib/architecture-review/types";
 
 type PointsSpec =
   | {
@@ -32,6 +32,11 @@ export type ArchitectureReviewPricingCatalogEntry = {
   maxFixCostUSD: number;
   quoteImpact: QuoteImpact;
   pricingNotes?: string;
+  officialSourceLinks: ArchitectureSourceLink[];
+  confidenceGuidance: string;
+  partialCreditGuidance: string;
+  remediationHoursLow: number;
+  remediationHoursHigh: number;
 };
 
 export type ArchitectureReviewPackageCatalogEntry = {
@@ -65,6 +70,126 @@ function normalizePoints(points: PointsSpec) {
   };
 }
 
+function roundHours(value: number) {
+  return Math.max(0.5, Math.round(value * 2) / 2);
+}
+
+function estimatedHoursForCatalogEntry(category: ArchitectureCategory, pointsDeducted: number, amountUsd: number) {
+  const categoryMultiplier: Record<ArchitectureCategory, number> = {
+    clarity: 0.3,
+    operations: 0.4,
+    performance: 0.45,
+    cost: 0.4,
+    sustainability: 0.25,
+    reliability: 0.55,
+    security: 0.6,
+  };
+
+  const pointsComponent = pointsDeducted * categoryMultiplier[category];
+  const amountComponent = amountUsd / 300;
+  return roundHours(pointsComponent + amountComponent);
+}
+
+function defaultOfficialSourceLinks(category: ArchitectureCategory): ArchitectureSourceLink[] {
+  const shared = [
+    {
+      label: "AWS Well-Architected Framework",
+      url: "https://docs.aws.amazon.com/wellarchitected/latest/framework/welcome.html",
+    },
+  ];
+
+  if (category === "security") {
+    return [
+      ...shared,
+      {
+        label: "AWS Security Reference Architecture",
+        url: "https://docs.aws.amazon.com/prescriptive-guidance/latest/security-reference-architecture/welcome.html",
+      },
+    ];
+  }
+
+  if (category === "reliability") {
+    return [
+      ...shared,
+      {
+        label: "AWS Reliability Pillar",
+        url: "https://docs.aws.amazon.com/wellarchitected/latest/reliability-pillar/welcome.html",
+      },
+    ];
+  }
+
+  if (category === "operations") {
+    return [
+      ...shared,
+      {
+        label: "AWS Operational Excellence Pillar",
+        url: "https://docs.aws.amazon.com/wellarchitected/latest/operational-excellence-pillar/welcome.html",
+      },
+    ];
+  }
+
+  if (category === "performance") {
+    return [
+      ...shared,
+      {
+        label: "AWS Performance Efficiency Pillar",
+        url: "https://docs.aws.amazon.com/wellarchitected/latest/performance-efficiency-pillar/welcome.html",
+      },
+    ];
+  }
+
+  if (category === "cost") {
+    return [
+      ...shared,
+      {
+        label: "AWS Cost Optimization Pillar",
+        url: "https://docs.aws.amazon.com/wellarchitected/latest/cost-optimization-pillar/welcome.html",
+      },
+    ];
+  }
+
+  if (category === "sustainability") {
+    return [
+      ...shared,
+      {
+        label: "AWS Sustainability Pillar",
+        url: "https://docs.aws.amazon.com/wellarchitected/latest/sustainability-pillar/welcome.html",
+      },
+    ];
+  }
+
+  return [
+    {
+      label: "AWS Architecture Center",
+      url: "https://aws.amazon.com/architecture/",
+    },
+    {
+      label: "AWS Architecture Icons",
+      url: "https://aws.amazon.com/architecture/icons/",
+    },
+  ];
+}
+
+function defaultConfidenceGuidance(category: ArchitectureCategory) {
+  if (category === "clarity") {
+    return "Confidence drops quickly when labels, boundaries, or ownership markers are missing even if the underlying design may be fixable.";
+  }
+
+  if (category === "security" || category === "reliability") {
+    return "Confidence is higher when the diagram and narrative explicitly name the AWS controls instead of implying them.";
+  }
+
+  return "Confidence is highest when the diagram and narrative agree on the operating path, component role, and production intent.";
+}
+
+function defaultPartialCreditGuidance(category: ArchitectureCategory) {
+  if (category === "clarity") {
+    return "Partial credit applies when the diagram intent is visible but the reader still has to infer labels, boundaries, or ownership.";
+  }
+
+  return "Partial credit applies when the design intent is present but the reviewer still cannot verify the exact AWS control, operating path, or implementation detail.";
+}
+
 function createPricingEntry(input: {
   ruleId: string;
   category: ArchitectureCategory;
@@ -73,8 +198,15 @@ function createPricingEntry(input: {
   points: PointsSpec;
   quoteImpact?: QuoteImpact;
   pricingNotes?: string;
+  officialSourceLinks?: ArchitectureSourceLink[];
+  confidenceGuidance?: string;
+  partialCreditGuidance?: string;
+  remediationHoursLow?: number;
+  remediationHoursHigh?: number;
 }): ArchitectureReviewPricingCatalogEntry {
   const normalizedPoints = normalizePoints(input.points);
+  const minFixCostUSD = calculateFixCostUSD(input.category, normalizedPoints.min);
+  const maxFixCostUSD = calculateFixCostUSD(input.category, normalizedPoints.max);
 
   return {
     ruleId: input.ruleId,
@@ -84,10 +216,19 @@ function createPricingEntry(input: {
     pointsSummary: normalizedPoints.summary,
     minPointsDeducted: normalizedPoints.min,
     maxPointsDeducted: normalizedPoints.max,
-    minFixCostUSD: calculateFixCostUSD(input.category, normalizedPoints.min),
-    maxFixCostUSD: calculateFixCostUSD(input.category, normalizedPoints.max),
+    minFixCostUSD,
+    maxFixCostUSD,
     quoteImpact: input.quoteImpact ?? "included",
     pricingNotes: input.pricingNotes,
+    officialSourceLinks: input.officialSourceLinks ?? defaultOfficialSourceLinks(input.category),
+    confidenceGuidance: input.confidenceGuidance ?? defaultConfidenceGuidance(input.category),
+    partialCreditGuidance: input.partialCreditGuidance ?? defaultPartialCreditGuidance(input.category),
+    remediationHoursLow:
+      input.remediationHoursLow ??
+      estimatedHoursForCatalogEntry(input.category, normalizedPoints.min, minFixCostUSD),
+    remediationHoursHigh:
+      input.remediationHoursHigh ??
+      estimatedHoursForCatalogEntry(input.category, normalizedPoints.max, maxFixCostUSD),
   };
 }
 

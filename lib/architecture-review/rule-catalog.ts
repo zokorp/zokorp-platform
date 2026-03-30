@@ -454,6 +454,26 @@ function codeEntryFromSnapshot(
           ? value.quoteImpact
           : "included",
       pricingNotes: typeof value.pricingNotes === "string" ? value.pricingNotes : undefined,
+      officialSourceLinks: Array.isArray(value.officialSourceLinks)
+        ? value.officialSourceLinks.filter((item): item is { label: string; url: string } => {
+            if (!item || typeof item !== "object" || Array.isArray(item)) {
+              return false;
+            }
+
+            const link = item as Record<string, unknown>;
+            return typeof link.label === "string" && typeof link.url === "string";
+          })
+        : [],
+      confidenceGuidance:
+        typeof value.confidenceGuidance === "string"
+          ? value.confidenceGuidance
+          : "Archived code snapshot. Review the evidence confidence before reusing this rule.",
+      partialCreditGuidance:
+        typeof value.partialCreditGuidance === "string"
+          ? value.partialCreditGuidance
+          : "Archived code snapshot. Review how partial credit should be interpreted before reusing this rule.",
+      remediationHoursLow: typeof value.remediationHoursLow === "number" ? value.remediationHoursLow : 0.5,
+      remediationHoursHigh: typeof value.remediationHoursHigh === "number" ? value.remediationHoursHigh : 0.5,
     };
   }
 
@@ -468,6 +488,11 @@ function codeEntryFromSnapshot(
     minFixCostUSD: 0,
     maxFixCostUSD: 0,
     quoteImpact: "included",
+    officialSourceLinks: [],
+    confidenceGuidance: "Archived code snapshot. Review the evidence confidence before reusing this rule.",
+    partialCreditGuidance: "Archived code snapshot. Review how partial credit should be interpreted before reusing this rule.",
+    remediationHoursLow: 0.5,
+    remediationHoursHigh: 0.5,
   };
 }
 
@@ -627,6 +652,43 @@ export function buildFallbackArchitectureEstimateSnapshot(
   return buildArchitectureEstimateSnapshot(report, new Map<string, PublishedCatalogOverride>(), options);
 }
 
+function estimatePolicyForScore(input: {
+  overallScore: number;
+  payableQuoteTotalUsd: number;
+}) {
+  if (input.overallScore < 60) {
+    return {
+      band: "consultation-only" as const,
+      scoreBandLabel: "0-59" as const,
+      headline: "Consultation-first path",
+      nextStep: `This architecture needs a consultation-first review before ZoKorp issues a payable remediation quote. Use the booking link to confirm the real target state and the shortest correction path.`,
+      payableQuoteEnabled: false,
+    };
+  }
+
+  if (input.overallScore >= 90) {
+    return {
+      band: "optional-polish" as const,
+      scoreBandLabel: "90-100" as const,
+      headline: "Optional polish only",
+      nextStep:
+        input.payableQuoteTotalUsd > 0
+          ? "The architecture is largely workable. Any scoped follow-up should focus on polish, presentation quality, or targeted optimization only."
+          : "No payable remediation scope was generated because the current submission does not show material fix work. Use the booking link only if you want a human polish pass.",
+      payableQuoteEnabled: input.payableQuoteTotalUsd > 0,
+    };
+  }
+
+  return {
+    band: "remediation-estimate" as const,
+    scoreBandLabel: "60-89" as const,
+    headline: "Bounded remediation estimate",
+    nextStep:
+      "The architecture is workable but has fixable gaps. The estimate below stays bounded to the issues visible in this submission so you can act quickly without opening a larger project.",
+    payableQuoteEnabled: input.payableQuoteTotalUsd > 0,
+  };
+}
+
 function buildArchitectureEstimateSnapshot(
   report: ArchitectureReviewReport,
   publishedOverrides: Map<string, PublishedCatalogOverride>,
@@ -637,7 +699,7 @@ function buildArchitectureEstimateSnapshot(
   const bookingUrl = options?.bookingUrl ?? defaultBookingUrl();
   const positiveFindings = report.findings.filter((finding) => finding.pointsDeducted > 0);
 
-  const lineItems = positiveFindings.map((finding) => {
+  const quoteCandidateLineItems = positiveFindings.map((finding) => {
     const codeEntry = getArchitectureReviewPricingCatalogEntry(finding.ruleId);
     const publishedOverride = publishedOverrides.get(finding.ruleId);
     const baseLineItem: ArchitectureEstimateLineItem = {
@@ -657,44 +719,72 @@ function buildArchitectureEstimateSnapshot(
         pointsDeducted: finding.pointsDeducted,
         amountUsd: finding.fixCostUSD,
       }),
+      remediationHoursLow: codeEntry?.remediationHoursLow ?? 0.5,
+      remediationHoursHigh: codeEntry?.remediationHoursHigh ?? 0.5,
+      officialSourceLinks: codeEntry?.officialSourceLinks ?? [],
+      confidenceGuidance:
+        codeEntry?.confidenceGuidance ??
+        "Confidence depends on whether the submitted diagram and narrative clearly show the AWS controls being claimed.",
+      partialCreditGuidance:
+        codeEntry?.partialCreditGuidance ??
+        "Partial credit applies when the reviewer can see the architectural intent but not the exact implementation detail.",
       source: publishedOverride ? "published" : "fallback",
       publishedRevisionId: publishedOverride?.publishedRevisionId ?? null,
     };
 
+    const amountUsd = quoteAmountForFinding({
+      lineItem: baseLineItem,
+      overrideMinPriceUsd: publishedOverride?.overrideMinPriceUsd ?? null,
+      overrideMaxPriceUsd: publishedOverride?.overrideMaxPriceUsd ?? null,
+      pricingMode: publishedOverride?.pricingMode ?? "DERIVED",
+    });
+
     return {
       ...baseLineItem,
-      amountUsd: quoteAmountForFinding({
-        lineItem: baseLineItem,
-        overrideMinPriceUsd: publishedOverride?.overrideMinPriceUsd ?? null,
-        overrideMaxPriceUsd: publishedOverride?.overrideMaxPriceUsd ?? null,
-        pricingMode: publishedOverride?.pricingMode ?? "DERIVED",
-      }),
+      amountUsd,
       estimatedHours: estimatedHoursForFinding({
         category: finding.category,
         pointsDeducted: finding.pointsDeducted,
-        amountUsd: quoteAmountForFinding({
-          lineItem: baseLineItem,
-          overrideMinPriceUsd: publishedOverride?.overrideMinPriceUsd ?? null,
-          overrideMaxPriceUsd: publishedOverride?.overrideMaxPriceUsd ?? null,
-          pricingMode: publishedOverride?.pricingMode ?? "DERIVED",
-        }),
+        amountUsd,
       }),
     };
   });
 
+  const payableQuoteTotalUsd = quoteCandidateLineItems.reduce((sum, item) => sum + item.amountUsd, 0);
+  const policy = estimatePolicyForScore({
+    overallScore: report.overallScore,
+    payableQuoteTotalUsd,
+  });
+  const lineItems = policy.band === "consultation-only" ? [] : quoteCandidateLineItems;
   const totalUsd = lineItems.reduce((sum, item) => sum + item.amountUsd, 0);
-  const assumptions = [
-    "Estimated only for the issues visible in the submitted diagram and written narrative.",
-    report.analysisConfidence === "low"
-      ? "Because the evidence confidence was low, the estimate assumes no hidden dependencies outside the submitted material."
-      : "The estimate assumes the current architecture can be corrected without a broader redesign.",
-    "Work is scoped for a solo implementation pass and one review cycle unless expanded during the booking conversation.",
-  ];
-  const exclusions = [
-    "New requirements, migrations, application code changes, and vendor procurement are excluded from this estimate.",
-    "Issues not visible in the submitted diagram or uncovered later are outside this estimated total.",
-    "Ongoing support, managed operations, and subscription work are not included unless separately agreed.",
-  ];
+  const assumptions =
+    policy.band === "consultation-only"
+      ? [
+          "No payable remediation quote is being issued at this score band.",
+          "The architecture needs a consultation-first review to confirm whether the design is feasible, salvageable, or should be redesigned.",
+          "Any future quote depends on validating the intended AWS workload, constraints, and target outcome during the follow-up call.",
+        ]
+      : [
+          "Estimated only for the issues visible in the submitted diagram and written narrative.",
+          report.analysisConfidence === "low"
+            ? "Because the evidence confidence was low, the estimate assumes no hidden dependencies outside the submitted material."
+            : policy.band === "optional-polish"
+              ? "The follow-up scope assumes polish, optimization, or presentation cleanup instead of a broader redesign."
+              : "The estimate assumes the current architecture can be corrected without a broader redesign.",
+          "Work is scoped for a solo implementation pass and one review cycle unless expanded during the booking conversation.",
+        ];
+  const exclusions =
+    policy.band === "consultation-only"
+      ? [
+          "This email does not include a payable remediation quote or delivery commitment.",
+          "New requirements, migrations, application code changes, and vendor procurement stay outside scope until the consultation confirms a workable target state.",
+          "If the intended design is impossible or materially misaligned with AWS best practices, the next step is redesign guidance rather than a light remediation pass.",
+        ]
+      : [
+          "New requirements, migrations, application code changes, and vendor procurement are excluded from this estimate.",
+          "Issues not visible in the submitted diagram or uncovered later are outside this estimated total.",
+          "Ongoing support, managed operations, and subscription work are not included unless separately agreed.",
+        ];
 
   const snapshot: ArchitectureEstimateSnapshot = {
     referenceCode: buildEstimateReferenceCode({
@@ -704,12 +794,13 @@ function buildArchitectureEstimateSnapshot(
     }),
     bookingUrl,
     totalUsd,
+    policy,
     lineItems,
     assumptions,
     exclusions,
   };
 
-  const auditUsage: ArchitectureEstimateAuditUsage[] = lineItems.map((item) => ({
+  const auditUsage: ArchitectureEstimateAuditUsage[] = quoteCandidateLineItems.map((item) => ({
     ruleId: item.ruleId,
     source: item.source,
     publishedRevisionId: item.publishedRevisionId ?? null,

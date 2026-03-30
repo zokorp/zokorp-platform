@@ -19,6 +19,7 @@ import {
 import { db } from "@/lib/db";
 import { isSchemaDriftError } from "@/lib/db-errors";
 import { recordEstimateCompanion } from "@/lib/estimate-companions";
+import { buildEmailPreferenceLinks } from "@/lib/email-preferences";
 import { ensureLeadLogSchemaReady } from "@/lib/lead-log-schema";
 import {
   archiveToolSubmission,
@@ -760,7 +761,7 @@ export async function processArchitectureReviewJob(jobId: string): Promise<Archi
       bookingUrl: ctaLinks?.bookArchitectureCallUrl,
     });
     const quoteCompanionResult =
-      report.overallScore >= 60 && estimateSnapshot.totalUsd > 0
+      estimateSnapshot.policy.payableQuoteEnabled && estimateSnapshot.totalUsd > 0
         ? await syncZohoInvoiceEstimate({
             email: job.userEmail,
             fullName: userName,
@@ -851,6 +852,10 @@ export async function processArchitectureReviewJob(jobId: string): Promise<Archi
         : undefined,
       estimateSnapshot,
       officialEstimateReference: quoteCompanion.status === "created" ? quoteCompanion.estimateNumber : null,
+      emailPreferenceLinks: buildEmailPreferenceLinks({
+        userId: job.userId,
+        email: job.userEmail,
+      }),
     });
 
     const outbox = await db.architectureReviewEmailOutbox.create({
