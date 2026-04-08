@@ -3,13 +3,14 @@ import { z } from "zod";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { isSchemaDriftError } from "@/lib/db-errors";
+import { isSchemaDriftError, isTransientDatabaseConnectionError } from "@/lib/db-errors";
 import { jsonNoStore } from "@/lib/internal-route";
 import { upsertLead } from "@/lib/privacy-leads";
 import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { BUSINESS_EMAIL_REQUIRED_MESSAGE, isBusinessEmail } from "@/lib/security";
 import { createServiceRequest } from "@/lib/service-requests";
+import { upsertZohoLead } from "@/lib/zoho-crm";
 
 const requestSchema = z.object({
   type: z.nativeEnum(ServiceRequestType),
@@ -25,6 +26,49 @@ const requestSchema = z.object({
   requesterName: z.string().trim().max(120).optional(),
   requesterCompanyName: z.string().trim().max(120).optional(),
 });
+
+function fallbackZohoCompanyName(input: {
+  requesterCompanyName?: string | null;
+  requesterEmail: string;
+}) {
+  const explicitCompany = input.requesterCompanyName?.trim();
+  if (explicitCompany) {
+    return explicitCompany;
+  }
+
+  const domain = input.requesterEmail.split("@")[1]?.trim().toLowerCase();
+  if (!domain) {
+    return "ZoKorp website inquiry";
+  }
+
+  return domain;
+}
+
+function buildZohoServiceRequestDescription(input: {
+  trackingCode: string;
+  requesterSource: "account" | "public_form";
+  type: ServiceRequestType;
+  title: string;
+  summary: string;
+  requesterEmail: string;
+  preferredStart?: string | undefined;
+  budgetRange?: string | undefined;
+  linkedToAccount: boolean;
+}) {
+  return [
+    `ZoKorp service request ${input.trackingCode}`,
+    `Requester source: ${input.requesterSource}`,
+    `Linked to account: ${input.linkedToAccount ? "yes" : "no"}`,
+    `Type: ${input.type}`,
+    `Title: ${input.title}`,
+    `Email: ${input.requesterEmail}`,
+    input.preferredStart ? `Preferred start: ${input.preferredStart}` : null,
+    input.budgetRange ? `Budget range: ${input.budgetRange}` : null,
+    `Summary: ${input.summary}`,
+  ]
+    .filter((line): line is string => Boolean(line))
+    .join("\n");
+}
 
 export async function POST(request: Request) {
   try {
@@ -100,16 +144,49 @@ export async function POST(request: Request) {
       budgetRange: parsed.data.budgetRange ?? undefined,
     });
 
+    const requesterSource = signedInUser ? "account" : "public_form";
+    const requesterName = signedInUser?.name ?? parsed.data.requesterName ?? null;
+    const requesterCompanyName = parsed.data.requesterCompanyName ?? null;
+
     if (!signedInUser) {
       try {
         await upsertLead({
           email: requesterEmail,
-          name: parsed.data.requesterName ?? null,
-          companyName: parsed.data.requesterCompanyName ?? null,
+          name: requesterName,
+          companyName: requesterCompanyName,
         });
       } catch (leadError) {
         console.error("Failed to upsert public service-request lead", leadError);
       }
+    }
+
+    try {
+      const zohoResult = await upsertZohoLead({
+        email: requesterEmail,
+        fullName: requesterName?.trim() || requesterEmail,
+        companyName: fallbackZohoCompanyName({
+          requesterCompanyName,
+          requesterEmail,
+        }),
+        leadSource: "ZoKorp Service Request",
+        description: buildZohoServiceRequestDescription({
+          trackingCode: created.trackingCode,
+          requesterSource,
+          type: created.type,
+          title: created.title,
+          summary: created.summary,
+          requesterEmail,
+          preferredStart: parsed.data.preferredStart,
+          budgetRange: parsed.data.budgetRange ?? undefined,
+          linkedToAccount: Boolean(signedInUser),
+        }),
+      });
+
+      if (zohoResult.status === "failed") {
+        console.error("Failed to sync service request to Zoho CRM", zohoResult.error);
+      }
+    } catch (zohoError) {
+      console.error("Failed to sync service request to Zoho CRM", zohoError);
     }
 
     try {
@@ -122,7 +199,7 @@ export async function POST(request: Request) {
             type: created.type,
             title: created.title,
             requesterEmail,
-            requesterSource: signedInUser ? "account" : "public_form",
+            requesterSource,
           },
         },
       });
@@ -140,6 +217,13 @@ export async function POST(request: Request) {
     if (isSchemaDriftError(error)) {
       return jsonNoStore(
         { error: "Service request tracking is being enabled. Please retry shortly." },
+        { status: 503 },
+      );
+    }
+
+    if (isTransientDatabaseConnectionError(error)) {
+      return jsonNoStore(
+        { error: "Service request intake is temporarily busy. Please retry shortly." },
         { status: 503 },
       );
     }

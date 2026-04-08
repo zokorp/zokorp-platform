@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -245,10 +245,11 @@ export function ArchitectureDiagramReviewerForm({
   const fieldClassName =
     "focus-ring block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-[0_1px_0_rgba(255,255,255,0.65)_inset]";
   const fieldLabelClassName = "text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500";
-
-  const speechSupported =
-    typeof window !== "undefined" &&
-    Boolean(((window as SpeechWindow).SpeechRecognition ?? (window as SpeechWindow).webkitSpeechRecognition));
+  const speechSupported = useSyncExternalStore(
+    () => () => {},
+    () => Boolean(((window as SpeechWindow).SpeechRecognition ?? (window as SpeechWindow).webkitSpeechRecognition)),
+    () => false,
+  );
 
   const canSubmit = useMemo(() => {
     if (!selectedFile || paragraphTooShort || paragraphTooLong) {

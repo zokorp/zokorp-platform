@@ -9,7 +9,9 @@ const {
   createServiceRequestMock,
   auditCreateMock,
   upsertLeadMock,
+  upsertZohoLeadMock,
   isSchemaDriftErrorMock,
+  isTransientDatabaseConnectionErrorMock,
 } = vi.hoisted(() => ({
   requireSameOriginMock: vi.fn(),
   consumeRateLimitMock: vi.fn(),
@@ -19,7 +21,9 @@ const {
   createServiceRequestMock: vi.fn(),
   auditCreateMock: vi.fn(),
   upsertLeadMock: vi.fn(),
+  upsertZohoLeadMock: vi.fn(),
   isSchemaDriftErrorMock: vi.fn(),
+  isTransientDatabaseConnectionErrorMock: vi.fn(),
 }));
 
 vi.mock("@/lib/request-origin", () => ({
@@ -44,6 +48,10 @@ vi.mock("@/lib/privacy-leads", () => ({
   upsertLead: upsertLeadMock,
 }));
 
+vi.mock("@/lib/zoho-crm", () => ({
+  upsertZohoLead: upsertZohoLeadMock,
+}));
+
 vi.mock("@/lib/db", () => ({
   db: {
     user: {
@@ -57,6 +65,7 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/db-errors", () => ({
   isSchemaDriftError: isSchemaDriftErrorMock,
+  isTransientDatabaseConnectionError: isTransientDatabaseConnectionErrorMock,
 }));
 
 import { POST } from "@/app/api/services/requests/route";
@@ -87,7 +96,13 @@ describe("service requests route", () => {
     });
     auditCreateMock.mockRejectedValue(new Error("audit unavailable"));
     upsertLeadMock.mockResolvedValue(undefined);
+    upsertZohoLeadMock.mockResolvedValue({
+      status: "success",
+      recordId: "zoho_123",
+      error: null,
+    });
     isSchemaDriftErrorMock.mockReturnValue(false);
+    isTransientDatabaseConnectionErrorMock.mockReturnValue(false);
   });
 
   afterEach(() => {
@@ -128,6 +143,13 @@ describe("service requests route", () => {
         requesterName: "Zohaib Khawaja",
         requesterSource: "account",
         type: "CONSULTATION",
+      }),
+    );
+    expect(upsertZohoLeadMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: "consulting@zokorp.com",
+        fullName: "Zohaib Khawaja",
+        leadSource: "ZoKorp Service Request",
       }),
     );
     expect(upsertLeadMock).not.toHaveBeenCalled();
@@ -182,6 +204,14 @@ describe("service requests route", () => {
       name: "Customer Founder",
       companyName: "CustomerCo",
     });
+    expect(upsertZohoLeadMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: "founder@customerco.com",
+        fullName: "Customer Founder",
+        companyName: "CustomerCo",
+        leadSource: "ZoKorp Service Request",
+      }),
+    );
     expect(auditCreateMock).toHaveBeenCalledTimes(1);
 
     consoleErrorSpy.mockRestore();
@@ -239,5 +269,76 @@ describe("service requests route", () => {
     });
     expect(createServiceRequestMock).not.toHaveBeenCalled();
     expect(upsertLeadMock).not.toHaveBeenCalled();
+  });
+
+  it("returns a transient 503 when database connections are saturated", async () => {
+    authMock.mockResolvedValue(null);
+    userFindUniqueMock.mockResolvedValue(null);
+    createServiceRequestMock.mockRejectedValue(new Error("max clients reached"));
+    isTransientDatabaseConnectionErrorMock.mockReturnValue(true);
+
+    const response = await POST(
+      new Request("https://www.zokorp.com/api/services/requests", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "https://www.zokorp.com",
+        },
+        body: JSON.stringify({
+          type: "CONSULTATION",
+          title: "Need architecture remediation help",
+          summary: "Need follow-up help translating a scored architecture review into a short remediation plan.",
+          requesterEmail: "founder@customerco.com",
+          requesterName: "Customer Founder",
+          requesterCompanyName: "CustomerCo",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    await expect(response.json()).resolves.toEqual({
+      error: "Service request intake is temporarily busy. Please retry shortly.",
+    });
+  });
+
+  it("still returns success when Zoho sync fails", async () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    authMock.mockResolvedValue(null);
+    userFindUniqueMock.mockResolvedValue(null);
+    auditCreateMock.mockResolvedValue({});
+    upsertZohoLeadMock.mockResolvedValue({
+      status: "failed",
+      error: "ZOHO_CRM_CALL_FAILED:500",
+    });
+
+    const response = await POST(
+      new Request("https://www.zokorp.com/api/services/requests", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "https://www.zokorp.com",
+        },
+        body: JSON.stringify({
+          type: "CONSULTATION",
+          title: "Need architecture remediation help",
+          summary: "Need follow-up help translating a scored architecture review into a short remediation plan.",
+          requesterEmail: "founder@customerco.com",
+          requesterName: "Customer Founder",
+          requesterCompanyName: "CustomerCo",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      id: "sr_123",
+      trackingCode: "SR-260326-ABCDE",
+      status: "SUBMITTED",
+      linkedToAccount: false,
+    });
+    expect(upsertZohoLeadMock).toHaveBeenCalledTimes(1);
+
+    consoleErrorSpy.mockRestore();
   });
 });

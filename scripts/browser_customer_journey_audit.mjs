@@ -349,9 +349,22 @@ async function runAuthenticatedJourney(page, steps, config) {
   await page.locator("#email").fill(config.loginEmail);
   await page.locator("#password").fill(config.loginPassword);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await page.waitForURL(/\/account$/, {
+  try {
+    await page.waitForURL(/\/(account|software)(\/|$)|\/login\?error=/, {
+      timeout: config.timeoutMs,
+    });
+  } catch {
+    // Fall through to the explicit /account verification below.
+  }
+  await page.goto(new URL("/account", config.appBaseUrl).toString(), {
+    waitUntil: "networkidle",
     timeout: config.timeoutMs,
   });
+
+  if (page.url().includes("/login")) {
+    throw new Error("Authenticated journey did not complete successfully.");
+  }
+
   await assertVisibleText(page, "Welcome back", config.timeoutMs);
   await assertVisibleText(page, "Billing and Invoices", config.timeoutMs);
 

@@ -205,12 +205,12 @@ export default function HomePage() {
           </CardHeader>
           <CardContent className="space-y-3 px-0">
             {CONSULTING_OFFERS.map((offer) => (
-              <div key={offer.slug} className="flex items-start justify-between gap-4 border-b border-white/10 pb-3">
+              <div key={offer.slug} className="flex flex-col gap-2 border-b border-white/10 pb-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                 <div>
                   <p className="text-sm font-medium text-slate-100">{offer.title}</p>
                   <p className="mt-1 text-sm text-slate-300">{offer.summary}</p>
                 </div>
-                <p className="shrink-0 text-sm font-semibold text-white">{offer.priceAnchor}</p>
+                <p className="text-sm font-semibold text-white sm:max-w-[13rem] sm:text-right">{offer.priceAnchor}</p>
               </div>
             ))}
           </CardContent>

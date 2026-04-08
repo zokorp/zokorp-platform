@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -48,44 +48,12 @@ export function ServiceRequestPanel({
   registerHref = "/register",
   accountHref = "/account",
 }: ServiceRequestPanelProps) {
-  const [isSignedIn, setIsSignedIn] = useState(signedIn);
-  const [signedInEmail, setSignedInEmail] = useState<string | null>(currentEmail);
+  const [isSignedIn] = useState(signedIn);
+  const [signedInEmail] = useState<string | null>(currentEmail);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedRequest, setSubmittedRequest] = useState<SubmissionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function syncSession() {
-      try {
-        const response = await fetch("/api/auth/session", {
-          method: "GET",
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
-          return;
-        }
-
-        const data = (await response.json()) as { user?: { email?: string } };
-        if (isMounted) {
-          const nextEmail = data.user?.email ?? null;
-          setIsSignedIn(Boolean(nextEmail));
-          setSignedInEmail(nextEmail);
-        }
-      } catch {
-        // Keep static fallback state if session endpoint is unavailable.
-      }
-    }
-
-    void syncSession();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   const submitLabel = useMemo(() => {
     if (isSubmitting) {

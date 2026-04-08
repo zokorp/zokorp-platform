@@ -24,7 +24,13 @@ const LEGACY_PAGE_REDIRECTS = new Map([
 
 function redirectToHost(request: NextRequest, nextHost: string, pathname: string, status = 308) {
   const destination = request.nextUrl.clone();
-  destination.protocol = "https:";
+  const isLocalhostTarget =
+    nextHost === "localhost" ||
+    nextHost.startsWith("localhost:") ||
+    nextHost === "127.0.0.1" ||
+    nextHost.startsWith("127.0.0.1:");
+
+  destination.protocol = isLocalhostTarget ? request.nextUrl.protocol : "https:";
   destination.host = nextHost;
   destination.pathname = pathname;
   return NextResponse.redirect(destination, status);

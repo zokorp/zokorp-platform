@@ -4,8 +4,14 @@ tests
 tmp
 .playwright-cli
 .venv
+.git
 .next
+out
+output
 coverage
+.env*
+*.log
 tsconfig.typecheck.tsbuildinfo
+data/validator/references/files
 DEEP_RESEARCH_PHASE3_PROMPT.md
 DEEP_RESEARCH_PHASE4_PROMPT.md

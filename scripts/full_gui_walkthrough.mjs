@@ -178,9 +178,18 @@ async function runMarketingDesktop(page, steps, config) {
   await page.keyboard.press("Escape");
 
   const main = page.getByRole("main");
-  const bookingHref = await main.getByRole("link", { name: "Book a call", exact: true }).getAttribute("href");
-  const quoteHref = await main.getByRole("link", { name: "Get a quote", exact: true }).getAttribute("href");
-  const softwareHref = await main.getByRole("link", { name: "Explore software", exact: true }).getAttribute("href");
+  const bookingHref = await main
+    .getByRole("link", { name: "Book a call", exact: true })
+    .first()
+    .getAttribute("href");
+  const quoteHref = await main
+    .getByRole("link", { name: "Get a quote", exact: true })
+    .first()
+    .getAttribute("href");
+  const softwareHref = await main
+    .getByRole("link", { name: "Explore software", exact: true })
+    .first()
+    .getAttribute("href");
   if (!bookingHref || !bookingHref.includes("utm_source=zokorp")) {
     throw new Error("Homepage Book a call CTA is missing expected UTM parameters.");
   }
@@ -440,6 +449,28 @@ async function ensureAppAuthentication(page, steps, config) {
 }
 
 async function runAppAuthenticated(page, steps, config) {
+  if (!config.loginEmail || !config.loginPassword) {
+    steps.push(
+      buildStep("app_auth_login", "App authentication handoff", "skipped", {
+        detail: "Skipped because JOURNEY_EMAIL and JOURNEY_PASSWORD are not configured.",
+      }),
+    );
+    steps.push(
+      buildStep("app_billing", "Billing page", "skipped", {
+        detail: "Skipped because authenticated browser credentials are not configured.",
+      }),
+    );
+
+    for (const product of APP_PRODUCT_EXPECTATIONS) {
+      steps.push(
+        buildStep(`app_auth_${product.slug}`, `Authenticated product: ${product.label}`, "skipped", {
+          detail: "Skipped because authenticated browser credentials are not configured.",
+        }),
+      );
+    }
+    return;
+  }
+
   await ensureAppAuthentication(page, steps, config);
 
   await page.goto(new URL("/account/billing", config.appBaseUrl).toString(), {
@@ -618,6 +649,15 @@ async function locateZohoLead(page, syntheticLead, config) {
 }
 
 async function runZohoVerification(context, steps, config, syntheticLead) {
+  if (config.skipZoho) {
+    steps.push(
+      buildStep("zoho_verification", "Zoho CRM lead verification", "skipped", {
+        detail: "Skipped because JOURNEY_SKIP_ZOHO is enabled for this run.",
+      }),
+    );
+    return;
+  }
+
   if (!syntheticLead) {
     steps.push(
       buildStep("zoho_verification", "Zoho CRM lead verification", "skipped", {
@@ -709,6 +749,7 @@ export async function runFullGuiWalkthrough(options = {}) {
   const timeoutMs = readNumber(readSetting("JOURNEY_TIMEOUT_MS", "30000"), 30000);
   const mutationMode = readSetting("JOURNEY_MUTATION_MODE", "readonly");
   const keepBrowserOpen = readBoolean(readSetting("JOURNEY_KEEP_BROWSER_OPEN", "false"), false);
+  const skipZoho = readBoolean(readSetting("JOURNEY_SKIP_ZOHO", "false"), false);
 
   if (!VALID_MUTATION_MODES.has(mutationMode)) {
     throw new Error(`Unsupported JOURNEY_MUTATION_MODE: ${mutationMode}`);
@@ -728,6 +769,7 @@ export async function runFullGuiWalkthrough(options = {}) {
     timeoutMs,
     mutationMode,
     keepBrowserOpen,
+    skipZoho,
     hostSplitSkipped: sameOrigin(marketingBaseUrl, appBaseUrl),
     loginEmail: readSetting("JOURNEY_EMAIL", ""),
     loginPassword: readSetting("JOURNEY_PASSWORD", ""),

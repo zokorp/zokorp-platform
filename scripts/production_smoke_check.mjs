@@ -53,6 +53,53 @@ function sameOrigin(left, right) {
   }
 }
 
+function isLocalHostUrl(value) {
+  try {
+    const { hostname } = new URL(value);
+    return hostname === "localhost" || hostname === "127.0.0.1";
+  } catch {
+    return false;
+  }
+}
+
+function locationsMatch(expectedLocation, actualLocation, options = {}) {
+  if (!expectedLocation || !actualLocation) {
+    return false;
+  }
+
+  if (actualLocation === expectedLocation) {
+    return true;
+  }
+
+  try {
+    const expected = new URL(expectedLocation);
+    const actual = new URL(actualLocation, expected);
+
+    if (
+      expected.protocol === actual.protocol &&
+      expected.host === actual.host &&
+      expected.pathname === actual.pathname &&
+      expected.search === actual.search &&
+      expected.hash === actual.hash
+    ) {
+      return true;
+    }
+
+    if (!options.ignoreProtocol) {
+      return false;
+    }
+
+    return (
+      expected.host === actual.host &&
+      expected.pathname === actual.pathname &&
+      expected.search === actual.search &&
+      expected.hash === actual.hash
+    );
+  } catch {
+    return false;
+  }
+}
+
 function expectedProductionMarketingBlock(marketingBaseUrl, appBaseUrl) {
   try {
     return (
@@ -78,9 +125,26 @@ async function probeControlHost(url, timeoutMs) {
   }
 }
 
-async function runRedirectCheck({ id, label, sourceUrl, expectedLocation, timeoutMs, blockedWhenLocationMatches }) {
+async function runRedirectCheck({
+  id,
+  label,
+  sourceUrl,
+  expectedLocation,
+  timeoutMs,
+  blockedWhenLocationMatches,
+  ignoreProtocol = false,
+}) {
   try {
     const result = await manualRedirectCheck(sourceUrl, timeoutMs, smokeUserAgent);
+    const resolvedLocation = result.location
+      ? (() => {
+          try {
+            return new URL(result.location, sourceUrl).toString();
+          } catch {
+            return result.location;
+          }
+        })()
+      : result.location;
     if (result.status === null || result.status < 300 || result.status > 399) {
       return buildStep(id, label, "fail", {
         url: sourceUrl,
@@ -89,19 +153,22 @@ async function runRedirectCheck({ id, label, sourceUrl, expectedLocation, timeou
       });
     }
 
-    if (result.location === expectedLocation) {
+    if (locationsMatch(expectedLocation, resolvedLocation, { ignoreProtocol })) {
       return buildStep(id, label, "pass", {
         url: sourceUrl,
         statusCode: result.status,
-        location: result.location,
+        location: resolvedLocation,
       });
     }
 
-    if (blockedWhenLocationMatches && result.location === blockedWhenLocationMatches) {
+    if (
+      blockedWhenLocationMatches &&
+      locationsMatch(blockedWhenLocationMatches, resolvedLocation, { ignoreProtocol })
+    ) {
       return buildStep(id, label, "blocked", {
         url: sourceUrl,
         statusCode: result.status,
-        location: result.location,
+        location: resolvedLocation,
         detail: `Redirect target is still ${blockedWhenLocationMatches} instead of ${expectedLocation}.`,
       });
     }
@@ -109,8 +176,8 @@ async function runRedirectCheck({ id, label, sourceUrl, expectedLocation, timeou
     return buildStep(id, label, "fail", {
       url: sourceUrl,
       statusCode: result.status,
-      location: result.location,
-      detail: `Expected redirect to ${expectedLocation}, got ${result.location ?? "no Location header"}.`,
+      location: resolvedLocation,
+      detail: `Expected redirect to ${expectedLocation}, got ${resolvedLocation ?? "no Location header"}.`,
     });
   } catch (error) {
     return buildStep(id, label, "fail", {
@@ -325,8 +392,10 @@ export async function runProductionSmokeCheck(options = {}) {
   const appHost = new URL(appBaseUrl).host;
   const productionMarketingBlockAllowed = expectedProductionMarketingBlock(marketingBaseUrl, appBaseUrl);
   const hostSplitSkipped = sameOrigin(marketingBaseUrl, appBaseUrl);
+  const localSameOriginRun =
+    hostSplitSkipped && isLocalHostUrl(marketingBaseUrl) && isLocalHostUrl(appBaseUrl);
 
-  if (apexBaseUrl) {
+  if (apexBaseUrl && !sameOrigin(apexBaseUrl, marketingBaseUrl)) {
     const apexExpectedLocation = toAbsoluteUrl("/", marketingBaseUrl);
     steps.push(
       await runRedirectCheck({
@@ -339,12 +408,15 @@ export async function runProductionSmokeCheck(options = {}) {
           productionMarketingBlockAllowed && toAbsoluteUrl("/", appBaseUrl) !== apexExpectedLocation
             ? toAbsoluteUrl("/", appBaseUrl)
             : null,
+        ignoreProtocol: isLocalHostUrl(apexBaseUrl) && isLocalHostUrl(marketingBaseUrl),
       }),
     );
   } else {
     steps.push(
       buildStep("apex_redirect", "Apex redirects to canonical marketing host", "skipped", {
-        detail: "Skipped because SMOKE_APEX_BASE_URL is not configured for this target.",
+        detail: apexBaseUrl
+          ? "Skipped because apex and marketing use the same origin for this target."
+          : "Skipped because SMOKE_APEX_BASE_URL is not configured for this target.",
       }),
     );
   }
@@ -422,6 +494,7 @@ export async function runProductionSmokeCheck(options = {}) {
           productionMarketingBlockAllowed &&
           marketingHost !== appHost &&
           toAbsoluteUrl(redirectExpectation.to, appBaseUrl),
+        ignoreProtocol: localSameOriginRun,
       }),
     );
   }
