@@ -6,6 +6,7 @@ import { isPasswordAuthEnabled } from "@/lib/auth-config";
 import { db } from "@/lib/db";
 import { hashPassword, hashOpaqueToken, validatePasswordStrength } from "@/lib/password-auth";
 import { consumePasswordResetToken } from "@/lib/password-reset-tokens";
+import { recordOperationalIssue } from "@/lib/operational-issues";
 import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { ensureUserAuthSchemaReady } from "@/lib/user-auth-schema";
@@ -186,7 +187,14 @@ export async function POST(request: Request) {
         : "Password updated successfully.",
     });
   } catch (error) {
-    console.error(error);
+    await recordOperationalIssue({
+      action: "auth.password_reset_failed",
+      area: "auth",
+      error,
+      metadata: {
+        route: "/api/auth/password/reset",
+      },
+    });
     return NextResponse.json({ error: "Unable to reset password." }, { status: 500 });
   }
 }

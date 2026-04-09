@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { AccessModel, CreditTier, PriceKind } from "@prisma/client";
 
 import { db } from "@/lib/db";
+import { recordOperationalIssue } from "@/lib/operational-issues";
 
 export class CatalogUnavailableError extends Error {
   constructor(message: string, options?: { cause?: unknown }) {
@@ -152,7 +153,14 @@ export async function getSoftwareCatalog(): Promise<CatalogProduct[]> {
 
     return products.filter((product) => PUBLIC_PRODUCT_SLUGS.has(product.slug)).map((product) => sanitizePublicProduct(product));
   } catch (error) {
-    console.error("Failed to load software catalog from database.", error);
+    void recordOperationalIssue({
+      action: "catalog.software_catalog_fallback",
+      area: "catalog",
+      error,
+      metadata: {
+        route: "/software",
+      },
+    });
     return loadFallbackCatalog("database-backed catalog query failed", error);
   }
 }
@@ -184,7 +192,15 @@ export async function getProductBySlug(slug: string): Promise<CatalogProduct | n
 
     return sanitizePublicProduct(product);
   } catch (error) {
-    console.error("Failed to load product by slug from database.", { slug, error });
+    void recordOperationalIssue({
+      action: "catalog.product_fallback",
+      area: "catalog",
+      error,
+      metadata: {
+        slug,
+        route: `/software/${slug}`,
+      },
+    });
     const fallback = cloneFallbackCatalog().find((product) => product.slug === slug);
     return fallback ? sanitizePublicProduct(fallback) : null;
   }

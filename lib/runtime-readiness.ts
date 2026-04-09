@@ -91,6 +91,9 @@ export function buildRuntimeReadinessReport(env: RuntimeEnv = process.env): Runt
     configured(env.EMAIL_SERVER_PASSWORD) &&
     configured(env.EMAIL_FROM);
   const resendConfigured = configured(env.RESEND_API_KEY) && configured(env.RESEND_FROM_EMAIL);
+  const sentryServerConfigured = configured(env.SENTRY_DSN);
+  const sentryClientConfigured = configured(env.NEXT_PUBLIC_SENTRY_DSN);
+  const analyticsConfigured = configured(env.NEXT_PUBLIC_GA_MEASUREMENT_ID);
   const stripeSecretConfigured = configured(env.STRIPE_SECRET_KEY);
   const stripeWebhookConfigured = configured(env.STRIPE_WEBHOOK_SECRET);
   const publicSubscriptionPricingApproved = env.PUBLIC_SUBSCRIPTION_PRICING_APPROVED === "true";
@@ -577,6 +580,56 @@ export function buildRuntimeReadinessReport(env: RuntimeEnv = process.env): Runt
             "Zoho lead sync -> ZOHO_SYNC_URL + ZOHO_SYNC_SECRET",
           ],
           operatorAction: "Verify repo-level secrets and recent successful workflow runs in GitHub Actions before declaring scheduler health.",
+        },
+      ],
+    },
+    {
+      id: "monitoring",
+      label: "Monitoring and Observability",
+      checks: [
+        sentryServerConfigured || sentryClientConfigured
+          ? {
+              id: "external-error-monitoring",
+              label: "External error monitoring",
+              level: "pass",
+              summary: sentryServerConfigured && sentryClientConfigured
+                ? "Server and browser Sentry DSNs are configured."
+                : sentryServerConfigured
+                  ? "Server-side Sentry DSN is configured."
+                  : "Browser-side Sentry DSN is configured.",
+            }
+          : {
+              id: "external-error-monitoring",
+              label: "External error monitoring",
+              level: "warning",
+              summary: "No external error sink is configured. Runtime failures currently rely on internal audit records and platform logs.",
+              operatorAction: "Add SENTRY_DSN and NEXT_PUBLIC_SENTRY_DSN only when you are ready to route browser and server errors to an external incident tool.",
+            },
+        analyticsConfigured
+          ? {
+              id: "visitor-analytics",
+              label: "Visitor analytics",
+              level: "pass",
+              summary: "Google Analytics is configured for public traffic visibility.",
+            }
+          : {
+              id: "visitor-analytics",
+              label: "Visitor analytics",
+              level: "warning",
+              summary: "No visitor analytics signal is configured from runtime env.",
+              operatorAction: "Set NEXT_PUBLIC_GA_MEASUREMENT_ID or enable a privacy-safe platform analytics tool before relying on passive traffic visibility.",
+            },
+        {
+          id: "health-endpoint",
+          label: "Public health endpoint",
+          level: "pass",
+          summary: "The app serves /api/health for uptime checks on the current deployment.",
+        },
+        {
+          id: "internal-incident-feed",
+          label: "Internal incident feed",
+          level: "pass",
+          summary: "Unhandled request failures, key route failures, and CSP signals are persisted into operator-visible audit records.",
         },
       ],
     },

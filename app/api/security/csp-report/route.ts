@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { parseCspReportBody, summarizeCspReports } from "@/lib/csp-report";
 import { db } from "@/lib/db";
+import { recordOperationalIssue } from "@/lib/operational-issues";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -55,7 +56,14 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error("csp-report ingestion failed", error);
+    await recordOperationalIssue({
+      action: "security.csp_ingest_failed",
+      area: "security",
+      error,
+      metadata: {
+        route: "/api/security/csp-report",
+      },
+    });
   }
 
   return noContent();

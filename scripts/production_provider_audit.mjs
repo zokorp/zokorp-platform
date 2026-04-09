@@ -8,8 +8,10 @@ import { join } from "node:path";
 import { runProductionSmokeCheck } from "./production_smoke_check.mjs";
 
 const repo = process.env.AUDIT_GITHUB_REPO ?? "leggoboyo/zokorp-platform";
-const baseUrl = process.env.AUDIT_BASE_URL ?? "https://app.zokorp.com";
-const expectedStripeWebhookUrl = new URL("/api/stripe/webhook", baseUrl).toString();
+const marketingBaseUrl = process.env.AUDIT_MARKETING_BASE_URL ?? "https://www.zokorp.com";
+const appBaseUrl = process.env.AUDIT_APP_BASE_URL ?? "https://app.zokorp.com";
+const apexBaseUrl = process.env.AUDIT_APEX_BASE_URL ?? "https://zokorp.com";
+const expectedStripeWebhookUrl = new URL("/api/stripe/webhook", appBaseUrl).toString();
 
 const requiredStripeEvents = [
   "checkout.session.completed",
@@ -95,8 +97,8 @@ async function pullProductionEnv() {
   }
 }
 
-async function verifyHeaders() {
-  const response = await fetch(baseUrl, {
+async function verifyHeaders(targetUrl) {
+  const response = await fetch(targetUrl, {
     redirect: "follow",
     headers: {
       "user-agent": "zokorp-production-provider-audit/1.0",
@@ -124,9 +126,36 @@ async function verifyHeaders() {
   }
 
   return resultStatus(response.ok && missing.length === 0, {
+    url: targetUrl,
     status: response.status,
     missing,
   });
+}
+
+async function verifyHealth(targetBaseUrl) {
+  const healthUrl = new URL("/api/health", targetBaseUrl).toString();
+  const response = await fetch(healthUrl, {
+    redirect: "follow",
+    headers: {
+      "user-agent": "zokorp-production-provider-audit/1.0",
+    },
+  });
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = null;
+  }
+
+  return resultStatus(
+    response.ok && payload?.status === "ok" && payload?.checks?.database === "ok",
+    {
+      url: healthUrl,
+      status: response.status,
+      payload,
+    },
+  );
 }
 
 async function verifyStripe(env) {
@@ -207,7 +236,8 @@ async function verifyZohoInvoice(env) {
 function verifyEnvPresence(env) {
   const requiredKeys = [
     "NEXTAUTH_URL",
-    "NEXT_PUBLIC_SITE_URL",
+    "APP_SITE_URL",
+    "MARKETING_SITE_URL",
     "STRIPE_SECRET_KEY",
     "STRIPE_WEBHOOK_SECRET",
     "STRIPE_PRICE_ID_PLATFORM_MONTHLY",
@@ -232,16 +262,46 @@ function verifyEnvPresence(env) {
 
 function verifyCanonicalOrigins(env) {
   const authUrl = env.NEXTAUTH_URL ?? "";
-  const siteUrl = env.NEXT_PUBLIC_SITE_URL ?? "";
+  const appUrl = env.APP_SITE_URL ?? env.NEXT_PUBLIC_SITE_URL ?? "";
+  const marketingUrl = env.MARKETING_SITE_URL ?? "";
   try {
-    return resultStatus(new URL(authUrl).origin === new URL(siteUrl).origin, {
-      authOrigin: new URL(authUrl).origin,
-      siteOrigin: new URL(siteUrl).origin,
+    const authOrigin = new URL(authUrl).origin;
+    const appOrigin = new URL(appUrl).origin;
+    const marketingOrigin = new URL(marketingUrl).origin;
+    return resultStatus(authOrigin === appOrigin && marketingOrigin !== appOrigin, {
+      authOrigin,
+      appOrigin,
+      marketingOrigin,
     });
   } catch {
     return resultStatus(false, {
       authOrigin: authUrl || null,
-      siteOrigin: siteUrl || null,
+      appOrigin: appUrl || null,
+      marketingOrigin: marketingUrl || null,
+    });
+  }
+}
+
+function verifyLegacyPublicSiteUrl(env) {
+  const legacySiteUrl = env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (!legacySiteUrl) {
+    return resultStatus(true, {
+      legacyOrigin: null,
+      detail: "NEXT_PUBLIC_SITE_URL is unset.",
+    });
+  }
+
+  try {
+    const legacyOrigin = new URL(legacySiteUrl).origin;
+    const appOrigin = new URL(env.APP_SITE_URL ?? "").origin;
+    return resultStatus(legacyOrigin === appOrigin, {
+      legacyOrigin,
+      appOrigin,
+    });
+  } catch {
+    return resultStatus(false, {
+      legacyOrigin: legacySiteUrl || null,
+      appOrigin: env.APP_SITE_URL ?? null,
     });
   }
 }
@@ -296,7 +356,11 @@ async function main() {
     pulledEnv.cleanup();
   }
 
-  const smoke = await runProductionSmokeCheck({ baseUrl });
+  const smoke = await runProductionSmokeCheck({
+    marketingBaseUrl,
+    appBaseUrl,
+    apexBaseUrl,
+  });
   const checks = [
     {
       id: "env_presence",
@@ -305,8 +369,13 @@ async function main() {
     },
     {
       id: "origin_alignment",
-      label: "Canonical auth/site origin alignment",
+      label: "Canonical auth/app origin alignment",
       ...(verifyCanonicalOrigins(env)),
+    },
+    {
+      id: "legacy_public_site_url",
+      label: "Legacy public site URL fallback",
+      ...(verifyLegacyPublicSiteUrl(env)),
     },
     {
       id: "smoke",
@@ -316,9 +385,24 @@ async function main() {
       regressions: smoke.regressions,
     },
     {
-      id: "headers",
-      label: "Canonical response security headers",
-      ...(await verifyHeaders()),
+      id: "marketing_headers",
+      label: "Marketing-host security headers",
+      ...(await verifyHeaders(marketingBaseUrl)),
+    },
+    {
+      id: "app_headers",
+      label: "App-host security headers",
+      ...(await verifyHeaders(appBaseUrl)),
+    },
+    {
+      id: "marketing_health",
+      label: "Marketing-host health endpoint",
+      ...(await verifyHealth(marketingBaseUrl)),
+    },
+    {
+      id: "app_health",
+      label: "App-host health endpoint",
+      ...(await verifyHealth(appBaseUrl)),
     },
     {
       id: "stripe",
@@ -340,14 +424,20 @@ async function main() {
   const totals = summarizeChecks(checks);
   const outcome = totals.fail === 0 ? "pass" : "fail";
   const summary = {
-    baseUrl,
+    baseUrls: {
+      apex: apexBaseUrl,
+      marketing: marketingBaseUrl,
+      app: appBaseUrl,
+    },
     checkedAt: new Date().toISOString(),
     outcome,
     totals,
     checks,
   };
 
-  console.log(`Base URL: ${baseUrl}`);
+  console.log(`Marketing URL: ${marketingBaseUrl}`);
+  console.log(`App URL: ${appBaseUrl}`);
+  console.log(`Apex URL: ${apexBaseUrl}`);
   console.log(`Checked at: ${summary.checkedAt}`);
   console.log("");
   for (const check of checks) {

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { sendEmailVerificationEmail } from "@/lib/auth-email";
 import { db } from "@/lib/db";
 import { issueEmailVerificationToken } from "@/lib/email-verification";
+import { recordOperationalIssue } from "@/lib/operational-issues";
 import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { isBusinessEmail } from "@/lib/security";
@@ -93,7 +94,14 @@ export async function POST(request: Request) {
         : "Account found, but email delivery is currently unavailable. Retry shortly or contact support.",
     });
   } catch (error) {
-    console.error(error);
+    await recordOperationalIssue({
+      action: "auth.verify_email_request_failed",
+      area: "auth",
+      error,
+      metadata: {
+        route: "/api/auth/verify-email/request",
+      },
+    });
     return NextResponse.json({ error: "Unable to process verification request." }, { status: 500 });
   }
 }

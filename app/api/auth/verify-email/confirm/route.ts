@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
 import { consumeEmailVerificationToken } from "@/lib/email-verification";
+import { recordOperationalIssue } from "@/lib/operational-issues";
 import { getSiteOriginFromRequest } from "@/lib/site-origin";
 
 function redirectUrl(baseUrl: string, path: string, params?: Record<string, string>) {
@@ -59,7 +60,14 @@ export async function GET(request: Request) {
 
     return NextResponse.redirect(redirectUrl(origin, "/register/verify-email", { status: "invalid" }));
   } catch (error) {
-    console.error(error);
+    await recordOperationalIssue({
+      action: "auth.verify_email_confirm_failed",
+      area: "auth",
+      error,
+      metadata: {
+        route: "/api/auth/verify-email/confirm",
+      },
+    });
     return NextResponse.redirect(redirectUrl(origin, "/register/verify-email", { status: "invalid" }));
   }
 }

@@ -17,6 +17,7 @@ import { recordValidatorToolRun } from "@/lib/tool-runs";
 import { syncZohoInvoiceEstimate } from "@/lib/zoho-invoice";
 import { recordEstimateCompanion } from "@/lib/estimate-companions";
 import { buildEmailPreferenceLinks } from "@/lib/email-preferences";
+import { recordOperationalIssue } from "@/lib/operational-issues";
 import { CreditTier, EntitlementStatus, Role } from "@prisma/client";
 
 export const runtime = "nodejs";
@@ -394,7 +395,14 @@ export async function POST(request: Request) {
       }
     }
 
-    console.error(error);
+    await recordOperationalIssue({
+      action: "tool.zokorp_validator_failed",
+      area: "tool-run",
+      error,
+      metadata: {
+        route: "/api/tools/zokorp-validator",
+      },
+    });
     return jsonNoStore({ error: "Tool execution failed" }, { status: 500 });
   }
 }

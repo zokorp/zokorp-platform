@@ -50,6 +50,18 @@ export default async function AdminOperationsPage() {
       entries: snapshot.automationHealthSignals,
     },
     {
+      key: "internal-failures",
+      title: "Recent internal failures",
+      description: "Caught runtime and route failures that were persisted for operator review instead of staying in platform logs only.",
+      entries: snapshot.internalFailureSignals,
+    },
+    {
+      key: "security-signals",
+      title: "Security signals",
+      description: "Recent CSP violations and CSP-ingestion failures that may indicate broken embeds, third-party drift, or policy regressions.",
+      entries: snapshot.securitySignals,
+    },
+    {
       key: "follow-up",
       title: "Follow-up attention",
       description: "Estimates and service requests that still need an operator response path.",
@@ -86,6 +98,8 @@ export default async function AdminOperationsPage() {
           { label: "Quote issues", value: snapshot.stats.failedQuoteCompanions },
           { label: "Booked calls", value: snapshot.stats.recentBookedCalls },
           { label: "Automation attention", value: snapshot.stats.automationAttention },
+          { label: "Internal failures", value: snapshot.stats.internalFailures },
+          { label: "Security signals", value: snapshot.stats.securitySignals },
           { label: "Follow-up attention", value: snapshot.stats.followUpAttention },
           { label: "Validator runs", value: snapshot.stats.recentValidatorRuns },
           { label: "MLOps runs", value: snapshot.stats.recentMlopsRuns },
@@ -138,6 +152,16 @@ export default async function AdminOperationsPage() {
                   {section.key === "automation-health" ? (
                     <Link href="/admin/readiness" className={buttonVariants({ variant: "secondary", size: "sm" })}>
                       Open readiness
+                    </Link>
+                  ) : null}
+                  {section.key === "internal-failures" ? (
+                    <Link href="/admin/readiness" className={buttonVariants({ variant: "secondary", size: "sm" })}>
+                      Review runtime posture
+                    </Link>
+                  ) : null}
+                  {section.key === "security-signals" ? (
+                    <Link href="/admin/readiness" className={buttonVariants({ variant: "secondary", size: "sm" })}>
+                      Review security posture
                     </Link>
                   ) : null}
                   {section.key === "follow-up" ? (

@@ -48,6 +48,9 @@ describe("runtime readiness report", () => {
     expect(findCheck(report, "password-email-delivery")).toMatchObject({
       level: "warning",
     });
+    expect(findCheck(report, "external-error-monitoring")).toMatchObject({
+      level: "warning",
+    });
   });
 
   it("warns when archive and architecture signing secrets fall back to auth", () => {
@@ -191,6 +194,9 @@ describe("runtime readiness report", () => {
       ZOHO_WORKDRIVE_FOLDER_ID: "folder_123",
       ZOHO_WORKDRIVE_ACCESS_TOKEN: "workdrive-token",
       ZOKORP_ADMIN_EMAILS: "ops@zokorp.com",
+      SENTRY_DSN: "https://server@example.ingest.sentry.io/1",
+      NEXT_PUBLIC_SENTRY_DSN: "https://browser@example.ingest.sentry.io/2",
+      NEXT_PUBLIC_GA_MEASUREMENT_ID: "G-TEST123",
     });
 
     expect(findCheck(report, "auth-secret")).toMatchObject({ level: "pass" });
@@ -205,6 +211,10 @@ describe("runtime readiness report", () => {
     expect(findCheck(report, "calendly-sync-secret")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "zoho-invoice")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "zoho-workdrive")).toMatchObject({ level: "pass" });
+    expect(findCheck(report, "external-error-monitoring")).toMatchObject({ level: "pass" });
+    expect(findCheck(report, "visitor-analytics")).toMatchObject({ level: "pass" });
+    expect(findCheck(report, "health-endpoint")).toMatchObject({ level: "pass" });
+    expect(findCheck(report, "internal-incident-feed")).toMatchObject({ level: "pass" });
     expect(findCheck(report, "github-actions-schedulers")).toMatchObject({ level: "warning" });
     expect(report.totals.fail).toBe(0);
   });

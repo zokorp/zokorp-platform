@@ -7,6 +7,7 @@ import { requireEntitlement } from "@/lib/entitlements";
 import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { maxUploadBytes } from "@/lib/security";
+import { recordOperationalIssue } from "@/lib/operational-issues";
 import {
   buildDemoRevenueSeries,
   buildRevenueForecastFromPoints,
@@ -202,7 +203,14 @@ export async function POST(request: Request) {
       }
     }
 
-    console.error(error);
+    await recordOperationalIssue({
+      action: "tool.mlops_forecast_failed",
+      area: "tool-run",
+      error,
+      metadata: {
+        route: "/api/tools/mlops-forecast",
+      },
+    });
     return jsonNoStore({ error: "Forecast execution failed" }, { status: 500 });
   }
 }

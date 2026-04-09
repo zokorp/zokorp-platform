@@ -86,6 +86,109 @@ const AUTOMATION_HEALTH_ACTIONS = [
   ),
 ];
 
+const INTERNAL_FAILURE_CONFIGS = [
+  {
+    action: "runtime.request_error",
+    title: "Unhandled request error",
+    href: "/admin/readiness",
+    statusLabel: "runtime error",
+    statusTone: "danger" as const,
+  },
+  {
+    action: "service.request_submission_failed",
+    title: "Service request submission failed",
+    href: "/admin/service-requests",
+    statusLabel: "failed",
+    statusTone: "danger" as const,
+  },
+  {
+    action: "service.request_zoho_sync_failed",
+    title: "Service request Zoho sync failed",
+    href: "/admin/service-requests",
+    statusLabel: "sync failed",
+    statusTone: "warning" as const,
+  },
+  {
+    action: "service.request_lead_upsert_failed",
+    title: "Service request lead capture failed",
+    href: "/admin/service-requests",
+    statusLabel: "lead capture failed",
+    statusTone: "warning" as const,
+  },
+  {
+    action: "service.request_audit_log_failed",
+    title: "Service request audit log failed",
+    href: "/admin/service-requests",
+    statusLabel: "audit failed",
+    statusTone: "warning" as const,
+  },
+  {
+    action: "auth.register_failed",
+    title: "Account registration failed",
+    href: "/admin/readiness",
+    statusLabel: "failed",
+    statusTone: "danger" as const,
+  },
+  {
+    action: "auth.password_reset_request_failed",
+    title: "Password reset request failed",
+    href: "/admin/readiness",
+    statusLabel: "failed",
+    statusTone: "danger" as const,
+  },
+  {
+    action: "auth.password_reset_failed",
+    title: "Password reset completion failed",
+    href: "/admin/readiness",
+    statusLabel: "failed",
+    statusTone: "danger" as const,
+  },
+  {
+    action: "auth.verify_email_request_failed",
+    title: "Verification email request failed",
+    href: "/admin/readiness",
+    statusLabel: "failed",
+    statusTone: "danger" as const,
+  },
+  {
+    action: "auth.verify_email_confirm_failed",
+    title: "Email verification confirmation failed",
+    href: "/admin/readiness",
+    statusLabel: "failed",
+    statusTone: "danger" as const,
+  },
+  {
+    action: "tool.zokorp_validator_failed",
+    title: "Validator execution failed",
+    href: "/admin/operations",
+    statusLabel: "failed",
+    statusTone: "danger" as const,
+  },
+  {
+    action: "tool.mlops_forecast_failed",
+    title: "Forecast execution failed",
+    href: "/admin/operations",
+    statusLabel: "failed",
+    statusTone: "danger" as const,
+  },
+  {
+    action: "catalog.software_catalog_fallback",
+    title: "Software catalog fallback in use",
+    href: "/admin/readiness",
+    statusLabel: "fallback",
+    statusTone: "warning" as const,
+  },
+  {
+    action: "catalog.product_fallback",
+    title: "Product catalog fallback in use",
+    href: "/admin/readiness",
+    statusLabel: "fallback",
+    statusTone: "warning" as const,
+  },
+] as const;
+
+const SECURITY_SIGNAL_ACTIONS = ["security.csp_violation", "security.csp_ingest_failed"] as const;
+
 type OperationsIssue = {
   id: string;
   createdAt: Date;
@@ -108,12 +211,16 @@ export type AdminOperationsSnapshot = {
     recentBookedCalls: number;
     followUpAttention: number;
     automationAttention: number;
+    internalFailures: number;
+    securitySignals: number;
   };
   architectureEmailIssues: OperationsIssue[];
   crmSyncIssues: OperationsIssue[];
   estimateCompanionIssues: OperationsIssue[];
   bookedCallSignals: OperationsIssue[];
   automationHealthSignals: OperationsIssue[];
+  internalFailureSignals: OperationsIssue[];
+  securitySignals: OperationsIssue[];
   followUpAttentionIssues: OperationsIssue[];
   toolRunSignals: OperationsIssue[];
 };
@@ -140,6 +247,10 @@ function actionMatches(actions: readonly string[], action: string) {
   return actions.includes(action);
 }
 
+function internalFailureConfig(action: string) {
+  return INTERNAL_FAILURE_CONFIGS.find((item) => item.action === action) ?? null;
+}
+
 function formatRelativeAge(date: Date) {
   const diffMs = Date.now() - date.getTime();
   const diffMinutes = Math.max(1, Math.round(diffMs / (60 * 1000)));
@@ -160,7 +271,7 @@ function formatRelativeAge(date: Date) {
 export async function getAdminOperationsSnapshot(): Promise<AdminOperationsSnapshot> {
   const staleThreshold = new Date(Date.now() - FOLLOW_UP_ATTENTION_WINDOW_MS);
 
-  const [emailOutboxes, crmLeads, estimateCompanions, toolRuns, legacyToolRunLogs, bookedCalls, flaggedBookedCallLogs, automationHealthLogs, staleServiceRequests] = await Promise.all([
+  const [emailOutboxes, crmLeads, estimateCompanions, toolRuns, legacyToolRunLogs, bookedCalls, flaggedBookedCallLogs, automationHealthLogs, internalFailureLogs, securitySignalLogs, staleServiceRequests] = await Promise.all([
     db.architectureReviewEmailOutbox.findMany({
       where: {
         status: {
@@ -278,6 +389,28 @@ export async function getAdminOperationsSnapshot(): Promise<AdminOperationsSnaps
       where: {
         action: {
           in: AUTOMATION_HEALTH_ACTIONS,
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 50,
+    }),
+    db.auditLog.findMany({
+      where: {
+        action: {
+          in: INTERNAL_FAILURE_CONFIGS.map((item) => item.action),
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 25,
+    }),
+    db.auditLog.findMany({
+      where: {
+        action: {
+          in: [...SECURITY_SIGNAL_ACTIONS],
         },
       },
       orderBy: {
@@ -558,6 +691,84 @@ export async function getAdminOperationsSnapshot(): Promise<AdminOperationsSnaps
         } satisfies OperationsIssue;
       });
 
+  const internalFailureSignals = internalFailureLogs
+    .map((item) => {
+      const config = internalFailureConfig(item.action);
+      if (!config) {
+        return null;
+      }
+
+      const metadata = asRecord(item.metadataJson);
+      return {
+        id: item.id,
+        createdAt: item.createdAt,
+        title: config.title,
+        statusLabel: config.statusLabel,
+        statusTone: config.statusTone,
+        summary:
+          [
+            readString(metadata, "route"),
+            readString(metadata, "path"),
+            readString(metadata, "trackingCode"),
+            readString(metadata, "slug"),
+            readString(metadata, "requesterEmail"),
+          ]
+            .filter(Boolean)
+            .join(" · ") || "Operator review required",
+        details: [
+          readString(metadata, "errorName"),
+          readString(metadata, "errorMessage"),
+          readString(metadata, "host") ? `Host ${readString(metadata, "host")}` : null,
+          readString(metadata, "routePath") ? `Route ${readString(metadata, "routePath")}` : null,
+          readString(metadata, "errorDigest") ? `Digest ${readString(metadata, "errorDigest")}` : null,
+        ].filter((value): value is string => Boolean(value)),
+        href: config.href,
+      } satisfies OperationsIssue;
+    })
+    .filter(Boolean) as OperationsIssue[];
+
+  const securitySignals = securitySignalLogs.map((item) => {
+    const metadata = asRecord(item.metadataJson);
+    if (item.action === "security.csp_ingest_failed") {
+      return {
+        id: item.id,
+        createdAt: item.createdAt,
+        title: "CSP report ingestion failed",
+        statusLabel: "failed",
+        statusTone: "danger" as const,
+        summary: readString(metadata, "route") ?? "/api/security/csp-report",
+        details: [readString(metadata, "errorName"), readString(metadata, "errorMessage")].filter(
+          (value): value is string => Boolean(value),
+        ),
+        href: "/admin/readiness",
+      } satisfies OperationsIssue;
+    }
+
+    const reports = Array.isArray(metadata?.reports) ? metadata.reports : [];
+    const firstReport = asRecord(reports[0]);
+    return {
+      id: item.id,
+      createdAt: item.createdAt,
+      title: "Content Security Policy violation",
+      statusLabel: "reported",
+      statusTone: "warning" as const,
+      summary:
+        [
+          readString(firstReport, "effectiveDirective"),
+          readString(firstReport, "blockedUri"),
+          readString(firstReport, "documentUri"),
+        ]
+          .filter(Boolean)
+          .join(" · ") || "CSP violation reported",
+      details: [
+        readString(metadata, "userAgent"),
+        readString(firstReport, "sourceFile"),
+        readNumber(firstReport, "lineNumber") !== null ? `Line ${readNumber(firstReport, "lineNumber")}` : null,
+      ].filter((value): value is string => Boolean(value)),
+      href: "/admin/readiness",
+    } satisfies OperationsIssue;
+  });
+
   return {
     stats: {
       pendingArchitectureEmail: emailOutboxes.filter((item) => item.status === "pending").length,
@@ -569,6 +780,8 @@ export async function getAdminOperationsSnapshot(): Promise<AdminOperationsSnaps
       recentBookedCalls: bookedCalls.length + flaggedBookedCallSignals.length,
       followUpAttention: staleServiceRequests.length + staleEstimatesWithoutFollowUp.length,
       automationAttention: automationHealthSignals.filter((item) => item.statusTone === "danger" || item.statusTone === "warning").length,
+      internalFailures: internalFailureSignals.length,
+      securitySignals: securitySignals.length,
     },
     architectureEmailIssues: emailOutboxes.map((item) => ({
       id: item.id,
@@ -628,6 +841,8 @@ export async function getAdminOperationsSnapshot(): Promise<AdminOperationsSnaps
       ...flaggedBookedCallSignals,
     ].sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime()),
     automationHealthSignals,
+    internalFailureSignals,
+    securitySignals,
     followUpAttentionIssues: [
       ...staleEstimatesWithoutFollowUp.map((item) => ({
         id: item.id,

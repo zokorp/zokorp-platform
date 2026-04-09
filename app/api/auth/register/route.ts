@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { issueEmailVerificationToken } from "@/lib/email-verification";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { hashPassword, validatePasswordStrength } from "@/lib/password-auth";
+import { recordOperationalIssue } from "@/lib/operational-issues";
 import { requireSameOrigin } from "@/lib/request-origin";
 import { isBusinessEmail } from "@/lib/security";
 import { getSiteOriginFromRequest } from "@/lib/site-origin";
@@ -157,7 +158,14 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (error) {
-    console.error(error);
+    await recordOperationalIssue({
+      action: "auth.register_failed",
+      area: "auth",
+      error,
+      metadata: {
+        route: "/api/auth/register",
+      },
+    });
     return NextResponse.json({ error: "Unable to create account." }, { status: 500 });
   }
 }

@@ -5,6 +5,7 @@ import { sendPasswordResetEmail } from "@/lib/auth-email";
 import { isPasswordAuthEnabled } from "@/lib/auth-config";
 import { db } from "@/lib/db";
 import { issuePasswordResetToken } from "@/lib/password-reset-tokens";
+import { recordOperationalIssue } from "@/lib/operational-issues";
 import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { isBusinessEmail } from "@/lib/security";
@@ -109,7 +110,14 @@ export async function POST(request: Request) {
       message: "If that account exists, a reset email has been sent.",
     });
   } catch (error) {
-    console.error(error);
+    await recordOperationalIssue({
+      action: "auth.password_reset_request_failed",
+      area: "auth",
+      error,
+      metadata: {
+        route: "/api/auth/password/request-reset",
+      },
+    });
     return NextResponse.json({ error: "Unable to process reset request." }, { status: 500 });
   }
 }

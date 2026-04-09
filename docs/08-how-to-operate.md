@@ -20,8 +20,9 @@
   - `npm run ops:audit:production`
 - What it verifies:
   - production Vercel env pull succeeds
-  - canonical site smoke checks pass on `https://app.zokorp.com`
-  - core security headers are present on the live site
+  - canonical smoke checks pass across `https://zokorp.com`, `https://www.zokorp.com`, and `https://app.zokorp.com`
+  - core security headers are present on both the marketing and app hosts
+  - `/api/health` returns `status: ok` with a healthy database check on both hosts
   - Stripe webhook endpoint is enabled and pointed at `/api/stripe/webhook`
   - Zoho Invoice refresh-token flow works and can read the configured organization
   - the latest GitHub scheduled runs for queue drain, follow-ups, Calendly sync, Zoho lead sync, and estimate sync all succeeded
@@ -32,6 +33,20 @@
 - Output:
   - human-readable pass/fail lines
   - JSON summary for copy/paste into incident notes or handoff messages
+
+## 2a.1) Public health endpoint
+- Route:
+  - `GET /api/health`
+- Expected behavior:
+  - returns `200` with `status: "ok"` when the app is serving requests and the runtime database check succeeds
+  - returns `503` with `status: "degraded"` when the app is up but the database check fails
+  - responds with `Cache-Control: no-store`
+- Safe external uptime targets:
+  - `https://www.zokorp.com/api/health`
+  - `https://app.zokorp.com/api/health`
+- Important:
+  - this route is intentionally low-detail and safe for uptime monitoring
+  - deeper readiness and operator triage still live in `/admin/readiness`, `/admin/operations`, and `/admin/billing`
 
 ## 2b) Run the live browser customer-journey audit from CLI
 - One-time setup for a reusable sign-in account:
@@ -159,6 +174,7 @@
 - Operator note:
   - `/admin/operations` is now the first stop for retrying Zoho lead sync, retrying estimate sync, checking booked-call linkage, reviewing quote-follow-up attention, and retrying failed architecture-review email delivery from the outbox.
   - `/admin/operations` now also includes automation-health signals for the architecture queue worker, architecture follow-up sender, retention sweep, Zoho lead sync, and estimate-companion sync so stale or failed scheduled jobs are visible without querying raw logs.
+  - `/admin/operations` now also surfaces recent internal failures and CSP/security signals so caught runtime issues no longer stay in platform logs only.
   - `/admin/billing` is now the first stop for Stripe checkout fulfillment issues, recent webhook processing history, refunds/disputes, and entitlement or credit-balance reconciliation signals.
 
 ## 3) Add or update Stripe prices

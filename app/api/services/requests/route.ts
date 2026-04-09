@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { isSchemaDriftError, isTransientDatabaseConnectionError } from "@/lib/db-errors";
 import { jsonNoStore } from "@/lib/internal-route";
+import { recordOperationalIssue } from "@/lib/operational-issues";
 import { upsertLead } from "@/lib/privacy-leads";
 import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
@@ -156,7 +157,15 @@ export async function POST(request: Request) {
           companyName: requesterCompanyName,
         });
       } catch (leadError) {
-        console.error("Failed to upsert public service-request lead", leadError);
+        await recordOperationalIssue({
+          action: "service.request_lead_upsert_failed",
+          area: "service-requests",
+          error: leadError,
+          metadata: {
+            requesterEmail,
+            trackingCode: created.trackingCode,
+          },
+        });
       }
     }
 
@@ -183,10 +192,26 @@ export async function POST(request: Request) {
       });
 
       if (zohoResult.status === "failed") {
-        console.error("Failed to sync service request to Zoho CRM", zohoResult.error);
+        await recordOperationalIssue({
+          action: "service.request_zoho_sync_failed",
+          area: "service-requests",
+          error: zohoResult.error,
+          metadata: {
+            requesterEmail,
+            trackingCode: created.trackingCode,
+          },
+        });
       }
     } catch (zohoError) {
-      console.error("Failed to sync service request to Zoho CRM", zohoError);
+      await recordOperationalIssue({
+        action: "service.request_zoho_sync_failed",
+        area: "service-requests",
+        error: zohoError,
+        metadata: {
+          requesterEmail,
+          trackingCode: created.trackingCode,
+        },
+      });
     }
 
     try {
@@ -204,7 +229,15 @@ export async function POST(request: Request) {
         },
       });
     } catch (auditError) {
-      console.error("Failed to record service request audit log", auditError);
+      await recordOperationalIssue({
+        action: "service.request_audit_log_failed",
+        area: "service-requests",
+        error: auditError,
+        metadata: {
+          requesterEmail,
+          trackingCode: created.trackingCode,
+        },
+      });
     }
 
     return jsonNoStore({
@@ -228,7 +261,11 @@ export async function POST(request: Request) {
       );
     }
 
-    console.error(error);
+    await recordOperationalIssue({
+      action: "service.request_submission_failed",
+      area: "service-requests",
+      error,
+    });
     return jsonNoStore({ error: "Unable to submit service request." }, { status: 500 });
   }
 }

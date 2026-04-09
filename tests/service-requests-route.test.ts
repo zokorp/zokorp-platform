@@ -153,7 +153,7 @@ describe("service requests route", () => {
       }),
     );
     expect(upsertLeadMock).not.toHaveBeenCalled();
-    expect(auditCreateMock).toHaveBeenCalledTimes(1);
+    expect(auditCreateMock).toHaveBeenCalledTimes(2);
 
     consoleErrorSpy.mockRestore();
   });

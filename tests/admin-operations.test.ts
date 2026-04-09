@@ -54,6 +54,8 @@ describe("admin operations snapshot", () => {
     leadLogFindManyMock.mockResolvedValue([]);
     estimateCompanionFindManyMock.mockResolvedValue([]);
     toolRunFindManyMock.mockResolvedValue([]);
+    auditLogFindManyMock.mockResolvedValue([]);
+    leadInteractionFindManyMock.mockResolvedValue([]);
     serviceRequestFindManyMock.mockResolvedValue([]);
   });
 
@@ -185,6 +187,61 @@ describe("admin operations snapshot", () => {
     });
     expect(snapshot.automationHealthSignals[1]).toMatchObject({
       summary: "Expected daily · Last signal 3 day(s) ago",
+    });
+  });
+
+  it("surfaces internal failures and CSP signals for operators", async () => {
+    estimateCompanionFindManyMock
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    auditLogFindManyMock
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id: "internal_failure_1",
+          action: "service.request_submission_failed",
+          createdAt: new Date("2026-04-04T22:10:00.000Z"),
+          metadataJson: {
+            route: "/api/services/requests",
+            trackingCode: "SR-123",
+            errorName: "Error",
+            errorMessage: "Unable to submit service request.",
+          },
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: "security_1",
+          action: "security.csp_violation",
+          createdAt: new Date("2026-04-04T22:12:00.000Z"),
+          metadataJson: {
+            reports: [
+              {
+                effectiveDirective: "script-src",
+                blockedUri: "https://example.com/script.js",
+                documentUri: "https://www.zokorp.com/",
+              },
+            ],
+            userAgent: "Mozilla/5.0",
+          },
+        },
+      ]);
+
+    const snapshot = await getAdminOperationsSnapshot();
+
+    expect(snapshot.stats.internalFailures).toBe(1);
+    expect(snapshot.stats.securitySignals).toBe(1);
+    expect(snapshot.internalFailureSignals[0]).toMatchObject({
+      title: "Service request submission failed",
+      summary: "/api/services/requests · SR-123",
+      href: "/admin/service-requests",
+    });
+    expect(snapshot.securitySignals[0]).toMatchObject({
+      title: "Content Security Policy violation",
+      summary: "script-src · https://example.com/script.js · https://www.zokorp.com/",
+      href: "/admin/readiness",
     });
   });
 });
