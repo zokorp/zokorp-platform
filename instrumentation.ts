@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import type { Instrumentation } from "next";
 
 function compactError(error: unknown) {
@@ -26,6 +27,8 @@ export const onRequestError: Instrumentation.onRequestError = async (
   request,
   context,
 ) => {
+  await Sentry.captureRequestError(error, request, context);
+
   const summary = compactError(error);
   console.error("Unhandled request error", {
     path: request.path,
@@ -45,3 +48,13 @@ export const onRequestError: Instrumentation.onRequestError = async (
   const { recordRequestErrorIssue } = await import("@/lib/operational-issues");
   await recordRequestErrorIssue(error, request, context);
 };
+
+export async function register() {
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    await import("./sentry.server.config");
+  }
+
+  if (process.env.NEXT_RUNTIME === "edge") {
+    await import("./sentry.edge.config");
+  }
+}

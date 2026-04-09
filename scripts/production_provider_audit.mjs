@@ -41,6 +41,10 @@ const schedulerWorkflows = [
     workflow: "zoho-sync-estimate-companions.yml",
     label: "Zoho estimate companion sync",
   },
+  {
+    workflow: "uptime-checks.yml",
+    label: "Uptime checks",
+  },
 ];
 
 function runCommand(command, args) {

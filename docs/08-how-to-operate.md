@@ -25,7 +25,7 @@
   - `/api/health` returns `status: ok` with a healthy database check on both hosts
   - Stripe webhook endpoint is enabled and pointed at `/api/stripe/webhook`
   - Zoho Invoice refresh-token flow works and can read the configured organization
-  - the latest GitHub scheduled runs for queue drain, follow-ups, Calendly sync, Zoho lead sync, and estimate sync all succeeded
+  - the latest GitHub scheduled runs for queue drain, follow-ups, Calendly sync, Zoho lead sync, estimate sync, and uptime checks all succeeded
 - Prerequisites on the operator machine:
   - Vercel CLI is authenticated and linked to `leggoboyos-projects/zokorp-web`
   - GitHub CLI is authenticated with access to `leggoboyo/zokorp-platform`
@@ -47,6 +47,41 @@
 - Important:
   - this route is intentionally low-detail and safe for uptime monitoring
   - deeper readiness and operator triage still live in `/admin/readiness`, `/admin/operations`, and `/admin/billing`
+
+## 2a.2) Free external uptime monitor
+- Command:
+  - `npm run uptime:check`
+- What it verifies:
+  - apex redirects to the canonical marketing host
+  - both public `/api/health` routes return `status: "ok"`
+  - the marketing homepage still renders its primary CTA markers
+  - the app login route still responds
+- Scheduled automation:
+  - `.github/workflows/uptime-checks.yml`
+  - runs every 15 minutes on an offset schedule and can also be triggered manually from GitHub Actions
+- Important:
+  - this monitor is intentionally cheap and public-endpoint only
+  - it does not require provider APIs, paid browser infrastructure, or dashboard logins
+  - it should be treated as the first passive signal, not a replacement for the deeper provider or browser audits
+  - scheduled workflows only run from the default branch
+  - GitHub may auto-disable scheduled workflows after 60 days of repository inactivity, so treat the workflow list as part of launch/runbook review
+
+## 2a.3) Sentry activation checklist
+- Code support is now present for:
+  - server-side error capture
+  - edge/runtime request error capture
+- To activate it for real, add these env vars:
+  - `SENTRY_DSN`
+- Optional but recommended for readable production stack traces:
+  - `SENTRY_AUTH_TOKEN`
+  - `SENTRY_ORG`
+  - `SENTRY_PROJECT`
+- Optional sample-rate controls:
+  - `SENTRY_TRACES_SAMPLE_RATE`
+- Important:
+  - the app is intentionally conservative by default: no replay, no user-feedback widget, no default PII, and zero trace sampling until you opt in
+  - if `SENTRY_DSN` is blank, the server-side Sentry SDK stays effectively dormant
+  - browser-side Sentry capture can be added later after server-side monitoring is confirmed useful
 
 ## 2b) Run the live browser customer-journey audit from CLI
 - One-time setup for a reusable sign-in account:
@@ -171,6 +206,15 @@
   - requires:
     - `ZOHO_ESTIMATE_COMPANION_SYNC_URL`
     - `CRON_SECRET`
+- Uptime checks:
+  - workflow: `.github/workflows/uptime-checks.yml`
+  - requires:
+    - no secrets by default
+  - uses:
+    - `https://zokorp.com`
+    - `https://www.zokorp.com`
+    - `https://app.zokorp.com`
+    - public `/api/health` routes
 - Operator note:
   - `/admin/operations` is now the first stop for retrying Zoho lead sync, retrying estimate sync, checking booked-call linkage, reviewing quote-follow-up attention, and retrying failed architecture-review email delivery from the outbox.
   - `/admin/operations` now also includes automation-health signals for the architecture queue worker, architecture follow-up sender, retention sweep, Zoho lead sync, and estimate-companion sync so stale or failed scheduled jobs are visible without querying raw logs.

@@ -93,6 +93,8 @@ export function buildRuntimeReadinessReport(env: RuntimeEnv = process.env): Runt
   const resendConfigured = configured(env.RESEND_API_KEY) && configured(env.RESEND_FROM_EMAIL);
   const sentryServerConfigured = configured(env.SENTRY_DSN);
   const sentryClientConfigured = configured(env.NEXT_PUBLIC_SENTRY_DSN);
+  const sentrySourceMapUploadConfigured =
+    configured(env.SENTRY_AUTH_TOKEN) && configured(env.SENTRY_ORG) && configured(env.SENTRY_PROJECT);
   const analyticsConfigured = configured(env.NEXT_PUBLIC_GA_MEASUREMENT_ID);
   const stripeSecretConfigured = configured(env.STRIPE_SECRET_KEY);
   const stripeWebhookConfigured = configured(env.STRIPE_WEBHOOK_SECRET);
@@ -578,6 +580,7 @@ export function buildRuntimeReadinessReport(env: RuntimeEnv = process.env): Runt
             "Architecture review follow-ups -> ARCH_REVIEW_FOLLOWUP_URL + ARCH_REVIEW_FOLLOWUP_SECRET",
             "Calendly booking sync -> CALENDLY_PERSONAL_ACCESS_TOKEN + CALENDLY_SYNC_INGEST_URL + CALENDLY_SYNC_SECRET",
             "Zoho lead sync -> ZOHO_SYNC_URL + ZOHO_SYNC_SECRET",
+            "Uptime checks -> no secrets (uses the public marketing/app URLs and /api/health)",
           ],
           operatorAction: "Verify repo-level secrets and recent successful workflow runs in GitHub Actions before declaring scheduler health.",
         },
@@ -618,6 +621,21 @@ export function buildRuntimeReadinessReport(env: RuntimeEnv = process.env): Runt
               level: "warning",
               summary: "No visitor analytics signal is configured from runtime env.",
               operatorAction: "Set NEXT_PUBLIC_GA_MEASUREMENT_ID or enable a privacy-safe platform analytics tool before relying on passive traffic visibility.",
+            },
+        sentrySourceMapUploadConfigured
+          ? {
+              id: "external-error-source-maps",
+              label: "Sentry source maps",
+              level: "pass",
+              summary: "Source map upload credentials are configured for production builds.",
+            }
+          : {
+              id: "external-error-source-maps",
+              label: "Sentry source maps",
+              level: "warning",
+              summary: "Sentry source map upload is not configured. Stack traces will be less useful until build credentials are added.",
+              operatorAction:
+                "Set SENTRY_AUTH_TOKEN, SENTRY_ORG, and SENTRY_PROJECT in CI or Vercel only when you are ready to upload production source maps.",
             },
         {
           id: "health-endpoint",
