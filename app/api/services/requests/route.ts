@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { isSchemaDriftError, isTransientDatabaseConnectionError } from "@/lib/db-errors";
 import { createInternalAuditLog, jsonNoStore } from "@/lib/internal-route";
 import { recordOperationalIssue } from "@/lib/operational-issues";
-import { upsertLead } from "@/lib/privacy-leads";
+import { ensureLeadInteraction, upsertLead } from "@/lib/privacy-leads";
 import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { BUSINESS_EMAIL_REQUIRED_MESSAGE, isBusinessEmail } from "@/lib/security";
@@ -105,6 +105,7 @@ export async function POST(request: Request) {
     const requesterSource = signedInUser ? "account" : "public_form";
     const requesterName = signedInUser?.name ?? parsed.data.requesterName ?? null;
     const requesterCompanyName = parsed.data.requesterCompanyName ?? null;
+    let leadId: string | null = null;
     let operatorEmailStatus: {
       attempted: boolean;
       ok: boolean;
@@ -112,24 +113,33 @@ export async function POST(request: Request) {
       error: string | null;
     } | null = null;
 
-    if (!signedInUser) {
-      try {
-        await upsertLead({
-          email: requesterEmail,
-          name: requesterName,
-          companyName: requesterCompanyName,
-        });
-      } catch (leadError) {
-        await recordOperationalIssue({
-          action: "service.request_lead_upsert_failed",
-          area: "service-requests",
-          error: leadError,
-          metadata: {
-            requesterEmail,
-            trackingCode: created.trackingCode,
-          },
-        });
-      }
+    try {
+      const lead = await upsertLead({
+        userId: signedInUser?.id ?? null,
+        email: requesterEmail,
+        name: requesterName,
+        companyName: requesterCompanyName,
+      });
+      leadId = lead.id;
+
+      await ensureLeadInteraction({
+        leadId: lead.id,
+        userId: signedInUser?.id ?? null,
+        serviceRequestId: created.id,
+        source: "service-request",
+        action: "service_request_created",
+        externalEventId: `service-request:${created.id}:created`,
+      });
+    } catch (leadError) {
+      await recordOperationalIssue({
+        action: "service.request_lead_upsert_failed",
+        area: "service-requests",
+        error: leadError,
+        metadata: {
+          requesterEmail,
+          trackingCode: created.trackingCode,
+        },
+      });
     }
 
     try {
@@ -192,6 +202,7 @@ export async function POST(request: Request) {
             title: created.title,
             requesterEmail,
             requesterSource,
+            leadTracked: Boolean(leadId),
             zohoSyncQueued: true,
             operatorEmailStatus,
           },

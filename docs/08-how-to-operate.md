@@ -26,6 +26,15 @@
   - Stripe webhook endpoint is enabled and pointed at `/api/stripe/webhook`
   - Zoho Invoice refresh-token flow works and can read the configured organization
   - the latest GitHub scheduled runs for queue drain, follow-ups, Calendly sync, Zoho lead sync, service-request CRM sync, estimate sync, and uptime checks all succeeded
+- Software host-split expectations included in this audit:
+  - `https://www.zokorp.com/software` stays public and canonical to `www`
+  - `https://app.zokorp.com/software` stays crawl-safe and canonical to the marketing host
+  - `https://app.zokorp.com/software/architecture-diagram-reviewer`
+  - `https://app.zokorp.com/software/zokorp-validator`
+  - `https://app.zokorp.com/software/mlops-foundation-platform`
+  - `https://app.zokorp.com/software/architecture-diagram-reviewer/sample-report`
+  - app-host marketing routes such as `/services` and `/about` redirect back to `www`
+  - app-host `robots.txt` and `sitemap.xml` stay off the crawl surface
 - Prerequisites on the operator machine:
   - Vercel CLI is authenticated and linked to `leggoboyos-projects/zokorp-web`
   - GitHub CLI is authenticated with access to `leggoboyo/zokorp-platform`
@@ -34,7 +43,24 @@
   - human-readable pass/fail lines
   - JSON summary for copy/paste into incident notes or handoff messages
 
-## 2a.1) Public health endpoint
+## 2a.1) Run the split-host smoke against a preview deployment
+- Command:
+  - `JOURNEY_MARKETING_BASE_URL=https://preview-www.example.com JOURNEY_APP_BASE_URL=https://preview-app.example.com npm run smoke:preview`
+- Use this when:
+  - validating a preview pair before production
+  - confirming `/software` and the tool detail routes still honor canonical and robots expectations on split hosts
+- If preview aliases are protected by Vercel Authentication:
+  - export `VERCEL_AUTOMATION_BYPASS_SECRET` before running the smoke or browser audit
+  - example:
+    - `VERCEL_AUTOMATION_BYPASS_SECRET=... JOURNEY_MARKETING_BASE_URL=https://preview-www.example.com JOURNEY_APP_BASE_URL=https://preview-app.example.com npm run smoke:preview`
+  - the audit scripts now send `x-vercel-protection-bypass` automatically when that env var is present
+- Recommended overrides when preview should still point canonical URLs at production:
+  - `JOURNEY_EXPECTED_MARKETING_CANONICAL_BASE_URL=https://www.zokorp.com`
+  - `JOURNEY_EXPECTED_APP_CANONICAL_BASE_URL=https://app.zokorp.com`
+- Local note:
+  - when both base URLs are the same localhost origin, host-split checks are expected to skip instead of fail
+
+## 2a.2) Public health endpoint
 - Route:
   - `GET /api/health`
 - Expected behavior:
@@ -48,7 +74,7 @@
   - this route is intentionally low-detail and safe for uptime monitoring
   - deeper readiness and operator triage still live in `/admin/readiness`, `/admin/operations`, and `/admin/billing`
 
-## 2a.2) Free external uptime monitor
+## 2a.3) Free external uptime monitor
 - Command:
   - `npm run uptime:check`
 - What it verifies:
@@ -66,7 +92,7 @@
   - scheduled workflows only run from the default branch
   - GitHub may auto-disable scheduled workflows after 60 days of repository inactivity, so treat the workflow list as part of launch/runbook review
 
-## 2a.3) Sentry activation checklist
+## 2a.4) Sentry activation checklist
 - Code support is now present for:
   - server-side error capture
   - edge/runtime request error capture
@@ -91,6 +117,12 @@
   - Extra local overrides already stored in `.env.audit.local` are preserved when the command rotates the audit account.
 - Command:
   - `npm run journey:audit:production`
+- Preview variant:
+  - `JOURNEY_MARKETING_BASE_URL=https://preview-www.example.com JOURNEY_APP_BASE_URL=https://preview-app.example.com npm run journey:audit:preview`
+- Preview audit-account setup:
+  - `node scripts/provision_browser_audit_user.mjs --environment=preview --email=browser-audit-preview@zokorp-platform.test --write-env-file=.env.audit.preview.local`
+  - then run:
+    - `VERCEL_AUTOMATION_BYPASS_SECRET=... JOURNEY_ENV_FILE=.env.audit.preview.local JOURNEY_MARKETING_BASE_URL=https://preview-www.example.com JOURNEY_APP_BASE_URL=https://preview-app.example.com npm run journey:audit:preview`
 - What it verifies:
   - the configured marketing host serves the current public pages
   - the configured app host serves product and auth routes without breaking the split
@@ -98,6 +130,7 @@
   - app-only metadata routes keep their canonical and robots meta tags intact
   - public product pages render their expected unsigned state
   - authenticated product pages render their expected signed-in state when creds are provided
+  - the software hub, reviewer sample report, and app-host software detail pages stay aligned with the split-host `/software` contract
 - Optional authenticated checks:
   - if `.env.audit.local` exists, the audit loads `JOURNEY_EMAIL` and `JOURNEY_PASSWORD` automatically
   - you can still override with shell env vars if you want to use a different account
@@ -169,6 +202,8 @@
   - it consumes one real validator credit and creates one synthetic booked-call service request for the audit user
   - it is intended as a repeatable operator proof, not a marketing demo
   - add `CALENDLY_SYNC_SECRET` to `.env.audit.local` if you want the proof runner to verify the live internal ingest route directly instead of falling back when provider-secret export is unavailable
+  - if a production DB URL is available locally through `.env.audit.local`, `PRODUCTION_DIRECT_DATABASE_URL`, or `PRODUCTION_DATABASE_URL`, the proof adds direct database validation for credit and linkage writes
+  - if no production DB URL is available locally, the proof still runs in browser-only mode and verifies the same validator/service-request flow through the live account UI plus the internal booked-call route
 
 ## 2e) Run the full soft-launch audit bundle
 - Command:
@@ -227,6 +262,37 @@
   - `/admin/service-requests` now shows whether each request is pending CRM sync, successfully synced, or failed, and updating a request status/note re-queues that request for CRM sync.
   - `/admin/operations` now also surfaces recent internal failures and CSP/security signals so caught runtime issues no longer stay in platform logs only.
   - `/admin/billing` is now the first stop for Stripe checkout fulfillment issues, recent webhook processing history, refunds/disputes, and entitlement or credit-balance reconciliation signals.
+
+## 2g) Architecture reviewer privacy-mode guardrails and operator checks
+- What privacy mode now supports locally:
+  - `SVG`
+  - `PNG` / `JPG` with browser OCR
+  - text-based `PDF`
+  - scanned or image-only `PDF` with browser OCR fallback
+- Current browser-side limits:
+  - privacy-mode PDF OCR is capped at `8` pages
+  - privacy-mode PDF OCR rejects files larger than `6 MB`
+  - raw diagrams are not uploaded in privacy mode
+  - only minimal telemetry is sent unless the user explicitly requests email delivery
+- Delivery behavior:
+  - local-only run writes a minimal `ToolRun` plus lead event/interaction telemetry
+  - privacy email delivery is idempotent by user plus fingerprint, so repeat clicks should reuse the prior result instead of re-sending
+  - when email send fails, the server returns a fallback payload without retaining raw diagram content
+- Where to inspect it:
+  - `/admin/leads`
+    - filter `Source = Architecture Review`
+    - filter `Execution = Privacy mode` to isolate browser-first runs
+    - filter `Ops = No follow-up yet` to find scored runs that never turned into a booked call or service request
+  - `/admin/operations`
+    - recent tool-run signals now include reviewer delivery state and execution mode
+  - `/account`
+    - follow-up timeline now shows delivery requested, sent, fallback, CTA, booked-call, and service-request creation signals
+- Audit trail entries to expect:
+  - `tool.architecture_review_privacy_run`
+  - `tool.architecture_review_privacy_delivery`
+- Important:
+  - if real-host smoke says app-host marketing routes, `robots.txt`, or `sitemap.xml` are still wrong, treat that as deployment drift until a fresh deployment proves otherwise
+  - local single-origin smoke runs are expected to skip split-host assertions instead of failing them
 
 ## 3) Add or update Stripe prices
 - Open `/admin/prices` as an admin user.

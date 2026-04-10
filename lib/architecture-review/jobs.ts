@@ -22,6 +22,7 @@ import { buildEmailPreferenceLinks } from "@/lib/email-preferences";
 import { ensureLeadLogSchemaReady } from "@/lib/lead-log-schema";
 import {
   archiveToolSubmission,
+  ensureLeadInteraction,
   recordLeadEvent,
   upsertLead,
 } from "@/lib/privacy-leads";
@@ -43,6 +44,26 @@ const PROCESSING_PHASES: ArchitectureReviewPhase[] = [
   "send-fallback",
   "completed",
 ];
+
+function buildArchitectureReviewJobInteractionEventId(input: {
+  jobId: string;
+  action: "run_completed" | "delivery_requested" | "delivery_sent" | "delivery_fallback";
+}) {
+  return `architecture-review:job:${input.jobId}:${input.action}`;
+}
+
+async function recordArchitectureReviewInteraction(input: Parameters<typeof ensureLeadInteraction>[0]) {
+  try {
+    await ensureLeadInteraction(input);
+  } catch (error) {
+    console.error("Failed to persist architecture review interaction", {
+      source: input.source,
+      action: input.action,
+      externalEventId: input.externalEventId ?? null,
+      error,
+    });
+  }
+}
 
 type DeviceClass = "mobile" | "tablet" | "desktop" | "unknown";
 type TimedArchitectureReviewPhase = Exclude<ArchitectureReviewPhase, "completed" | "llm-refine">;
@@ -876,6 +897,30 @@ export async function processArchitectureReviewJob(jobId: string): Promise<Archi
       name: userName,
     });
 
+    await recordArchitectureReviewInteraction({
+      leadId: lead.id,
+      userId: job.userId,
+      source: "architecture-review",
+      action: "run_completed",
+      externalEventId: buildArchitectureReviewJobInteractionEventId({
+        jobId: job.id,
+        action: "run_completed",
+      }),
+      estimateReferenceCode: estimateSnapshot.referenceCode,
+    });
+
+    await recordArchitectureReviewInteraction({
+      leadId: lead.id,
+      userId: job.userId,
+      source: "architecture-review",
+      action: "delivery_requested",
+      externalEventId: buildArchitectureReviewJobInteractionEventId({
+        jobId: job.id,
+        action: "delivery_requested",
+      }),
+      estimateReferenceCode: estimateSnapshot.referenceCode,
+    });
+
     if (saveForFollowUp) {
       try {
         await archiveToolSubmission({
@@ -976,6 +1021,19 @@ export async function processArchitectureReviewJob(jobId: string): Promise<Archi
           recommendedEngagement: report.quoteTier,
           sourceRecordKey: `architecture-review:${job.id}`,
         },
+      });
+
+      await recordArchitectureReviewInteraction({
+        leadId: lead.id,
+        userId: job.userId,
+        source: "architecture-review",
+        action: "delivery_sent",
+        provider: sendResult.provider,
+        externalEventId: buildArchitectureReviewJobInteractionEventId({
+          jobId: job.id,
+          action: "delivery_sent",
+        }),
+        estimateReferenceCode: estimateSnapshot.referenceCode,
       });
 
       await persistAuditLog({
@@ -1119,6 +1177,19 @@ export async function processArchitectureReviewJob(jobId: string): Promise<Archi
         recommendedEngagement: report.quoteTier,
         sourceRecordKey: `architecture-review:${job.id}`,
       },
+    });
+
+    await recordArchitectureReviewInteraction({
+      leadId: lead.id,
+      userId: job.userId,
+      source: "architecture-review",
+      action: "delivery_fallback",
+      provider: sendResult.provider,
+      externalEventId: buildArchitectureReviewJobInteractionEventId({
+        jobId: job.id,
+        action: "delivery_fallback",
+      }),
+      estimateReferenceCode: estimateSnapshot.referenceCode,
     });
 
     await persistAuditLog({

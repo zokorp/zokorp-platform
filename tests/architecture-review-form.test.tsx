@@ -392,6 +392,51 @@ describe("ArchitectureDiagramReviewerForm", () => {
     expect(screen.queryByText(/pdf privacy mode is not available yet/i)).toBeNull();
   });
 
+  it("shows the scanned PDF OCR error message in privacy mode", async () => {
+    vi.spyOn(architectureReviewClient, "isStrictDiagramFile").mockResolvedValue({
+      ok: true,
+      format: "pdf",
+      mimeType: "application/pdf",
+    });
+    vi.spyOn(architectureReviewClient, "extractPdfTextEvidence").mockRejectedValue(
+      new Error("Scanned PDF OCR is limited to 8 pages in privacy mode. Split the PDF or use standard mode."),
+    );
+
+    render(<ArchitectureDiagramReviewerForm accountEmail="owner@acmecloud.com" />);
+
+    fireEvent.click(screen.getByLabelText(/privacy mode \(analyze in browser\)/i));
+
+    const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d]);
+    const pdfFile = new File([pdfBytes], "diagram.pdf", { type: "application/pdf" });
+    const fileInput = screen.getByLabelText(/diagram file/i);
+    const submitButton = screen.getByRole("button", { name: /run local review/i });
+    const form = submitButton.closest("form");
+
+    Object.defineProperty(fileInput, "files", {
+      value: [pdfFile],
+      writable: false,
+    });
+    fireEvent.change(fileInput);
+
+    fireEvent.change(screen.getByLabelText(/architecture description/i), {
+      target: {
+        value: "CloudFront forwards traffic to API Gateway, Lambda writes DynamoDB, and CloudWatch alarms on failures.",
+      },
+    });
+
+    if (!form) {
+      throw new Error("Expected form element.");
+    }
+
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Scanned PDF OCR is limited to 8 pages in privacy mode/i)).toBeTruthy();
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("shows browser OCR progress before PNG submission is sent", async () => {
     vi.spyOn(architectureReviewClient, "isStrictDiagramFile").mockResolvedValue({
       ok: true,

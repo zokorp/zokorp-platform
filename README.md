@@ -42,8 +42,11 @@ Without email, Stripe, or Zoho credentials, the UI can still run locally, but ve
 - `npm run typecheck`
 - `npm test`
 - `npm run build`
+- `JOURNEY_MARKETING_BASE_URL=https://preview-www.example.com JOURNEY_APP_BASE_URL=https://preview-app.example.com npm run smoke:preview`
+- `VERCEL_AUTOMATION_BYPASS_SECRET=... JOURNEY_MARKETING_BASE_URL=https://preview-www.example.com JOURNEY_APP_BASE_URL=https://preview-app.example.com npm run smoke:preview`
 - `node scripts/production_smoke_check.mjs`
 - `SMOKE_BASE_URL=http://127.0.0.1:3000 node scripts/production_smoke_check.mjs`
+- `JOURNEY_MARKETING_BASE_URL=https://preview-www.example.com JOURNEY_APP_BASE_URL=https://preview-app.example.com npm run journey:audit:preview`
 
 ## Important docs
 - [`docs/03-environment-variables-template.md`](docs/03-environment-variables-template.md): env contract, split by local vs production and secret vs non-secret

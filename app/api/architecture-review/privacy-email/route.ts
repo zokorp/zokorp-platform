@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { Prisma } from "@prisma/client";
+import { Prisma, type ToolRun } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -9,6 +9,8 @@ import { buildArchitectureReviewEmailContent, buildMailtoUrl } from "@/lib/archi
 import { createEmlToken } from "@/lib/architecture-review/eml-token";
 import { calculateLeadScore } from "@/lib/architecture-review/lead";
 import {
+  buildArchitecturePrivacyDeliveryIdempotencyKey,
+  buildArchitecturePrivacyInteractionEventId,
   buildArchitecturePrivacySourceRecordKey,
   ensureArchitectureReviewLead,
   findArchitecturePrivacyFingerprint,
@@ -23,10 +25,10 @@ import { buildEmailPreferenceLinks } from "@/lib/email-preferences";
 import { recordEstimateCompanion } from "@/lib/estimate-companions";
 import { isFreeToolAccessError, requireVerifiedFreeToolAccess } from "@/lib/free-tool-access";
 import { jsonNoStore } from "@/lib/internal-route";
-import { recordLeadEvent } from "@/lib/privacy-leads";
+import { ensureLeadInteraction, recordLeadEvent } from "@/lib/privacy-leads";
 import { requireSameOrigin } from "@/lib/request-origin";
 import { estimateBandForRange, scoreBandForScore } from "@/lib/tool-consent";
-import { recordArchitectureReviewToolRun } from "@/lib/tool-runs";
+import { claimToolRunDelivery, recordArchitectureReviewToolRun } from "@/lib/tool-runs";
 import { syncZohoInvoiceEstimate } from "@/lib/zoho-invoice";
 import { ensureLeadLogSchemaReady } from "@/lib/lead-log-schema";
 
@@ -47,6 +49,136 @@ function resolveAuthProvider(provider: string | null | undefined) {
   }
 
   return normalized.slice(0, 60);
+}
+
+function asRecord(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  return value as Record<string, unknown>;
+}
+
+function readString(record: Record<string, unknown> | null, key: string) {
+  const value = record?.[key];
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function readBoolean(record: Record<string, unknown> | null, key: string) {
+  return record?.[key] === true;
+}
+
+function readQuoteCompanion(record: Record<string, unknown> | null) {
+  const status = readString(record, "status");
+  const provider = readString(record, "provider");
+  const estimateId = readString(record, "estimateId");
+  const estimateNumber = readString(record, "estimateNumber");
+  const error = readString(record, "error");
+
+  if (
+    status !== "created" &&
+    status !== "failed" &&
+    status !== "not_configured"
+  ) {
+    return null;
+  }
+
+  if (provider !== "zoho-invoice" && provider !== null) {
+    return null;
+  }
+
+  return {
+    status,
+    provider,
+    estimateId,
+    estimateNumber,
+    error,
+  };
+}
+
+function buildStoredPrivacyEmailResponse(toolRun: ToolRun | null) {
+  if (!toolRun) {
+    return null;
+  }
+
+  const metadata = asRecord(toolRun.metadataJson);
+  const deliveryResult = asRecord(metadata?.deliveryResult);
+  const storedStatus = readString(deliveryResult, "status");
+  const requestId = readString(deliveryResult, "requestId") ?? null;
+  const estimateReferenceCode =
+    readString(deliveryResult, "estimateReferenceCode") ?? toolRun.estimateReferenceCode ?? null;
+  const quoteCompanion = readQuoteCompanion(asRecord(deliveryResult?.quoteCompanion));
+
+  if (storedStatus === "sent" || toolRun.deliveryStatus === "sent") {
+    return {
+      status: "sent" as const,
+      requestId: requestId ?? randomUUID(),
+      reused: readBoolean(deliveryResult, "reused") || true,
+      estimateReferenceCode: estimateReferenceCode ?? undefined,
+      quoteCompanion: quoteCompanion ?? undefined,
+    };
+  }
+
+  if (storedStatus === "fallback" || toolRun.deliveryStatus === "fallback") {
+    return {
+      status: "fallback" as const,
+      requestId: requestId ?? randomUUID(),
+      reused: readBoolean(deliveryResult, "reused") || true,
+      reason: readString(deliveryResult, "reason") ?? undefined,
+      mailtoUrl: readString(deliveryResult, "mailtoUrl") ?? undefined,
+      emlDownloadToken: readString(deliveryResult, "emlDownloadToken") ?? undefined,
+      estimateReferenceCode: estimateReferenceCode ?? undefined,
+      quoteCompanion: quoteCompanion ?? undefined,
+    };
+  }
+
+  if (toolRun.deliveryStatus === "delivery-processing") {
+    return {
+      status: "processing" as const,
+      requestId: requestId ?? randomUUID(),
+      reused: true,
+    };
+  }
+
+  return null;
+}
+
+async function recordPrivacyEmailAudit(input: {
+  userId: string;
+  requestId: string;
+  toolRunId: string;
+  deliveryState: string;
+  sourceRecordKey?: string | null;
+  reused?: boolean;
+  provider?: string | null;
+  estimateReferenceCode?: string | null;
+  quoteCompanionStatus?: string | null;
+  reason?: string | null;
+}) {
+  try {
+    await db.auditLog.create({
+      data: {
+        userId: input.userId,
+        action: "tool.architecture_review_privacy_delivery",
+        metadataJson: {
+          requestId: input.requestId,
+          toolRunId: input.toolRunId,
+          deliveryState: input.deliveryState,
+          sourceRecordKey: input.sourceRecordKey ?? null,
+          reused: input.reused ?? false,
+          provider: input.provider ?? null,
+          estimateReferenceCode: input.estimateReferenceCode ?? null,
+          quoteCompanionStatus: input.quoteCompanionStatus ?? null,
+          reason: input.reason ?? null,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Failed to persist privacy email audit log", {
+      requestId: input.requestId,
+      error,
+    });
+  }
 }
 
 async function findLatestAccountProvider(userId: string) {
@@ -81,6 +213,25 @@ async function createPrivacyLeadLog(input: {
   const authProvider = await findLatestAccountProvider(input.userId);
 
   try {
+    const existing = await db.leadLog.findFirst({
+      where: {
+        userId: input.userId,
+        userEmail: input.userEmail,
+        architectureProvider: input.report.provider,
+        overallScore: input.report.overallScore,
+        analysisConfidence: input.report.analysisConfidence,
+        quoteTier: input.report.quoteTier,
+        topIssues: summarizeTopIssues(input.report.findings) || "none",
+        createdAt: {
+          gte: new Date(Date.now() - 15 * 60 * 1000),
+        },
+      },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
     return await db.leadLog.create({
       data: {
         userId: input.userId,
@@ -155,6 +306,82 @@ export async function POST(request: Request) {
         },
         {
           status: 409,
+          headers: {
+            "X-Request-Id": requestId,
+          },
+        },
+      );
+    }
+
+    const deliveryIdempotencyKey = buildArchitecturePrivacyDeliveryIdempotencyKey({
+      userId: access.user.id,
+      fingerprintId: fingerprint.id,
+    });
+    const deliveryClaim = await claimToolRunDelivery({
+      toolRunId: payload.toolRunId,
+      userId: access.user.id,
+      toolSlug: "architecture-diagram-reviewer",
+      from: ["local-email-pending", "local-only"],
+      to: "delivery-processing",
+    });
+
+    if (deliveryClaim.state === "missing") {
+      return jsonNoStore(
+        {
+          error: "Privacy-mode run record was not found. Run the local review again before requesting email delivery.",
+          requestId,
+        },
+        {
+          status: 409,
+          headers: {
+            "X-Request-Id": requestId,
+          },
+        },
+      );
+    }
+
+    if (deliveryClaim.state !== "claimed") {
+      const existingResult = buildStoredPrivacyEmailResponse(deliveryClaim.toolRun);
+
+      if (existingResult) {
+        await recordPrivacyEmailAudit({
+          userId: access.user.id,
+          requestId,
+          toolRunId: payload.toolRunId,
+          deliveryState: existingResult.status,
+          reused: true,
+          estimateReferenceCode:
+            "estimateReferenceCode" in existingResult ? existingResult.estimateReferenceCode ?? null : null,
+          reason: "reason" in existingResult ? existingResult.reason ?? null : null,
+        });
+
+        return jsonNoStore(
+          existingResult,
+          {
+            status: existingResult.status === "processing" ? 202 : 200,
+            headers: {
+              "X-Request-Id": requestId,
+            },
+          },
+        );
+      }
+
+      await recordPrivacyEmailAudit({
+        userId: access.user.id,
+        requestId,
+        toolRunId: payload.toolRunId,
+        deliveryState: "processing",
+        reused: true,
+      });
+
+      return jsonNoStore(
+        {
+          status: "processing",
+          requestId,
+          reused: true,
+        },
+        {
+          status: 202,
           headers: {
             "X-Request-Id": requestId,
           },
@@ -327,6 +554,19 @@ export async function POST(request: Request) {
         },
       });
 
+      await ensureLeadInteraction({
+        leadId: lead.id,
+        userId: access.user.id,
+        source: "architecture-review",
+        action: "delivery_sent",
+        provider: sendResult.provider,
+        externalEventId: buildArchitecturePrivacyInteractionEventId({
+          fingerprintId: fingerprint.id,
+          action: "delivery_sent",
+        }),
+        estimateReferenceCode: estimateSnapshot.referenceCode,
+      });
+
       try {
         await recordArchitectureReviewToolRun({
           toolRunId: payload.toolRunId,
@@ -349,18 +589,38 @@ export async function POST(request: Request) {
             scoreBand: scoreBandForScore(report.overallScore),
             policyBand: estimateSnapshot.policy.band,
             allowCrmFollowUp: payload.allowCrmFollowUp,
+            deliveryIdempotencyKey,
             quoteCompanionStatus: quoteCompanion.status,
             estimateLineItems: estimateAuditUsage,
+            deliveryResult: {
+              status: "sent",
+              requestId,
+              reused: false,
+              estimateReferenceCode: estimateSnapshot.referenceCode,
+              quoteCompanion,
+            },
           },
         });
       } catch (toolRunError) {
         console.error("Failed to persist privacy email tool run", toolRunError);
       }
 
+      await recordPrivacyEmailAudit({
+        userId: access.user.id,
+        requestId,
+        toolRunId: payload.toolRunId,
+        deliveryState: "sent",
+        sourceRecordKey,
+        provider: sendResult.provider,
+        estimateReferenceCode: estimateSnapshot.referenceCode,
+        quoteCompanionStatus: quoteCompanion.status,
+      });
+
       return jsonNoStore(
         {
           status: "sent",
           requestId,
+          reused: false,
           estimateReferenceCode: estimateSnapshot.referenceCode,
           quoteCompanion,
         },
@@ -406,6 +666,19 @@ export async function POST(request: Request) {
       },
     });
 
+    await ensureLeadInteraction({
+      leadId: lead.id,
+      userId: access.user.id,
+      source: "architecture-review",
+      action: "delivery_fallback",
+      provider: sendResult.provider,
+      externalEventId: buildArchitecturePrivacyInteractionEventId({
+        fingerprintId: fingerprint.id,
+        action: "delivery_fallback",
+      }),
+      estimateReferenceCode: estimateSnapshot.referenceCode,
+    });
+
     try {
       await recordArchitectureReviewToolRun({
         toolRunId: payload.toolRunId,
@@ -428,19 +701,43 @@ export async function POST(request: Request) {
           scoreBand: scoreBandForScore(report.overallScore),
           policyBand: estimateSnapshot.policy.band,
           allowCrmFollowUp: payload.allowCrmFollowUp,
+          deliveryIdempotencyKey,
           fallbackReason: sendResult.error ?? null,
           quoteCompanionStatus: quoteCompanion.status,
           estimateLineItems: estimateAuditUsage,
+          deliveryResult: {
+            status: "fallback",
+            requestId,
+            reused: false,
+            reason: sendResult.error ?? "EMAIL_DELIVERY_FAILED",
+            mailtoUrl,
+            emlDownloadToken,
+            estimateReferenceCode: estimateSnapshot.referenceCode,
+            quoteCompanion,
+          },
         },
       });
     } catch (toolRunError) {
       console.error("Failed to persist privacy email tool run", toolRunError);
     }
 
+    await recordPrivacyEmailAudit({
+      userId: access.user.id,
+      requestId,
+      toolRunId: payload.toolRunId,
+      deliveryState: "fallback",
+      sourceRecordKey,
+      provider: sendResult.provider,
+      estimateReferenceCode: estimateSnapshot.referenceCode,
+      quoteCompanionStatus: quoteCompanion.status,
+      reason: sendResult.error ?? "EMAIL_DELIVERY_FAILED",
+    });
+
     return jsonNoStore(
       {
         status: "fallback",
         requestId,
+        reused: false,
         reason: sendResult.error ?? "EMAIL_DELIVERY_FAILED",
         mailtoUrl,
         emlDownloadToken,

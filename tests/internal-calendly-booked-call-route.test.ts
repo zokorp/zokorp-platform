@@ -124,7 +124,7 @@ describe("internal Calendly booked-call ingest route", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
-    expect(mocks.leadInteractionCreate).toHaveBeenCalledTimes(1);
+    expect(mocks.leadInteractionCreate).toHaveBeenCalledTimes(2);
     expect(mocks.serviceRequestCreate).toHaveBeenCalledTimes(1);
     expect(mocks.serviceRequestUpdate).toHaveBeenCalledWith({
       where: { id: "request_123" },

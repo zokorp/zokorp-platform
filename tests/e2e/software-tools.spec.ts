@@ -20,6 +20,10 @@ import {
 
 const reviewerFixturePath = path.join(process.cwd(), "tests/e2e/fixtures/architecture-reviewer-privacy.svg");
 const reviewerPdfFixturePath = path.join(process.cwd(), "tests/e2e/fixtures/architecture-reviewer-privacy.pdf");
+const reviewerScannedPdfFixturePath = path.join(
+  process.cwd(),
+  "tests/e2e/fixtures/architecture-reviewer-privacy-scanned.pdf",
+);
 const validatorFixturePath = path.join(process.cwd(), "tests/e2e/fixtures/validator-minimal.pdf");
 const hasUserAuth = hasUserStorageState();
 const hasAdminAuth = hasAdminStorageState();
@@ -254,6 +258,51 @@ test.describe("authenticated architecture reviewer", () => {
     await page.getByRole("button", { name: /Run Local Review/i }).click();
 
     await expect(page.getByText(/Report ready in browser/i)).toBeVisible();
+    await expect(page.getByText(/Local privacy-mode report/i)).toBeVisible();
+    await expect(page.getByText(/AWS score \d+\/100/i)).toBeVisible();
+
+    expect(standardSubmitCallCount).toBe(0);
+    expect(telemetryBody).toMatchObject({
+      toolSlug: "architecture-diagram-reviewer",
+      emailDeliveryRequested: false,
+    });
+  });
+
+  test("privacy mode renders a local report for scanned PDF uploads", async ({ page }) => {
+    let telemetryBody: Record<string, unknown> | null = null;
+    let standardSubmitCallCount = 0;
+
+    await page.route("**/api/architecture-review/privacy-telemetry", async (route) => {
+      telemetryBody = route.request().postDataJSON() as Record<string, unknown>;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          toolRunId: "toolrun_privacy_pdf_scan_001",
+          dedupedLeadFingerprint: false,
+          requestId: "req_privacy_pdf_scan_001",
+        }),
+      });
+    });
+    await page.route("**/api/submit-architecture-review", async (route) => {
+      standardSubmitCallCount += 1;
+      await route.abort();
+    });
+
+    await page.goto(buildUrl(appBaseUrl, "/software/architecture-diagram-reviewer"), {
+      waitUntil: "domcontentloaded",
+    });
+    await page.waitForLoadState("networkidle");
+
+    await privacyModeToggle(page).check();
+    await page.locator('input[name="diagram"]').setInputFiles(reviewerScannedPdfFixturePath);
+    await page.getByLabel(/Architecture Description/i).fill(
+      "CloudFront sends traffic to API Gateway, Lambda writes DynamoDB, and CloudWatch alarms when failures occur.",
+    );
+    await page.getByRole("button", { name: /Run Local Review/i }).click();
+
+    await expect(page.getByText(/Report ready in browser/i)).toBeVisible({ timeout: 60_000 });
     await expect(page.getByText(/Local privacy-mode report/i)).toBeVisible();
     await expect(page.getByText(/AWS score \d+\/100/i)).toBeVisible();
 

@@ -41,12 +41,9 @@ describe("uptime monitor", () => {
         }
 
         if (url === "https://app.zokorp.com") {
-          return new Response(null, {
-            status: 308,
-            headers: {
-              location: "https://app.zokorp.com/software",
-            },
-          });
+          return htmlResponse(
+            "<html><body>Account access and software live here. Company browsing and services stay on</body></html>",
+          );
         }
 
         if (url === "https://www.zokorp.com/api/health") {
@@ -79,7 +76,7 @@ describe("uptime monitor", () => {
     expect(summary.totals.pass).toBe(6);
   });
 
-  it("fails when the app root no longer redirects to /software", async () => {
+  it("fails when the app root no longer renders the landing page marker", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: string | URL) => {
@@ -95,12 +92,7 @@ describe("uptime monitor", () => {
         }
 
         if (url === "https://app.zokorp.com") {
-          return new Response(null, {
-            status: 200,
-            headers: {
-              location: "https://app.zokorp.com/",
-            },
-          });
+          return htmlResponse("<html><body>wrong app shell</body></html>");
         }
 
         if (url.endsWith("/api/health")) {
@@ -118,7 +110,7 @@ describe("uptime monitor", () => {
     );
 
     const summary = await runUptimeMonitor();
-    const appRootCheck = summary.results.find((item) => item.id === "app_root_redirect");
+    const appRootCheck = summary.results.find((item) => item.id === "app_root_landing");
 
     expect(appRootCheck?.ok).toBe(false);
     expect(summary.totals.fail).toBe(1);
@@ -140,12 +132,9 @@ describe("uptime monitor", () => {
         }
 
         if (url === "https://app.zokorp.com") {
-          return new Response(null, {
-            status: 308,
-            headers: {
-              location: "https://app.zokorp.com/software",
-            },
-          });
+          return htmlResponse(
+            "<html><body>Account access and software live here. Company browsing and services stay on</body></html>",
+          );
         }
 
         if (url === "https://www.zokorp.com/api/health") {

@@ -34,6 +34,7 @@ import {
   readBoolean,
   readNumber,
   resolveExpectedCanonicalBaseUrl,
+  resolveVercelProtectionBypassHeaders,
   resolveOutputPath,
   writeLocatorScreenshot,
   writeJsonFile,
@@ -986,6 +987,9 @@ export async function runFullGuiWalkthrough(options = {}) {
   const mutationMode = readSetting("JOURNEY_MUTATION_MODE", "readonly");
   const keepBrowserOpen = readBoolean(readSetting("JOURNEY_KEEP_BROWSER_OPEN", "false"), false);
   const skipZoho = readBoolean(readSetting("JOURNEY_SKIP_ZOHO", "false"), false);
+  const protectionBypassHeaders = resolveVercelProtectionBypassHeaders(readSetting, {
+    setCookie: true,
+  });
 
   if (!VALID_MUTATION_MODES.has(mutationMode)) {
     throw new Error(`Unsupported JOURNEY_MUTATION_MODE: ${mutationMode}`);
@@ -1058,6 +1062,7 @@ export async function runFullGuiWalkthrough(options = {}) {
     try {
       browserContext = await chromium.launchPersistentContext(profileDir, {
         channel: browserChannel,
+        extraHTTPHeaders: protectionBypassHeaders,
         headless: !headed,
         viewport: { width: 1440, height: 960 },
       });
@@ -1067,6 +1072,7 @@ export async function runFullGuiWalkthrough(options = {}) {
       }
 
       browserContext = await chromium.launchPersistentContext(profileDir, {
+        extraHTTPHeaders: protectionBypassHeaders,
         headless: !headed,
         viewport: { width: 1440, height: 960 },
       });

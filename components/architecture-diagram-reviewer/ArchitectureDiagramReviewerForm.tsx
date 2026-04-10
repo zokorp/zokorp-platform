@@ -93,6 +93,7 @@ type PrivacyEmailResponse =
   | {
       status: "sent";
       requestId: string;
+      reused?: boolean;
       estimateReferenceCode?: string;
       quoteCompanion?: {
         status: "created" | "failed" | "not_configured";
@@ -105,6 +106,7 @@ type PrivacyEmailResponse =
   | {
       status: "fallback";
       requestId: string;
+      reused?: boolean;
       reason?: string;
       mailtoUrl?: string | null;
       emlDownloadToken?: string | null;
@@ -116,6 +118,11 @@ type PrivacyEmailResponse =
         estimateNumber?: string | null;
         error?: string;
       };
+    }
+  | {
+      status: "processing";
+      requestId: string;
+      reused?: boolean;
     }
   | {
       error: string;
@@ -513,7 +520,7 @@ export function ArchitectureDiagramReviewerForm({
 
     setPrivacyPdfFallbackNotice(
       isPdfSelection
-        ? "Text-based PDFs are supported locally. If this file is scanned or image-only, switch to standard mode for server-backed processing."
+        ? "PDFs run locally in privacy mode. Text-based PDFs stay faster; scanned or image-only PDFs fall back to local OCR and may take longer."
         : null,
     );
   }, [privacyModeActive, selectedFile]);
@@ -817,26 +824,35 @@ export function ArchitectureDiagramReviewerForm({
     if (diagramValidation.format === "pdf") {
       setPhase("ocr");
       setProgressPct(4);
-      setEtaSeconds(18);
+      setEtaSeconds(45);
       try {
         clientPdfText = await extractPdfTextEvidence(selectedFile, {
           onProgress: (progress) => {
             setPhase("ocr");
             setProgressPct(Math.max(4, Math.min(92, progress.percent)));
-            setEtaSeconds(Math.max(2, Math.round(((100 - progress.percent) / 100) * 18)));
+            const isOcrProgress = typeof progress.status === "string" && progress.status.startsWith("ocr");
+            const totalSeconds = isOcrProgress ? 75 : 18;
+            setEtaSeconds(Math.max(isOcrProgress ? 4 : 2, Math.round(((100 - progress.percent) / 100) * totalSeconds)));
           },
         });
-      } catch {
+      } catch (pdfError) {
+        const message =
+          pdfError instanceof Error
+            ? pdfError.message
+            : "Browser PDF extraction failed. Retry with a cleaner PDF or use standard mode.";
+
         if (effectiveExecutionMode === "privacy") {
           setStatus("error");
-          setError("Browser PDF text extraction failed. Retry with a text-based PDF or use standard mode.");
+          setError(message);
           return;
         }
+
+        setPrivacyPdfFallbackNotice(message);
       }
 
       if (!clientPdfText && effectiveExecutionMode === "privacy") {
         setStatus("error");
-        setError("No usable text was found in that PDF for privacy mode. Try a text-based PDF or use standard mode.");
+        setError("No usable architecture evidence was found in that PDF for privacy mode. Retry with a cleaner export or use standard mode.");
         return;
       }
     }
@@ -1041,11 +1057,23 @@ export function ArchitectureDiagramReviewerForm({
             return;
           }
 
+          if (emailPayload.status === "processing") {
+            setPrivacyDeliveryState({
+              tone: "info",
+              title: "Email delivery already in progress",
+              description: "A sanitized email request was already recorded for this local report.",
+              detail: "Retry later or check account history. Raw diagrams were not retained.",
+            });
+            return;
+          }
+
           if (emailPayload.status === "sent") {
             setPrivacyDeliveryState({
               tone: "success",
-              title: "Local report ready and emailed",
-              description: "A sanitized copy of this report was emailed to your verified business account.",
+              title: emailPayload.reused ? "Local report already emailed" : "Local report ready and emailed",
+              description: emailPayload.reused
+                ? "A sanitized copy of this report was already emailed to your verified business account."
+                : "A sanitized copy of this report was emailed to your verified business account.",
               detail: emailPayload.estimateReferenceCode
                 ? `Estimate reference: ${emailPayload.estimateReferenceCode}. Raw diagrams were not retained.`
                 : "Raw diagrams were not retained.",
@@ -1062,8 +1090,10 @@ export function ArchitectureDiagramReviewerForm({
 
           setPrivacyDeliveryState({
             tone: "warning",
-            title: "Local report ready; email fallback prepared",
-            description: "Automated email delivery was unavailable, but a draft fallback is ready from the sanitized report.",
+            title: emailPayload.reused ? "Local report; email fallback already prepared" : "Local report ready; email fallback prepared",
+            description: emailPayload.reused
+              ? "Automated email delivery was already unavailable for this report, and the fallback draft is still ready."
+              : "Automated email delivery was unavailable, but a draft fallback is ready from the sanitized report.",
             detail: emailPayload.reason ?? "Use the actions below to keep the report in your inbox without resubmitting the diagram.",
             mailtoUrl: emailPayload.mailtoUrl ?? null,
             emlDownloadToken: emailPayload.emlDownloadToken ?? null,
@@ -1332,7 +1362,7 @@ export function ArchitectureDiagramReviewerForm({
                     Privacy mode runs locally; only minimal metadata is sent to record your run.
                   </span>
                   <span className="block text-xs leading-5 text-slate-500">
-                    Email delivery requires server rendering; raw diagrams are not retained. Text-based PDFs are supported locally.
+                    Email delivery requires server rendering; raw diagrams are not retained. PDFs are analyzed locally, with OCR fallback for scanned pages.
                   </span>
                 </span>
               </label>
@@ -1394,7 +1424,7 @@ export function ArchitectureDiagramReviewerForm({
                       (nextFile.type === "application/pdf" || nextFile.name.toLowerCase().endsWith(".pdf"))
                     ) {
                       setPrivacyPdfFallbackNotice(
-                        "Text-based PDFs are supported locally. If this file is scanned or image-only, switch to standard mode for server-backed processing.",
+                        "PDFs run locally in privacy mode. Text-based PDFs stay faster; scanned or image-only PDFs fall back to local OCR and may take longer.",
                       );
                     } else {
                       setPrivacyPdfFallbackNotice(null);
@@ -1712,7 +1742,7 @@ export function ArchitectureDiagramReviewerForm({
             </Button>
             <p className="text-xs text-slate-500">
               {privacyModeActive
-                ? "Privacy mode renders the full report in your browser first. PNG, JPG, SVG, and text-based PDFs stay local; only minimal metadata is recorded unless you explicitly request sanitized email delivery."
+                ? "Privacy mode renders the full report in your browser first. PNG, JPG, SVG, and PDFs stay local; text-based pages stay fast and scanned pages fall back to local OCR. Only minimal metadata is recorded unless you explicitly request sanitized email delivery."
                 : "Standard mode delivers full findings and estimate context by email. This page stays limited to processing status and any fallback actions."}
             </p>
           </div>

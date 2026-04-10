@@ -5,6 +5,7 @@ import { createArchitectureReviewCtaToken } from "@/lib/architecture-review/cta-
 const mocks = vi.hoisted(() => ({
   leadLogUpdate: vi.fn(),
   leadUpsert: vi.fn(),
+  leadInteractionFindUnique: vi.fn(),
   leadInteractionCreate: vi.fn(),
 }));
 
@@ -17,6 +18,7 @@ vi.mock("@/lib/db", () => ({
       upsert: mocks.leadUpsert,
     },
     leadInteraction: {
+      findUnique: mocks.leadInteractionFindUnique,
       create: mocks.leadInteractionCreate,
     },
   },
@@ -47,6 +49,7 @@ describe("architecture review CTA route", () => {
     mocks.leadUpsert.mockResolvedValue({
       id: "lead_123",
     });
+    mocks.leadInteractionFindUnique.mockResolvedValue(null);
     mocks.leadInteractionCreate.mockResolvedValue({
       id: "interaction_123",
     });
@@ -112,6 +115,13 @@ describe("architecture review CTA route", () => {
           provider: "calendly",
           estimateReferenceCode: expect.stringMatching(/^ZK-ARCH-20260325-[A-F0-9]{6}$/),
         }),
+      }),
+    );
+    expect(mocks.leadInteractionFindUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          externalEventId: expect.stringMatching(/^architecture-review:cta:[a-f0-9]{64}$/),
+        },
       }),
     );
   });

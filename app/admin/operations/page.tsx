@@ -71,7 +71,7 @@ export default async function AdminOperationsPage() {
     {
       key: "tool-runs",
       title: "Recent tool-run signals",
-      description: "Recent validator and forecasting runs with delivery, estimate, or confidence signals.",
+      description: "Recent reviewer, validator, and forecasting runs with delivery, estimate, or confidence signals.",
       entries: snapshot.toolRunSignals,
     },
   ] as const;
@@ -84,7 +84,7 @@ export default async function AdminOperationsPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Admin Workspace</p>
             <h1 className="font-display text-4xl font-semibold text-slate-900">Operations</h1>
             <p className="max-w-3xl text-sm leading-6 text-slate-600">
-              Review email delivery, CRM sync, quote-companion, and recent tool-run signals without dropping into raw provider logs. Dedicated Stripe and credit-ledger exceptions live in the billing workspace.
+              Review email delivery, CRM sync, quote-companion, and recent software-run signals without dropping into raw provider logs. Dedicated Stripe and credit-ledger exceptions live in the billing workspace.
             </p>
           </div>
           <AdminNav current="operations" />
@@ -102,6 +102,7 @@ export default async function AdminOperationsPage() {
           { label: "Internal failures", value: snapshot.stats.internalFailures },
           { label: "Security signals", value: snapshot.stats.securitySignals },
           { label: "Follow-up attention", value: snapshot.stats.followUpAttention },
+          { label: "Reviewer runs", value: snapshot.stats.recentArchitectureRuns },
           { label: "Validator runs", value: snapshot.stats.recentValidatorRuns },
           { label: "MLOps runs", value: snapshot.stats.recentMlopsRuns },
         ].map((item) => (

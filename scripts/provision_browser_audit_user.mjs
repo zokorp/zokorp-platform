@@ -166,11 +166,31 @@ function pullVercelEnvironment(environment) {
 }
 
 function resolveBaseUrl(environment, pulledEnv) {
-  if (environment === "production") {
-    return pulledEnv.NEXTAUTH_URL ?? pulledEnv.NEXT_PUBLIC_SITE_URL ?? "https://app.zokorp.com";
+  const configuredBaseUrl = pulledEnv.NEXTAUTH_URL ?? pulledEnv.NEXT_PUBLIC_SITE_URL ?? "";
+
+  if (configuredBaseUrl) {
+    return configuredBaseUrl;
   }
 
-  return pulledEnv.NEXTAUTH_URL ?? pulledEnv.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  if (environment === "production") {
+    return "https://app.zokorp.com";
+  }
+
+  if (environment === "preview") {
+    return "";
+  }
+
+  return "http://localhost:3000";
+}
+
+function suggestedNextCommand({ environment, localEnvPath }) {
+  const envFlag = `JOURNEY_ENV_FILE=${localEnvPath}`;
+
+  if (environment === "preview") {
+    return `${envFlag} JOURNEY_MARKETING_BASE_URL=https://preview-www.example.com JOURNEY_APP_BASE_URL=https://preview-app.example.com npm run journey:audit:preview`;
+  }
+
+  return `npm run journey:audit:${environment}`;
 }
 
 async function main() {
@@ -279,8 +299,11 @@ async function main() {
       ...preservedEntries,
       JOURNEY_EMAIL: email,
       JOURNEY_PASSWORD: password,
-      JOURNEY_BASE_URL: baseUrl,
     };
+
+    if (baseUrl) {
+      nextEnv.JOURNEY_BASE_URL = baseUrl;
+    }
 
     const localEnvContent = [
       "# Local browser audit credentials for ZoKorp CLI checks.",
@@ -295,7 +318,7 @@ async function main() {
     console.log(`Email: ${email}`);
     console.log(`Verified: ${user.emailVerified?.toISOString() ?? "unknown"}`);
     console.log(`Credentials file: ${localEnvPath}`);
-    console.log("Next command: npm run journey:audit:production");
+    console.log(`Next command: ${suggestedNextCommand({ environment, localEnvPath })}`);
   } finally {
     await prisma?.$disconnect();
     pulled?.cleanup?.();

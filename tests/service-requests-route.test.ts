@@ -9,6 +9,7 @@ const {
   createServiceRequestMock,
   auditCreateMock,
   sendServiceRequestOperatorNotificationMock,
+  ensureLeadInteractionMock,
   upsertLeadMock,
   isSchemaDriftErrorMock,
   isTransientDatabaseConnectionErrorMock,
@@ -21,6 +22,7 @@ const {
   createServiceRequestMock: vi.fn(),
   auditCreateMock: vi.fn(),
   sendServiceRequestOperatorNotificationMock: vi.fn(),
+  ensureLeadInteractionMock: vi.fn(),
   upsertLeadMock: vi.fn(),
   isSchemaDriftErrorMock: vi.fn(),
   isTransientDatabaseConnectionErrorMock: vi.fn(),
@@ -45,6 +47,7 @@ vi.mock("@/lib/service-requests", () => ({
 }));
 
 vi.mock("@/lib/privacy-leads", () => ({
+  ensureLeadInteraction: ensureLeadInteractionMock,
   upsertLead: upsertLeadMock,
 }));
 
@@ -100,7 +103,8 @@ describe("service requests route", () => {
       provider: "smtp",
       error: undefined,
     });
-    upsertLeadMock.mockResolvedValue(undefined);
+    upsertLeadMock.mockResolvedValue({ id: "lead_123" });
+    ensureLeadInteractionMock.mockResolvedValue({ interaction: { id: "interaction_123" }, deduped: false });
     isSchemaDriftErrorMock.mockReturnValue(false);
     isTransientDatabaseConnectionErrorMock.mockReturnValue(false);
   });
@@ -152,7 +156,20 @@ describe("service requests route", () => {
         requesterSource: "account",
       }),
     );
-    expect(upsertLeadMock).not.toHaveBeenCalled();
+    expect(upsertLeadMock).toHaveBeenCalledWith({
+      userId: "user_123",
+      email: "consulting@zokorp.com",
+      name: "Zohaib Khawaja",
+      companyName: null,
+    });
+    expect(ensureLeadInteractionMock).toHaveBeenCalledWith({
+      leadId: "lead_123",
+      userId: "user_123",
+      serviceRequestId: "sr_123",
+      source: "service-request",
+      action: "service_request_created",
+      externalEventId: "service-request:sr_123:created",
+    });
     expect(auditCreateMock).toHaveBeenCalledTimes(2);
     expect(auditCreateMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -216,9 +233,18 @@ describe("service requests route", () => {
       }),
     );
     expect(upsertLeadMock).toHaveBeenCalledWith({
+      userId: null,
       email: "founder@customerco.com",
       name: "Customer Founder",
       companyName: "CustomerCo",
+    });
+    expect(ensureLeadInteractionMock).toHaveBeenCalledWith({
+      leadId: "lead_123",
+      userId: null,
+      serviceRequestId: "sr_123",
+      source: "service-request",
+      action: "service_request_created",
+      externalEventId: "service-request:sr_123:created",
     });
     expect(sendServiceRequestOperatorNotificationMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -299,6 +325,7 @@ describe("service requests route", () => {
     });
     expect(createServiceRequestMock).not.toHaveBeenCalled();
     expect(upsertLeadMock).not.toHaveBeenCalled();
+    expect(ensureLeadInteractionMock).not.toHaveBeenCalled();
   });
 
   it("returns a transient 503 when database connections are saturated", async () => {
@@ -365,6 +392,7 @@ describe("service requests route", () => {
       linkedToAccount: false,
     });
     expect(upsertLeadMock).toHaveBeenCalledTimes(1);
+    expect(ensureLeadInteractionMock).not.toHaveBeenCalled();
 
     consoleErrorSpy.mockRestore();
   });

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import {
+  buildArchitecturePrivacyInteractionEventId,
   buildArchitecturePrivacySourceRecordKey,
   ensureArchitecturePrivacyFingerprint,
   ensureArchitectureReviewLead,
@@ -11,7 +12,7 @@ import { architectureReviewPrivacyTelemetrySchema } from "@/lib/architecture-rev
 import { db } from "@/lib/db";
 import { isFreeToolAccessError, requireVerifiedFreeToolAccess } from "@/lib/free-tool-access";
 import { jsonNoStore } from "@/lib/internal-route";
-import { recordLeadEvent } from "@/lib/privacy-leads";
+import { ensureLeadInteraction, recordLeadEvent } from "@/lib/privacy-leads";
 import { requireSameOrigin } from "@/lib/request-origin";
 import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { recordArchitectureReviewToolRun } from "@/lib/tool-runs";
@@ -53,6 +54,38 @@ async function exceedsDailyLimit(userId: string) {
   ]);
 
   return jobCount + privacyRunCount >= Math.max(1, ARCH_REVIEW_DAILY_LIMIT);
+}
+
+async function recordPrivacyTelemetryAudit(input: {
+  userId: string;
+  requestId: string;
+  toolRunId: string | null;
+  dedupedLeadFingerprint: boolean;
+  scoreBand: string;
+  emailDeliveryRequested: boolean;
+  sourceRecordKey: string;
+}) {
+  try {
+    await db.auditLog.create({
+      data: {
+        userId: input.userId,
+        action: "tool.architecture_review_privacy_run",
+        metadataJson: {
+          requestId: input.requestId,
+          toolRunId: input.toolRunId,
+          dedupedLeadFingerprint: input.dedupedLeadFingerprint,
+          scoreBand: input.scoreBand,
+          emailDeliveryRequested: input.emailDeliveryRequested,
+          sourceRecordKey: input.sourceRecordKey,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Failed to persist privacy telemetry audit log", {
+      requestId: input.requestId,
+      error,
+    });
+  }
 }
 
 export async function POST(request: Request) {
@@ -134,6 +167,30 @@ export async function POST(request: Request) {
       },
     });
 
+    await ensureLeadInteraction({
+      leadId: lead.id,
+      userId: user.id,
+      source: "architecture-review",
+      action: "run_completed",
+      externalEventId: buildArchitecturePrivacyInteractionEventId({
+        fingerprintId: fingerprint.id,
+        action: "run_completed",
+      }),
+    });
+
+    if (payload.emailDeliveryRequested) {
+      await ensureLeadInteraction({
+        leadId: lead.id,
+        userId: user.id,
+        source: "architecture-review",
+        action: "delivery_requested",
+        externalEventId: buildArchitecturePrivacyInteractionEventId({
+          fingerprintId: fingerprint.id,
+          action: "delivery_requested",
+        }),
+      });
+    }
+
     const toolRun = await recordArchitectureReviewToolRun({
       userId: user.id,
       summary: `Privacy-mode architecture review · score band ${payload.scoreBand}`,
@@ -148,6 +205,16 @@ export async function POST(request: Request) {
         scoreBand: payload.scoreBand,
         emailDeliveryRequested: payload.emailDeliveryRequested,
       },
+    });
+
+    await recordPrivacyTelemetryAudit({
+      userId: user.id,
+      requestId,
+      toolRunId: toolRun?.id ?? null,
+      dedupedLeadFingerprint: deduped,
+      scoreBand: payload.scoreBand,
+      emailDeliveryRequested: payload.emailDeliveryRequested,
+      sourceRecordKey,
     });
 
     return jsonNoStore(

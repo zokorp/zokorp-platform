@@ -70,6 +70,9 @@ describe("runProductionSmokeCheck", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    delete process.env.JOURNEY_MARKETING_BASE_URL;
+    delete process.env.JOURNEY_APP_BASE_URL;
+    delete process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
   });
 
   it("passes for a same-origin local target and skips host-split-only checks", async () => {
@@ -336,5 +339,88 @@ describe("runProductionSmokeCheck", () => {
     expect(summary.steps.find((step) => step.id === "app_account_redirect_to_login")?.status).toBe("pass");
     expect(summary.steps.find((step) => step.id === "app_login")?.status).toBe("pass");
     expect(summary.steps.some((step) => step.status === "fail")).toBe(false);
+  });
+
+  it("accepts preview JOURNEY base URLs when SMOKE variables are not set", async () => {
+    process.env.JOURNEY_MARKETING_BASE_URL = "https://preview-www.example";
+    process.env.JOURNEY_APP_BASE_URL = "https://preview-app.example";
+    process.env.VERCEL_AUTOMATION_BYPASS_SECRET = "preview-bypass-secret";
+
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockImplementation(async (input, init) => {
+      const url = String(input);
+      const requestHeaders = new Headers(init?.headers);
+
+      if (url === "http://example.com" || url === "https://vercel.com") {
+        expect(requestHeaders.get("x-vercel-protection-bypass")).toBe("preview-bypass-secret");
+        return mockResponse({ url, body: "ok" });
+      }
+
+      if (url === "https://preview-www.example/robots.txt") {
+        expect(requestHeaders.get("x-vercel-protection-bypass")).toBe("preview-bypass-secret");
+        return mockResponse({
+          url,
+          body: "User-agent: *\nSitemap: https://preview-www.example/sitemap.xml\n",
+        });
+      }
+
+      if (url === "https://preview-www.example/sitemap.xml") {
+        expect(requestHeaders.get("x-vercel-protection-bypass")).toBe("preview-bypass-secret");
+        return mockResponse({
+          url,
+          body: "<urlset><url><loc>https://preview-www.example/</loc></url></urlset>",
+        });
+      }
+
+      if (url === "https://preview-www.example/") {
+        expect(requestHeaders.get("x-vercel-protection-bypass")).toBe("preview-bypass-secret");
+        return htmlResponse({
+          url,
+          body: MARKETING_ROUTE_EXPECTATIONS.find((route) => route.path === "/")?.marker ?? "homepage",
+          canonicalUrl: "https://preview-www.example/",
+        });
+      }
+
+      if (url === "https://preview-app.example/") {
+        expect(requestHeaders.get("x-vercel-protection-bypass")).toBe("preview-bypass-secret");
+        return htmlResponse({
+          url,
+          body: APP_ROOT_EXPECTATION.marker,
+          canonicalUrl: "https://preview-app.example/",
+          robotsContent: APP_ROOT_EXPECTATION.expectedRobotsContent,
+          headers: { "x-robots-tag": APP_ROOT_EXPECTATION.expectedRobotsHeader },
+        });
+      }
+
+      if (url === "https://preview-app.example/robots.txt") {
+        expect(requestHeaders.get("x-vercel-protection-bypass")).toBe("preview-bypass-secret");
+        return mockResponse({
+          url,
+          body: "User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /account\n",
+        });
+      }
+
+      if (url === "https://preview-app.example/sitemap.xml") {
+        expect(requestHeaders.get("x-vercel-protection-bypass")).toBe("preview-bypass-secret");
+        return mockResponse({
+          status: 404,
+          url,
+          body: "Not Found",
+        });
+      }
+
+      throw new Error(`Unexpected fetch URL in preview env smoke test: ${url}`);
+    });
+
+    const summary = await runProductionSmokeCheck({
+      timeoutMs: 5000,
+    });
+
+    expect(summary.baseUrls.marketing).toBe("https://preview-www.example");
+    expect(summary.baseUrls.app).toBe("https://preview-app.example");
+    expect(summary.steps.find((step) => step.id === "marketing_homepage")?.status).toBe("pass");
+    expect(summary.steps.find((step) => step.id === "app_root_landing")?.status).toBe("pass");
+    expect(summary.steps.find((step) => step.id === "app_robots")?.status).toBe("pass");
+    expect(summary.steps.find((step) => step.id === "app_sitemap_absent")?.status).toBe("pass");
   });
 });

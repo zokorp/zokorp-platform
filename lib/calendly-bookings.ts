@@ -1,11 +1,12 @@
-import { Prisma, ServiceRequestStatus, ServiceRequestType } from "@prisma/client";
+import { ServiceRequestStatus, ServiceRequestType } from "@prisma/client";
 
 import { db } from "@/lib/db";
-import { recordLeadInteraction, upsertLead } from "@/lib/privacy-leads";
+import { ensureLeadInteraction, upsertLead } from "@/lib/privacy-leads";
 import { isBusinessEmail } from "@/lib/security";
 import { createServiceRequest } from "@/lib/service-requests";
 
 async function ensureServiceRequestForBookedCall(input: {
+  leadId: string;
   interactionId: string;
   userId: string;
   requesterEmail: string;
@@ -43,6 +44,17 @@ async function ensureServiceRequestForBookedCall(input: {
     data: {
       serviceRequestId: request.id,
     },
+  });
+
+  await ensureLeadInteraction({
+    leadId: input.leadId,
+    userId: input.userId,
+    serviceRequestId: request.id,
+    source: "architecture-review",
+    action: "service_request_created",
+    provider: input.provider,
+    externalEventId: `service-request:${request.id}:created`,
+    estimateReferenceCode: input.estimateReferenceCode,
   });
 
   return request;
@@ -105,54 +117,25 @@ export async function ingestArchitectureBookedCall(input: {
     name: input.name ?? user?.name ?? null,
   });
 
-  let interaction = await db.leadInteraction.findUnique({
-    where: {
-      externalEventId: input.externalEventId,
-    },
-    select: {
-      id: true,
-      serviceRequestId: true,
-    },
+  const callBookedResult = await ensureLeadInteraction({
+    leadId: lead.id,
+    userId: user?.id ?? null,
+    source: "architecture-review",
+    action: "call_booked",
+    provider,
+    externalEventId: input.externalEventId,
+    estimateReferenceCode,
   });
 
-  if (!interaction) {
-    try {
-      const created = await recordLeadInteraction({
-        leadId: lead.id,
-        userId: user?.id ?? null,
-        source: "architecture-review",
-        action: "call_booked",
-        provider,
-        externalEventId: input.externalEventId,
-        estimateReferenceCode,
-      });
-      interaction = {
-        id: created.id,
-        serviceRequestId: created.serviceRequestId,
-      };
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2002"
-      ) {
-        interaction = await db.leadInteraction.findUnique({
-          where: {
-            externalEventId: input.externalEventId,
-          },
-          select: {
-            id: true,
-            serviceRequestId: true,
-          },
-        });
-      } else {
-        throw error;
-      }
-    }
-  }
+  const interaction = {
+    id: callBookedResult.interaction.id,
+    serviceRequestId: callBookedResult.interaction.serviceRequestId,
+  };
 
   let serviceRequestId = interaction?.serviceRequestId ?? null;
   if (user?.id && interaction && !serviceRequestId) {
     const serviceRequest = await ensureServiceRequestForBookedCall({
+      leadId: lead.id,
       interactionId: interaction.id,
       userId: user.id,
       requesterEmail: email,

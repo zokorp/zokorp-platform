@@ -1,15 +1,28 @@
 import { createHash, createCipheriv, randomBytes } from "node:crypto";
 
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import {
   retentionPolicy,
   type ArchiveRecord,
   type LeadEventAggregate,
+  TOOL_EVENT_SOURCES,
   type ToolEventSource,
 } from "@/lib/tool-consent";
 
-export const LEAD_INTERACTION_ACTIONS = ["cta_clicked", "call_booked"] as const;
+export const LEAD_INTERACTION_ACTIONS = [
+  "cta_clicked",
+  "call_booked",
+  "run_completed",
+  "delivery_requested",
+  "delivery_sent",
+  "delivery_fallback",
+  "service_request_created",
+] as const;
 export type LeadInteractionAction = (typeof LEAD_INTERACTION_ACTIONS)[number];
+
+export const LEAD_INTERACTION_SOURCES = [...TOOL_EVENT_SOURCES, "service-request"] as const;
+export type LeadInteractionSource = (typeof LEAD_INTERACTION_SOURCES)[number];
 
 const ESTIMATE_REFERENCE_PREFIXES: Record<ToolEventSource, string> = {
   "architecture-review": "ARCH",
@@ -177,7 +190,7 @@ export async function recordLeadInteraction(input: {
   leadId: string;
   userId?: string | null;
   serviceRequestId?: string | null;
-  source: ToolEventSource;
+  source: LeadInteractionSource;
   action: LeadInteractionAction;
   provider?: string | null;
   externalEventId?: string | null;
@@ -197,6 +210,58 @@ export async function recordLeadInteraction(input: {
       createdAt: input.createdAt ?? new Date(),
     },
   });
+}
+
+export async function ensureLeadInteraction(input: {
+  leadId: string;
+  userId?: string | null;
+  serviceRequestId?: string | null;
+  source: LeadInteractionSource;
+  action: LeadInteractionAction;
+  provider?: string | null;
+  externalEventId?: string | null;
+  estimateReferenceCode?: string | null;
+  createdAt?: Date;
+}) {
+  if (input.externalEventId) {
+    const existing = await db.leadInteraction.findUnique({
+      where: { externalEventId: input.externalEventId },
+    });
+
+    if (existing) {
+      return {
+        interaction: existing,
+        deduped: true,
+      };
+    }
+  }
+
+  try {
+    const interaction = await recordLeadInteraction(input);
+    return {
+      interaction,
+      deduped: false,
+    };
+  } catch (error) {
+    if (
+      input.externalEventId &&
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      const existing = await db.leadInteraction.findUnique({
+        where: { externalEventId: input.externalEventId },
+      });
+
+      if (existing) {
+        return {
+          interaction: existing,
+          deduped: true,
+        };
+      }
+    }
+
+    throw error;
+  }
 }
 
 export async function createLeadEventForTool(input: {

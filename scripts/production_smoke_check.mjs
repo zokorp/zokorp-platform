@@ -21,6 +21,7 @@ import {
   outcomeFromSteps,
   parseArgs,
   resolveExpectedCanonicalBaseUrl,
+  resolveVercelProtectionBypassHeaders,
   shouldUseCompatibilityBaseUrl,
   toAbsoluteUrl,
 } from "./playwright_audit_support.mjs";
@@ -131,9 +132,9 @@ function canonicalUrlFor({ marketingBaseUrl, appBaseUrl }, path, canonicalHost) 
   return toAbsoluteUrl(path, targetBaseUrl);
 }
 
-async function probeControlHost(url, timeoutMs) {
+async function probeControlHost(url, timeoutMs, requestHeaders) {
   try {
-    const response = await followFetch(url, timeoutMs, smokeUserAgent);
+    const response = await followFetch(url, timeoutMs, smokeUserAgent, requestHeaders);
     return { url, ok: true, status: response.status, failureCode: null };
   } catch (error) {
     return {
@@ -153,9 +154,10 @@ async function runRedirectCheck({
   timeoutMs,
   blockedWhenLocationMatches,
   ignoreProtocol = false,
+  requestHeaders,
 }) {
   try {
-    const result = await manualRedirectCheck(sourceUrl, timeoutMs, smokeUserAgent);
+    const result = await manualRedirectCheck(sourceUrl, timeoutMs, smokeUserAgent, requestHeaders);
     const resolvedLocation = result.location
       ? (() => {
           try {
@@ -223,11 +225,12 @@ async function runPageCheck({
   expectedRobotsHeader,
   expectedRobotsContent,
   checkRobotsHeader = true,
+  requestHeaders,
 }) {
   const url = toAbsoluteUrl(path, baseUrl);
 
   try {
-    const response = await followFetch(url, timeoutMs, smokeUserAgent);
+    const response = await followFetch(url, timeoutMs, smokeUserAgent, requestHeaders);
     const finalHost = new URL(response.finalUrl).host;
 
     if (expectedHost && finalHost !== expectedHost) {
@@ -333,11 +336,12 @@ async function runMetaCheck({
   expectedRobotsContent,
   marketingBaseUrl,
   appBaseUrl,
+  requestHeaders,
 }) {
   const url = toAbsoluteUrl(path, baseUrl);
 
   try {
-    const response = await followFetch(url, timeoutMs, smokeUserAgent);
+    const response = await followFetch(url, timeoutMs, smokeUserAgent, requestHeaders);
     if (response.status !== 200) {
       return buildStep(id, label, "fail", {
         url,
@@ -390,14 +394,14 @@ async function runMetaCheck({
   }
 }
 
-async function runMarketingSeoCheck({ marketingBaseUrl, timeoutMs }) {
+async function runMarketingSeoCheck({ marketingBaseUrl, timeoutMs, requestHeaders }) {
   const robotsUrl = toAbsoluteUrl("/robots.txt", marketingBaseUrl);
   const sitemapUrl = toAbsoluteUrl("/sitemap.xml", marketingBaseUrl);
 
   try {
     const [robotsResponse, sitemapResponse] = await Promise.all([
-      followFetch(robotsUrl, timeoutMs, smokeUserAgent),
-      followFetch(sitemapUrl, timeoutMs, smokeUserAgent),
+      followFetch(robotsUrl, timeoutMs, smokeUserAgent, requestHeaders),
+      followFetch(sitemapUrl, timeoutMs, smokeUserAgent, requestHeaders),
     ]);
 
     const issues = [];
@@ -436,15 +440,15 @@ async function runMarketingSeoCheck({ marketingBaseUrl, timeoutMs }) {
   }
 }
 
-async function runAppSeoChecks({ appBaseUrl, timeoutMs }) {
+async function runAppSeoChecks({ appBaseUrl, timeoutMs, requestHeaders }) {
   const appHost = new URL(appBaseUrl).host;
   const robotsUrl = toAbsoluteUrl("/robots.txt", appBaseUrl);
   const sitemapUrl = toAbsoluteUrl("/sitemap.xml", appBaseUrl);
 
   try {
     const [robotsResponse, sitemapResponse] = await Promise.all([
-      followFetch(robotsUrl, timeoutMs, smokeUserAgent),
-      followFetch(sitemapUrl, timeoutMs, smokeUserAgent),
+      followFetch(robotsUrl, timeoutMs, smokeUserAgent, requestHeaders),
+      followFetch(sitemapUrl, timeoutMs, smokeUserAgent, requestHeaders),
     ]);
 
     const robotsIssues = [];
@@ -553,10 +557,18 @@ export async function runProductionSmokeCheck(options = {}) {
   const args = parseArgs(process.argv.slice(2));
   const envFile = loadAuditEnv(args["journey-env-file"] ?? process.env.JOURNEY_ENV_FILE);
   const readSetting = createSettingsReader({ args, envFile });
-  const fallbackBaseUrl = args.SMOKE_BASE_URL ?? process.env.SMOKE_BASE_URL ?? "";
+  const fallbackBaseUrl =
+    args.SMOKE_BASE_URL ??
+    process.env.SMOKE_BASE_URL ??
+    args.JOURNEY_BASE_URL ??
+    process.env.JOURNEY_BASE_URL ??
+    "";
   const compatibilityBaseUrl = shouldUseCompatibilityBaseUrl(fallbackBaseUrl) ? fallbackBaseUrl : "";
-  const explicitMarketingBaseUrl = readSetting("SMOKE_MARKETING_BASE_URL", "");
-  const explicitAppBaseUrl = readSetting("SMOKE_APP_BASE_URL", "");
+  const explicitMarketingBaseUrl = readSetting(
+    ["SMOKE_MARKETING_BASE_URL", "JOURNEY_MARKETING_BASE_URL"],
+    "",
+  );
+  const explicitAppBaseUrl = readSetting(["SMOKE_APP_BASE_URL", "JOURNEY_APP_BASE_URL"], "");
   const marketingBaseUrl =
     options.marketingBaseUrl ??
     (explicitMarketingBaseUrl || (!explicitAppBaseUrl && compatibilityBaseUrl) || "https://www.zokorp.com");
@@ -567,23 +579,34 @@ export async function runProductionSmokeCheck(options = {}) {
     options.expectedMarketingCanonicalBaseUrl ??
     resolveExpectedCanonicalBaseUrl({
       observedBaseUrl: marketingBaseUrl,
-      explicitBaseUrl: readSetting("SMOKE_EXPECTED_MARKETING_CANONICAL_BASE_URL", ""),
+      explicitBaseUrl: readSetting(
+        [
+          "SMOKE_EXPECTED_MARKETING_CANONICAL_BASE_URL",
+          "JOURNEY_EXPECTED_MARKETING_CANONICAL_BASE_URL",
+        ],
+        "",
+      ),
       defaultBaseUrl: "https://www.zokorp.com",
     });
   const expectedAppCanonicalBaseUrl =
     options.expectedAppCanonicalBaseUrl ??
     resolveExpectedCanonicalBaseUrl({
       observedBaseUrl: appBaseUrl,
-      explicitBaseUrl: readSetting("SMOKE_EXPECTED_APP_CANONICAL_BASE_URL", ""),
+      explicitBaseUrl: readSetting(
+        ["SMOKE_EXPECTED_APP_CANONICAL_BASE_URL", "JOURNEY_EXPECTED_APP_CANONICAL_BASE_URL"],
+        "",
+      ),
       defaultBaseUrl: "https://app.zokorp.com",
     });
   const apexBaseUrl =
     options.apexBaseUrl ??
     readSetting(
-      ["SMOKE_APEX_BASE_URL"],
+      ["SMOKE_APEX_BASE_URL", "JOURNEY_APEX_BASE_URL"],
       new URL(marketingBaseUrl).host === "www.zokorp.com" ? "https://zokorp.com" : "",
     );
-  const timeoutMs = options.timeoutMs ?? Number(readSetting("SMOKE_TIMEOUT_MS", "15000"));
+  const timeoutMs =
+    options.timeoutMs ?? Number(readSetting(["SMOKE_TIMEOUT_MS", "JOURNEY_TIMEOUT_MS"], "15000"));
+  const requestHeaders = resolveVercelProtectionBypassHeaders(readSetting);
   const steps = [];
   const marketingHost = new URL(marketingBaseUrl).host;
   const appHost = new URL(appBaseUrl).host;
@@ -608,6 +631,7 @@ export async function runProductionSmokeCheck(options = {}) {
             ? toAbsoluteUrl("/", appBaseUrl)
             : null,
         ignoreProtocol: isLocalHostUrl(apexBaseUrl) && isLocalHostUrl(marketingBaseUrl),
+        requestHeaders,
       }),
     );
   } else {
@@ -641,6 +665,7 @@ export async function runProductionSmokeCheck(options = {}) {
         expectedCanonicalHost: APP_ROOT_EXPECTATION.expectedCanonicalHost,
         expectedRobotsHeader: APP_ROOT_EXPECTATION.expectedRobotsHeader,
         expectedRobotsContent: APP_ROOT_EXPECTATION.expectedRobotsContent,
+        requestHeaders,
       }),
     );
   }
@@ -658,6 +683,7 @@ export async function runProductionSmokeCheck(options = {}) {
         timeoutMs,
         expectedHost: marketingHost,
         blockedHost: productionMarketingBlockAllowed ? appHost : null,
+        requestHeaders,
       }),
     );
   }
@@ -678,6 +704,7 @@ export async function runProductionSmokeCheck(options = {}) {
         expectedRobotsHeader: route.expectedRobotsHeader,
         expectedRobotsContent: route.expectedRobotsContent,
         checkRobotsHeader: !hostSplitSkipped,
+        requestHeaders,
       }),
     );
   }
@@ -698,6 +725,7 @@ export async function runProductionSmokeCheck(options = {}) {
         expectedRobotsHeader: product.expectedRobotsHeader,
         expectedRobotsContent: product.expectedRobotsContent,
         checkRobotsHeader: !hostSplitSkipped,
+        requestHeaders,
       }),
     );
   }
@@ -714,6 +742,7 @@ export async function runProductionSmokeCheck(options = {}) {
         expectedRobotsContent: metaExpectation.expectedRobotsContent,
         marketingBaseUrl: expectedMarketingCanonicalBaseUrl,
         appBaseUrl: expectedAppCanonicalBaseUrl,
+        requestHeaders,
       }),
     );
   }
@@ -731,6 +760,7 @@ export async function runProductionSmokeCheck(options = {}) {
           marketingHost !== appHost &&
           toAbsoluteUrl(redirectExpectation.to, appBaseUrl),
         ignoreProtocol: localSameOriginRun || compatibilityHostSplit,
+        requestHeaders,
       }),
     );
   }
@@ -782,6 +812,7 @@ export async function runProductionSmokeCheck(options = {}) {
           expectedLocation: toAbsoluteUrl(route.path, marketingBaseUrl),
           timeoutMs,
           ignoreProtocol: compatibilityHostSplit,
+          requestHeaders,
         }),
       );
     }
@@ -795,23 +826,25 @@ export async function runProductionSmokeCheck(options = {}) {
           expectedLocation: toAbsoluteUrl(route.expectedLocation, appBaseUrl),
           timeoutMs,
           ignoreProtocol: compatibilityHostSplit,
+          requestHeaders,
         }),
       );
     }
 
-    steps.push(...(await runAppSeoChecks({ appBaseUrl, timeoutMs })));
+    steps.push(...(await runAppSeoChecks({ appBaseUrl, timeoutMs, requestHeaders })));
   }
 
   steps.push(
     await runMarketingSeoCheck({
       marketingBaseUrl,
       timeoutMs,
+      requestHeaders,
     }),
   );
 
   const controlResults = [];
   for (const host of controlHosts) {
-    controlResults.push(await probeControlHost(host, timeoutMs));
+    controlResults.push(await probeControlHost(host, timeoutMs, requestHeaders));
   }
 
   const outcome = isEnvironmentNetworkFailure(controlResults, steps)

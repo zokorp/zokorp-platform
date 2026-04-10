@@ -122,6 +122,28 @@ function withSingleConnection(url) {
   return nextUrl.toString();
 }
 
+function resolveOperationalDatabaseUrl(auditEnv, pulledEnv) {
+  const candidates = [
+    auditEnv.PRODUCTION_DIRECT_DATABASE_URL,
+    auditEnv.PRODUCTION_DATABASE_URL,
+    process.env.PRODUCTION_DIRECT_DATABASE_URL,
+    process.env.PRODUCTION_DATABASE_URL,
+    process.env.DIRECT_DATABASE_URL,
+    process.env.DATABASE_URL,
+    pulledEnv.DIRECT_DATABASE_URL,
+    pulledEnv.DATABASE_URL,
+  ];
+
+  for (const candidate of candidates) {
+    const trimmed = candidate?.trim();
+    if (trimmed) {
+      return withSingleConnection(trimmed);
+    }
+  }
+
+  return "";
+}
+
 async function buildProofWorkbook() {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("Checklist");
@@ -283,6 +305,17 @@ async function loginAndSubmitValidatorProof({
     await page.locator("#password").fill(password);
     await page.locator("form").first().getByRole("button", { name: "Sign in", exact: true }).click();
     await page.waitForURL(new RegExp("\\/account$"), { timeout: 30_000 });
+    await page.goto(new URL("/software/zokorp-validator", baseUrl).toString(), { waitUntil: "networkidle" });
+
+    const validatorPageText = await page.textContent("body");
+    const beforeBalanceMatch = validatorPageText?.match(/Selected credits:\s*(\d+)/);
+    const beforeBalance = beforeBalanceMatch ? Number.parseInt(beforeBalanceMatch[1], 10) : null;
+    if (beforeBalance === null || Number.isNaN(beforeBalance)) {
+      throw new Error("Could not determine validator credit balance from the account UI.");
+    }
+    if (beforeBalance < 1) {
+      throw new Error("Audit account has no validator credits available for the operational proof.");
+    }
 
     const workbookBase64 = workbookBuffer.toString("base64");
     const validatorResponse = await page.evaluate(
@@ -323,6 +356,14 @@ async function loginAndSubmitValidatorProof({
       throw new Error(`Validator proof request failed with ${validatorResponse.status}: ${JSON.stringify(validatorResponse.json)}`);
     }
 
+    const afterBalance =
+      validatorResponse.json && typeof validatorResponse.json.remainingUses === "number"
+        ? validatorResponse.json.remainingUses
+        : null;
+    if (afterBalance !== null && afterBalance !== beforeBalance - 1) {
+      throw new Error(`Expected validator remaining uses to decrement by 1. Before=${beforeBalance}, After=${afterBalance}`);
+    }
+
     await page.goto(new URL("/account", baseUrl).toString(), { waitUntil: "networkidle" });
     await page.getByRole("tab", { name: "Tool Runs", exact: true }).click();
     await page.getByText("ZoKorpValidator · FTR", { exact: false }).first().waitFor({ state: "visible", timeout: 30_000 });
@@ -332,6 +373,8 @@ async function loginAndSubmitValidatorProof({
     return {
       response: validatorResponse.json,
       accountScreenshot,
+      beforeBalance,
+      afterBalance,
     };
   } finally {
     await browser.close();
@@ -398,6 +441,71 @@ async function queryValidatorProof(prisma, { userId, productId, proofStartedAt, 
     beforeBalance,
     afterBalance: afterBalance?.remainingUses ?? null,
   };
+}
+
+async function runBrowserOnlyBookedCallProof({
+  baseUrl,
+  email,
+  password,
+  calendlySyncSecret,
+}) {
+  const externalEventId = `synthetic-booked-call-${Date.now()}`;
+  const estimateReferenceCode = `ZK-ARCH-SYNTH-${Date.now().toString().slice(-6)}`;
+  const bookedAtIso = new Date().toISOString();
+
+  const response = await fetch(new URL("/api/internal/calendly/booked-call", baseUrl).toString(), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-calendly-sync-secret": calendlySyncSecret,
+    },
+    body: JSON.stringify({
+      email,
+      name: "ZoKorp Browser Audit",
+      externalEventId,
+      bookedAtIso,
+      estimateReferenceCode,
+      provider: "calendly-synthetic-proof",
+    }),
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(`Booked-call proof route failed with ${response.status}: ${JSON.stringify(payload)}`);
+  }
+  if (!payload || payload.status !== "ok") {
+    throw new Error(`Booked-call proof route returned unexpected payload: ${JSON.stringify(payload)}`);
+  }
+
+  const browser = await launchBrowser();
+  try {
+    const page = await browser.newPage();
+    await page.goto(new URL("/login", baseUrl).toString(), { waitUntil: "networkidle" });
+    await page.locator("#email").fill(email);
+    await page.locator("#password").fill(password);
+    await page.locator("form").first().getByRole("button", { name: "Sign in", exact: true }).click();
+    await page.waitForURL(new RegExp("\\/account$"), { timeout: 30_000 });
+
+    await page.getByText(estimateReferenceCode, { exact: false }).first().waitFor({ state: "visible", timeout: 30_000 });
+    const serviceRequestScreenshot = await screenshot(page, "account-service-request-proof");
+
+    await page.getByRole("tab", { name: "Follow-ups", exact: true }).click();
+    await page.getByText(estimateReferenceCode, { exact: false }).first().waitFor({ state: "visible", timeout: 30_000 });
+    const followUpsScreenshot = await screenshot(page, "account-follow-ups-proof");
+
+    return {
+      externalEventId,
+      estimateReferenceCode,
+      serviceRequestId: typeof payload.serviceRequestId === "string" ? payload.serviceRequestId : null,
+      status: payload.status,
+      ingestMode: "internal-route",
+      routeStatus: response.status,
+      serviceRequestScreenshot,
+      followUpsScreenshot,
+    };
+  } finally {
+    await browser.close();
+  }
 }
 
 async function runSyntheticBookedCallProof({
@@ -566,7 +674,7 @@ async function main() {
   try {
     const env = pulled.env;
     const baseUrl = auditEnv.JOURNEY_BASE_URL ?? env.NEXTAUTH_URL ?? "https://app.zokorp.com";
-    const databaseUrl = withSingleConnection(env.DIRECT_DATABASE_URL || env.DATABASE_URL);
+    const databaseUrl = resolveOperationalDatabaseUrl(auditEnv, env);
     const calendlySyncSecret = auditEnv.CALENDLY_SYNC_SECRET?.trim() || env.CALENDLY_SYNC_SECRET?.trim() || "";
     const initialDatabaseSettleMs = Number.parseInt(process.env.PROOF_DB_INITIAL_SETTLE_MS ?? "0", 10);
 
@@ -578,56 +686,93 @@ async function main() {
       throw new Error("CALENDLY_SYNC_SECRET is missing. Add it to .env.audit.local for direct booked-call proof.");
     }
 
-    prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: databaseUrl,
-        },
-      },
-      log: ["error"],
-    });
-
-    if (initialDatabaseSettleMs > 0) {
-      console.log(`Waiting ${initialDatabaseSettleMs}ms before starting direct database proof checks.`);
-      await sleep(initialDatabaseSettleMs);
-    }
-
     const proofStartedAt = new Date();
     const proofRunKey = proofStartedAt.toISOString();
-    const validatorAccess = await withDatabaseRetry("ensureAuditAccess", () =>
-      ensureAuditAccess(prisma, auditEnv.JOURNEY_EMAIL),
-    );
     const workbookBuffer = await buildProofWorkbook();
-    const validatorResult = await loginAndSubmitValidatorProof({
-      baseUrl,
-      email: auditEnv.JOURNEY_EMAIL,
-      password: auditEnv.JOURNEY_PASSWORD,
-      workbookBuffer,
-      proofRunKey,
-    });
-    const validatorProof = await withDatabaseRetry("queryValidatorProof", () =>
-      queryValidatorProof(prisma, {
-        userId: validatorAccess.userId,
-        productId: validatorAccess.productId,
-        proofStartedAt,
-        proofRunKey,
-        beforeBalance: validatorAccess.beforeBalance,
-      }),
-    );
-    const bookedCallProof = await withDatabaseRetry("runSyntheticBookedCallProof", () =>
-      runSyntheticBookedCallProof({
-        prisma,
-        calendlySyncSecret,
-        ingestBaseUrl: baseUrl,
+
+    let validatorProof;
+    let bookedCallProof;
+    let validatorResult;
+
+    if (databaseUrl) {
+      prisma = new PrismaClient({
+        datasources: {
+          db: {
+            url: databaseUrl,
+          },
+        },
+        log: ["error"],
+      });
+
+      if (initialDatabaseSettleMs > 0) {
+        console.log(`Waiting ${initialDatabaseSettleMs}ms before starting direct database proof checks.`);
+        await sleep(initialDatabaseSettleMs);
+      }
+
+      const validatorAccess = await withDatabaseRetry("ensureAuditAccess", () =>
+        ensureAuditAccess(prisma, auditEnv.JOURNEY_EMAIL),
+      );
+      validatorResult = await loginAndSubmitValidatorProof({
+        baseUrl,
         email: auditEnv.JOURNEY_EMAIL,
-        userId: validatorAccess.userId,
-      }),
-    );
+        password: auditEnv.JOURNEY_PASSWORD,
+        workbookBuffer,
+        proofRunKey,
+      });
+      validatorProof = await withDatabaseRetry("queryValidatorProof", () =>
+        queryValidatorProof(prisma, {
+          userId: validatorAccess.userId,
+          productId: validatorAccess.productId,
+          proofStartedAt,
+          proofRunKey,
+          beforeBalance: validatorAccess.beforeBalance,
+        }),
+      );
+      bookedCallProof = await withDatabaseRetry("runSyntheticBookedCallProof", () =>
+        runSyntheticBookedCallProof({
+          prisma,
+          calendlySyncSecret,
+          ingestBaseUrl: baseUrl,
+          email: auditEnv.JOURNEY_EMAIL,
+          userId: validatorAccess.userId,
+        }),
+      );
+    } else {
+      validatorResult = await loginAndSubmitValidatorProof({
+        baseUrl,
+        email: auditEnv.JOURNEY_EMAIL,
+        password: auditEnv.JOURNEY_PASSWORD,
+        workbookBuffer,
+        proofRunKey,
+      });
+      validatorProof = {
+        proofRunKey,
+        auditLogId: null,
+        score: typeof validatorResult.response?.score === "number" ? validatorResult.response.score : null,
+        deliveryStatus:
+          typeof validatorResult.response?.deliveryStatus === "string" ? validatorResult.response.deliveryStatus : null,
+        quoteCompanionStatus:
+          typeof validatorResult.response?.quoteCompanion?.status === "string"
+            ? validatorResult.response.quoteCompanion.status
+            : null,
+        beforeBalance: validatorResult.beforeBalance,
+        afterBalance: validatorResult.afterBalance,
+        verificationMode: "browser-only",
+      };
+
+      bookedCallProof = await runBrowserOnlyBookedCallProof({
+        baseUrl,
+        email: auditEnv.JOURNEY_EMAIL,
+        password: auditEnv.JOURNEY_PASSWORD,
+        calendlySyncSecret,
+      });
+    }
 
     const summary = {
       checkedAt: new Date().toISOString(),
       baseUrl,
       auditEmail: auditEnv.JOURNEY_EMAIL,
+      verificationMode: databaseUrl ? "database-backed" : "browser-only",
       validatorProof: {
         ...validatorProof,
         accountScreenshot: validatorResult.accountScreenshot,

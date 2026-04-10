@@ -1,10 +1,12 @@
+import { createHash } from "node:crypto";
+
 import { NextResponse } from "next/server";
 
 import { verifyArchitectureReviewCtaToken } from "@/lib/architecture-review/cta-token";
 import { buildCalendlyBookingUrl } from "@/lib/calendly";
 import { db } from "@/lib/db";
 import { isSchemaDriftError } from "@/lib/db-errors";
-import { buildEstimateReferenceCode, recordLeadInteraction, upsertLead } from "@/lib/privacy-leads";
+import { buildEstimateReferenceCode, ensureLeadInteraction, upsertLead } from "@/lib/privacy-leads";
 import { getMarketingSiteUrl } from "@/lib/site";
 
 export const runtime = "nodejs";
@@ -29,6 +31,10 @@ function destinationForType(
   return (
     process.env.ARCH_REVIEW_REMEDIATION_PLAN_URL ?? `${getMarketingSiteUrl()}/services#service-request`
   );
+}
+
+function buildArchitectureReviewCtaEventId(token: string) {
+  return `architecture-review:cta:${createHash("sha256").update(token).digest("hex")}`;
 }
 
 export async function GET(request: Request) {
@@ -73,12 +79,13 @@ export async function GET(request: Request) {
         email: updatedLeadLog.userEmail,
       });
 
-      await recordLeadInteraction({
+      await ensureLeadInteraction({
         leadId: lead.id,
         userId: updatedLeadLog.userId,
         source: "architecture-review",
         action: "cta_clicked",
         provider: payload.ctaType === "book-call" ? "calendly" : null,
+        externalEventId: buildArchitectureReviewCtaEventId(token),
         estimateReferenceCode,
       });
     } catch (error) {

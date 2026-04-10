@@ -108,7 +108,7 @@ describe("Calendly webhook route", () => {
     const response = await POST(signedWebhookRequest(body, "calendly-signing-key"));
 
     expect(response.status).toBe(200);
-    expect(mocks.leadInteractionCreate).toHaveBeenCalledTimes(1);
+    expect(mocks.leadInteractionCreate).toHaveBeenCalledTimes(2);
     expect(mocks.serviceRequestCreate).toHaveBeenCalledTimes(1);
     expect(mocks.serviceRequestUpdate).toHaveBeenCalledWith({
       where: { id: "request_123" },

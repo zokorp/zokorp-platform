@@ -489,9 +489,38 @@ function buildFollowUpTimelineEntries(
   return leadInteractions.map((interaction) => ({
     id: interaction.id,
     createdAt: interaction.createdAt,
-    title: interaction.action === "call_booked" ? "Architecture follow-up booked" : "Architecture follow-up signal",
-    badgeLabel: interaction.serviceRequest ? interaction.serviceRequest.status : "Recorded",
-    badgeVariant: interaction.serviceRequest ? "success" : "info",
+    title:
+      interaction.action === "call_booked"
+        ? "Architecture follow-up booked"
+        : interaction.action === "cta_clicked"
+          ? "Architecture follow-up link opened"
+          : interaction.action === "delivery_requested"
+            ? "Result email requested"
+            : interaction.action === "delivery_sent"
+              ? "Result email sent"
+              : interaction.action === "delivery_fallback"
+                ? "Result email fallback prepared"
+                : interaction.action === "service_request_created"
+                  ? "Service request created"
+                  : "Architecture follow-up signal",
+    badgeLabel:
+      interaction.serviceRequest
+        ? interaction.serviceRequest.status
+        : interaction.action === "delivery_fallback"
+          ? "Fallback"
+          : interaction.action === "delivery_sent"
+            ? "Sent"
+            : interaction.action === "delivery_requested"
+              ? "Queued"
+              : "Recorded",
+    badgeVariant:
+      interaction.serviceRequest
+        ? "success"
+        : interaction.action === "delivery_fallback"
+          ? "warning"
+          : interaction.action === "delivery_sent"
+            ? "success"
+            : "info",
     summary: [
       interaction.provider ?? "provider unknown",
       interaction.source,
@@ -573,7 +602,14 @@ export default async function AccountPage() {
         leadInteractions: {
           where: {
             action: {
-              in: ["call_booked", "cta_clicked"],
+              in: [
+                "call_booked",
+                "cta_clicked",
+                "delivery_requested",
+                "delivery_sent",
+                "delivery_fallback",
+                "service_request_created",
+              ],
             },
           },
           orderBy: {

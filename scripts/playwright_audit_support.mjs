@@ -104,6 +104,40 @@ export function readNumber(value, fallback) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+export function resolveVercelProtectionBypassHeaders(readSetting, { setCookie = false } = {}) {
+  const secret = readSetting(
+    [
+      "VERCEL_AUTOMATION_BYPASS_SECRET",
+      "AUDIT_VERCEL_PROTECTION_BYPASS",
+      "JOURNEY_VERCEL_PROTECTION_BYPASS",
+      "SMOKE_VERCEL_PROTECTION_BYPASS",
+    ],
+    "",
+  );
+
+  if (!secret) {
+    return undefined;
+  }
+
+  const headers = {
+    "x-vercel-protection-bypass": secret,
+  };
+
+  if (setCookie) {
+    headers["x-vercel-set-bypass-cookie"] = readSetting(
+      [
+        "VERCEL_AUTOMATION_BYPASS_SET_COOKIE",
+        "AUDIT_VERCEL_PROTECTION_BYPASS_SET_COOKIE",
+        "JOURNEY_VERCEL_PROTECTION_BYPASS_SET_COOKIE",
+        "SMOKE_VERCEL_PROTECTION_BYPASS_SET_COOKIE",
+      ],
+      "true",
+    );
+  }
+
+  return headers;
+}
+
 export function isLocalHostUrl(value) {
   try {
     const { hostname } = new URL(value);
@@ -338,7 +372,7 @@ export async function writeLocatorScreenshot(locator, screenshotsDir, stepId) {
   return filePath;
 }
 
-export async function manualRedirectCheck(url, timeoutMs, userAgent) {
+export async function manualRedirectCheck(url, timeoutMs, userAgent, extraHeaders = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -348,6 +382,7 @@ export async function manualRedirectCheck(url, timeoutMs, userAgent) {
       signal: controller.signal,
       headers: {
         "user-agent": userAgent,
+        ...extraHeaders,
       },
     });
 
@@ -360,7 +395,7 @@ export async function manualRedirectCheck(url, timeoutMs, userAgent) {
   }
 }
 
-export async function followFetch(url, timeoutMs, userAgent) {
+export async function followFetch(url, timeoutMs, userAgent, extraHeaders = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -370,6 +405,7 @@ export async function followFetch(url, timeoutMs, userAgent) {
       signal: controller.signal,
       headers: {
         "user-agent": userAgent,
+        ...extraHeaders,
       },
     });
 

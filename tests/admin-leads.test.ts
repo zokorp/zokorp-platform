@@ -5,10 +5,16 @@ const {
   userFindManyMock,
   leadFindManyMock,
   leadLogFindManyMock,
+  leadInteractionFindManyMock,
+  estimateCompanionFindManyMock,
+  toolRunFindManyMock,
 } = vi.hoisted(() => ({
   userFindManyMock: vi.fn(),
   leadFindManyMock: vi.fn(),
   leadLogFindManyMock: vi.fn(),
+  leadInteractionFindManyMock: vi.fn(),
+  estimateCompanionFindManyMock: vi.fn(),
+  toolRunFindManyMock: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -16,6 +22,9 @@ vi.mock("@/lib/db", () => ({
     user: { findMany: userFindManyMock },
     lead: { findMany: leadFindManyMock },
     leadLog: { findMany: leadLogFindManyMock },
+    leadInteraction: { findMany: leadInteractionFindManyMock },
+    estimateCompanion: { findMany: estimateCompanionFindManyMock },
+    toolRun: { findMany: toolRunFindManyMock },
   },
 }));
 
@@ -109,12 +118,16 @@ describe("admin leads helper", () => {
     ]);
 
     leadLogFindManyMock.mockResolvedValue([]);
+    leadInteractionFindManyMock.mockResolvedValue([]);
+    estimateCompanionFindManyMock.mockResolvedValue([]);
+    toolRunFindManyMock.mockResolvedValue([]);
   });
 
   it("shows likely human contacts by default and suppresses flagged QA/test entries", async () => {
     const result = await getLeadDirectory();
 
     expect(result.filters.audience).toBe("human");
+    expect(result.filters.execution).toBe("all");
     expect(result.entries.map((entry) => entry.email)).toEqual([
       "jane@human-company.com",
       "architecture@human-company.com",
@@ -206,6 +219,100 @@ describe("admin leads helper", () => {
     expect(result.entries[0]?.latestSource).toBe("architecture-review");
   });
 
+  it("adds support context from interactions, estimate companions, and tool runs", async () => {
+    leadInteractionFindManyMock.mockResolvedValue([
+      {
+        action: "delivery_sent",
+        source: "architecture-review",
+        provider: "smtp",
+        estimateReferenceCode: "ZK-ARCH-20260312-ABC123",
+        createdAt: new Date("2026-03-12T03:00:00.000Z"),
+        lead: {
+          email: "jane@human-company.com",
+        },
+        serviceRequest: {
+          trackingCode: "SR-260312-ABCDE",
+          status: "SUBMITTED",
+        },
+      },
+    ]);
+    estimateCompanionFindManyMock.mockResolvedValue([
+      {
+        customerEmail: "jane@human-company.com",
+        referenceCode: "ZK-ARCH-20260312-ABC123",
+        status: "created",
+        updatedAt: new Date("2026-03-12T04:00:00.000Z"),
+      },
+    ]);
+    toolRunFindManyMock.mockResolvedValue([
+      {
+        toolSlug: "architecture-diagram-reviewer",
+        summary: "AWS privacy review · 82/100 · emailed",
+        deliveryStatus: "sent",
+        estimateReferenceCode: "ZK-ARCH-20260312-ABC123",
+        createdAt: new Date("2026-03-12T05:00:00.000Z"),
+        metadataJson: {
+          executionMode: "privacy",
+        },
+        user: {
+          email: "jane@human-company.com",
+        },
+      },
+    ]);
+
+    const result = await getLeadDirectory({ audience: "all", q: "SR-260312-ABCDE" });
+
+    expect(result.entries).toHaveLength(1);
+    expect(result.entries[0]).toMatchObject({
+      email: "jane@human-company.com",
+      latestInteractionAction: "delivery_sent",
+      latestServiceRequestTrackingCode: "SR-260312-ABCDE",
+      latestEstimateReferenceCode: "ZK-ARCH-20260312-ABC123",
+      latestToolRunSlug: "architecture-diagram-reviewer",
+      latestToolRunExecutionMode: "privacy",
+    });
+  });
+
+  it("can filter to privacy-mode contacts that still need follow-up", async () => {
+    leadInteractionFindManyMock.mockResolvedValue([
+      {
+        action: "delivery_sent",
+        source: "architecture-review",
+        provider: "smtp",
+        estimateReferenceCode: "ZK-ARCH-20260312-ABC123",
+        createdAt: new Date("2026-03-12T03:00:00.000Z"),
+        lead: {
+          email: "jane@human-company.com",
+        },
+        serviceRequest: null,
+      },
+    ]);
+    toolRunFindManyMock.mockResolvedValue([
+      {
+        toolSlug: "architecture-diagram-reviewer",
+        summary: "AWS privacy review · 82/100 · emailed",
+        deliveryStatus: "sent",
+        estimateReferenceCode: "ZK-ARCH-20260312-ABC123",
+        createdAt: new Date("2026-03-12T05:00:00.000Z"),
+        metadataJson: {
+          executionMode: "privacy",
+        },
+        user: {
+          email: "jane@human-company.com",
+        },
+      },
+    ]);
+
+    const result = await getLeadDirectory({
+      audience: "all",
+      execution: "privacy",
+      ops: "no-follow-up",
+    });
+
+    expect(result.entries).toHaveLength(1);
+    expect(result.entries[0]?.email).toBe("jane@human-company.com");
+  });
+
   it("renders a CSV export with classification and ops columns", () => {
     const csv = renderLeadDirectoryCsv([
       {
@@ -226,6 +333,18 @@ describe("admin leads helper", () => {
         workdriveUploadStatus: "uploaded",
         recommendedEngagement: "Savings Sprint",
         leadStage: null,
+        latestInteractionAction: null,
+        latestInteractionSource: null,
+        latestInteractionProvider: null,
+        latestInteractionAt: null,
+        latestEstimateReferenceCode: null,
+        latestServiceRequestTrackingCode: null,
+        latestServiceRequestStatus: null,
+        latestToolRunSummary: null,
+        latestToolRunSlug: null,
+        latestToolRunDeliveryStatus: null,
+        latestToolRunExecutionMode: null,
+        latestToolRunAt: null,
         nextAction: "Review and follow up if this contact is sales-qualified.",
         signals: [],
         isLikelyHuman: true,
@@ -238,6 +357,7 @@ describe("admin leads helper", () => {
     expect(csv).toContain("Architecture Review");
     expect(csv).toContain("workdrive_upload_status");
     expect(csv).toContain("uploaded");
+    expect(csv).toContain("latest_tool_run_summary");
   });
 
   it("neutralizes spreadsheet formulas in CSV exports", () => {
@@ -260,6 +380,18 @@ describe("admin leads helper", () => {
         workdriveUploadStatus: null,
         recommendedEngagement: null,
         leadStage: null,
+        latestInteractionAction: null,
+        latestInteractionSource: null,
+        latestInteractionProvider: null,
+        latestInteractionAt: null,
+        latestEstimateReferenceCode: null,
+        latestServiceRequestTrackingCode: null,
+        latestServiceRequestStatus: null,
+        latestToolRunSummary: null,
+        latestToolRunSlug: null,
+        latestToolRunDeliveryStatus: null,
+        latestToolRunExecutionMode: null,
+        latestToolRunAt: null,
         nextAction: "Review.",
         signals: [],
         isLikelyHuman: true,

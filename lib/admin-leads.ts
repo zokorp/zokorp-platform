@@ -15,8 +15,11 @@ export type LeadAccountFilter = (typeof LEAD_ACCOUNT_FILTERS)[number];
 export const LEAD_VERIFIED_FILTERS = ["all", "verified", "unverified"] as const;
 export type LeadVerifiedFilter = (typeof LEAD_VERIFIED_FILTERS)[number];
 
-export const LEAD_OPS_FILTERS = ["all", "needs-attention", "healthy"] as const;
+export const LEAD_OPS_FILTERS = ["all", "needs-attention", "healthy", "no-follow-up"] as const;
 export type LeadOpsFilter = (typeof LEAD_OPS_FILTERS)[number];
+
+export const LEAD_EXECUTION_FILTERS = ["all", "privacy", "standard"] as const;
+export type LeadExecutionFilter = (typeof LEAD_EXECUTION_FILTERS)[number];
 
 export const LEAD_SORTS = ["latest", "oldest", "submissions"] as const;
 export type LeadSort = (typeof LEAD_SORTS)[number];
@@ -32,6 +35,7 @@ export type LeadDirectoryFilters = {
   account: LeadAccountFilter;
   verified: LeadVerifiedFilter;
   ops: LeadOpsFilter;
+  execution: LeadExecutionFilter;
   sort: LeadSort;
 };
 
@@ -63,6 +67,18 @@ type MutableLeadDirectoryEntry = {
   workdriveUploadStatus: string | null;
   recommendedEngagement: string | null;
   leadStage: string | null;
+  latestInteractionAction: string | null;
+  latestInteractionSource: string | null;
+  latestInteractionProvider: string | null;
+  latestInteractionAt: Date | null;
+  latestEstimateReferenceCode: string | null;
+  latestServiceRequestTrackingCode: string | null;
+  latestServiceRequestStatus: string | null;
+  latestToolRunSummary: string | null;
+  latestToolRunSlug: string | null;
+  latestToolRunDeliveryStatus: string | null;
+  latestToolRunExecutionMode: string | null;
+  latestToolRunAt: Date | null;
   nextAction: string;
   signals: Set<LeadSignal>;
 };
@@ -191,6 +207,14 @@ function deriveLeadSignals(entry: {
 
 function deriveArchitectureDeliveryState(input: { emailSentAt: Date | null; emailDeliveryMode: string | null }) {
   if (input.emailSentAt) {
+    return "sent" as const;
+  }
+
+  if (input.emailDeliveryMode === "fallback") {
+    return "fallback" as const;
+  }
+
+  if (input.emailDeliveryMode === "sent") {
     return "sent" as const;
   }
 
@@ -372,6 +396,18 @@ function upsertLeadEntry(
       workdriveUploadStatus: input.workdriveUploadStatus ?? null,
       recommendedEngagement: input.recommendedEngagement ?? null,
       leadStage: input.leadStage ?? null,
+      latestInteractionAction: null,
+      latestInteractionSource: null,
+      latestInteractionProvider: null,
+      latestInteractionAt: null,
+      latestEstimateReferenceCode: null,
+      latestServiceRequestTrackingCode: null,
+      latestServiceRequestStatus: null,
+      latestToolRunSummary: null,
+      latestToolRunSlug: null,
+      latestToolRunDeliveryStatus: null,
+      latestToolRunExecutionMode: null,
+      latestToolRunAt: null,
       nextAction: "",
       signals: new Set(),
     };
@@ -415,6 +451,91 @@ function upsertLeadEntry(
   existing.nextAction = nextActionForEntry(existing);
 }
 
+function updateLatestActivity(entry: MutableLeadDirectoryEntry, occurredAt: Date) {
+  if (entry.latestAt <= occurredAt) {
+    entry.latestAt = occurredAt;
+  }
+}
+
+function applyLeadInteractionContext(
+  entry: MutableLeadDirectoryEntry,
+  input: {
+    action: string;
+    source: string;
+    provider: string | null;
+    createdAt: Date;
+    estimateReferenceCode?: string | null;
+    serviceRequestTrackingCode?: string | null;
+    serviceRequestStatus?: string | null;
+  },
+) {
+  if (!entry.latestInteractionAt || entry.latestInteractionAt <= input.createdAt) {
+    entry.latestInteractionAction = input.action;
+    entry.latestInteractionSource = input.source;
+    entry.latestInteractionProvider = input.provider;
+    entry.latestInteractionAt = input.createdAt;
+  }
+
+  if (!entry.latestEstimateReferenceCode && input.estimateReferenceCode) {
+    entry.latestEstimateReferenceCode = input.estimateReferenceCode;
+  }
+
+  if (input.serviceRequestTrackingCode) {
+    entry.latestServiceRequestTrackingCode = input.serviceRequestTrackingCode;
+  }
+
+  if (input.serviceRequestStatus) {
+    entry.latestServiceRequestStatus = input.serviceRequestStatus;
+  }
+
+  updateLatestActivity(entry, input.createdAt);
+}
+
+function applyEstimateCompanionContext(
+  entry: MutableLeadDirectoryEntry,
+  input: {
+    referenceCode: string;
+    status: string;
+    updatedAt: Date;
+  },
+) {
+  if (!entry.latestEstimateReferenceCode) {
+    entry.latestEstimateReferenceCode = input.referenceCode;
+  }
+
+  if (input.status === "failed") {
+    entry.nextAction = "Inspect estimate companion sync and follow up on the formal estimate path.";
+  }
+
+  updateLatestActivity(entry, input.updatedAt);
+}
+
+function applyToolRunContext(
+  entry: MutableLeadDirectoryEntry,
+  input: {
+    toolSlug: string;
+    summary: string;
+    deliveryStatus: string | null;
+    estimateReferenceCode?: string | null;
+    executionMode?: string | null;
+    createdAt: Date;
+  },
+) {
+  if (!entry.latestToolRunAt || entry.latestToolRunAt <= input.createdAt) {
+    entry.latestToolRunSummary = input.summary;
+    entry.latestToolRunSlug = input.toolSlug;
+    entry.latestToolRunDeliveryStatus = input.deliveryStatus;
+    entry.latestToolRunExecutionMode = input.executionMode ?? null;
+    entry.latestToolRunAt = input.createdAt;
+  }
+
+  if (!entry.latestEstimateReferenceCode && input.estimateReferenceCode) {
+    entry.latestEstimateReferenceCode = input.estimateReferenceCode;
+  }
+
+  updateLatestActivity(entry, input.createdAt);
+}
+
 function toLeadDirectoryEntry(entry: MutableLeadDirectoryEntry): LeadDirectoryEntry {
   return {
     ...entry,
@@ -440,6 +561,7 @@ export function normalizeLeadDirectoryFilters(input: Partial<Record<string, stri
     account: normalizeValue(input.account, LEAD_ACCOUNT_FILTERS, "all"),
     verified: normalizeValue(input.verified, LEAD_VERIFIED_FILTERS, "all"),
     ops: normalizeValue(input.ops, LEAD_OPS_FILTERS, "all"),
+    execution: normalizeValue(input.execution, LEAD_EXECUTION_FILTERS, "all"),
     sort: normalizeValue(input.sort, LEAD_SORTS, "latest"),
   };
 }
@@ -469,6 +591,10 @@ export function buildLeadDirectoryQueryString(filters: LeadDirectoryFilters) {
 
   if (filters.ops !== "all") {
     params.set("ops", filters.ops);
+  }
+
+  if (filters.execution !== "all") {
+    params.set("execution", filters.execution);
   }
 
   if (filters.sort !== "latest") {
@@ -515,11 +641,27 @@ function matchesFilters(entry: LeadDirectoryEntry, filters: LeadDirectoryFilters
     entry.crmSyncState === "pending" ||
     workdriveNeedsAttention(entry.workdriveUploadStatus);
 
+  const hasFollowUp =
+    Boolean(entry.latestServiceRequestTrackingCode) ||
+    entry.latestInteractionAction === "call_booked" ||
+    entry.latestInteractionAction === "service_request_created";
+
   if (filters.ops === "needs-attention" && !needsAttention) {
     return false;
   }
 
   if (filters.ops === "healthy" && needsAttention) {
+    return false;
+  }
+
+  if (filters.ops === "no-follow-up" && hasFollowUp) {
+    return false;
+  }
+
+  if (
+    filters.execution !== "all" &&
+    entry.latestToolRunExecutionMode !== filters.execution
+  ) {
     return false;
   }
 
@@ -534,6 +676,16 @@ function matchesFilters(entry: LeadDirectoryEntry, filters: LeadDirectoryFilters
     entry.nextAction,
     entry.recommendedEngagement ?? "",
     entry.leadStage ?? "",
+    entry.latestInteractionAction ?? "",
+    entry.latestInteractionSource ?? "",
+    entry.latestInteractionProvider ?? "",
+    entry.latestEstimateReferenceCode ?? "",
+    entry.latestServiceRequestTrackingCode ?? "",
+    entry.latestServiceRequestStatus ?? "",
+    entry.latestToolRunSummary ?? "",
+    entry.latestToolRunSlug ?? "",
+    entry.latestToolRunDeliveryStatus ?? "",
+    entry.latestToolRunExecutionMode ?? "",
     ...entry.sources.map((source) => LEAD_SOURCE_LABELS[source]),
     ...entry.signals.map((signal) => LEAD_SIGNAL_LABELS[signal]),
   ]
@@ -562,7 +714,7 @@ function sortEntries(entries: LeadDirectoryEntry[], sort: LeadSort) {
 export async function getLeadDirectory(rawFilters: Partial<Record<string, string | undefined>> = {}): Promise<LeadDirectoryResult> {
   const filters = normalizeLeadDirectoryFilters(rawFilters);
 
-  const [users, leads, architectureLeads] = await Promise.all([
+  const [users, leads, architectureLeads, leadInteractions, estimateCompanions, toolRuns] = await Promise.all([
     db.user.findMany({
       select: {
         id: true,
@@ -623,6 +775,58 @@ export async function getLeadDirectory(rawFilters: Partial<Record<string, string
         zohoSyncNeedsUpdate: true,
         zohoSyncError: true,
         workdriveUploadStatus: true,
+      },
+    }),
+    db.leadInteraction.findMany({
+      select: {
+        action: true,
+        source: true,
+        provider: true,
+        estimateReferenceCode: true,
+        createdAt: true,
+        lead: {
+          select: {
+            email: true,
+          },
+        },
+        serviceRequest: {
+          select: {
+            trackingCode: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    }),
+    db.estimateCompanion.findMany({
+      select: {
+        customerEmail: true,
+        referenceCode: true,
+        status: true,
+        updatedAt: true,
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    }),
+    db.toolRun.findMany({
+      select: {
+        toolSlug: true,
+        summary: true,
+        deliveryStatus: true,
+        estimateReferenceCode: true,
+        createdAt: true,
+        metadataJson: true,
+        user: {
+          select: {
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
       },
     }),
   ]);
@@ -718,6 +922,67 @@ export async function getLeadDirectory(rawFilters: Partial<Record<string, string
     });
   }
 
+  for (const interaction of leadInteractions) {
+    const email = interaction.lead.email.trim().toLowerCase();
+    const entry = entries.get(email);
+    if (!entry) {
+      continue;
+    }
+
+    applyLeadInteractionContext(entry, {
+      action: interaction.action,
+      source: interaction.source,
+      provider: interaction.provider,
+      createdAt: interaction.createdAt,
+      estimateReferenceCode: interaction.estimateReferenceCode ?? null,
+      serviceRequestTrackingCode: interaction.serviceRequest?.trackingCode ?? null,
+      serviceRequestStatus: interaction.serviceRequest?.status ?? null,
+    });
+  }
+
+  for (const companion of estimateCompanions) {
+    const email = companion.customerEmail.trim().toLowerCase();
+    const entry = entries.get(email);
+    if (!entry) {
+      continue;
+    }
+
+    applyEstimateCompanionContext(entry, {
+      referenceCode: companion.referenceCode,
+      status: companion.status,
+      updatedAt: companion.updatedAt,
+    });
+  }
+
+  for (const toolRun of toolRuns) {
+    const email = toolRun.user?.email?.trim().toLowerCase();
+    if (!email) {
+      continue;
+    }
+
+    const entry = entries.get(email);
+    if (!entry) {
+      continue;
+    }
+
+    const metadata =
+      toolRun.metadataJson && typeof toolRun.metadataJson === "object" && !Array.isArray(toolRun.metadataJson)
+        ? (toolRun.metadataJson as Record<string, unknown>)
+        : null;
+
+    applyToolRunContext(entry, {
+      toolSlug: toolRun.toolSlug,
+      summary: toolRun.summary,
+      deliveryStatus: toolRun.deliveryStatus ?? null,
+      estimateReferenceCode: toolRun.estimateReferenceCode ?? null,
+      executionMode:
+        typeof metadata?.executionMode === "string" && metadata.executionMode.trim()
+          ? metadata.executionMode.trim()
+          : null,
+      createdAt: toolRun.createdAt,
+    });
+  }
+
   const allEntries = [...entries.values()].map(toLeadDirectoryEntry);
   const filteredEntries = sortEntries(
     allEntries.filter((entry) => matchesFilters(entry, filters)),
@@ -774,6 +1039,16 @@ export function renderLeadDirectoryCsv(entries: LeadDirectoryEntry[]) {
     "submission_count",
     "recommended_engagement",
     "lead_stage",
+    "latest_interaction_action",
+    "latest_interaction_source",
+    "latest_interaction_provider",
+    "latest_estimate_reference_code",
+    "latest_service_request_tracking_code",
+    "latest_service_request_status",
+    "latest_tool_run_slug",
+    "latest_tool_run_delivery_status",
+    "latest_tool_run_execution_mode",
+    "latest_tool_run_summary",
     "email_delivery_state",
     "crm_sync_state",
     "workdrive_upload_status",
@@ -798,6 +1073,16 @@ export function renderLeadDirectoryCsv(entries: LeadDirectoryEntry[]) {
       entry.submissionCount,
       entry.recommendedEngagement,
       entry.leadStage,
+      entry.latestInteractionAction,
+      entry.latestInteractionSource,
+      entry.latestInteractionProvider,
+      entry.latestEstimateReferenceCode,
+      entry.latestServiceRequestTrackingCode,
+      entry.latestServiceRequestStatus,
+      entry.latestToolRunSlug,
+      entry.latestToolRunDeliveryStatus,
+      entry.latestToolRunExecutionMode,
+      entry.latestToolRunSummary,
       entry.emailDeliveryState,
       entry.crmSyncState,
       entry.workdriveUploadStatus,

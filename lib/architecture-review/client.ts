@@ -24,8 +24,12 @@ const JPEG_SIGNATURE = [0xff, 0xd8, 0xff];
 const PDF_SIGNATURE = [0x25, 0x50, 0x44, 0x46];
 const MAX_DIAGRAM_FILE_BYTES = 8 * 1024 * 1024;
 const PNG_OCR_TIMEOUT_MS = 90_000;
-const PDF_TEXT_TIMEOUT_MS = 45_000;
+const PDF_TEXT_TIMEOUT_MS = 120_000;
 const PDF_TEXT_MAX_PAGES = 20;
+const PDF_OCR_MAX_PAGES = 8;
+const PDF_OCR_MAX_FILE_BYTES = 6 * 1024 * 1024;
+const PDF_OCR_MAX_LONG_EDGE = 1_800;
+const PDF_MIN_USABLE_TEXT_CHARS = 80;
 
 function isPngBytes(bytes: Uint8Array) {
   return PNG_SIGNATURE.every((byte, index) => bytes[index] === byte);
@@ -103,11 +107,99 @@ type ExtractPdfTextOptions = {
   onProgress?: (progress: PngOcrProgress) => void;
   timeoutMs?: number;
   maxPages?: number;
+  maxOcrPages?: number;
 };
+
+function normalizeExtractedText(value: string) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function hasUsablePdfEvidence(text: string) {
+  const normalized = normalizeExtractedText(text);
+  if (normalized.length >= PDF_MIN_USABLE_TEXT_CHARS) {
+    return true;
+  }
+
+  if (/\b(api gateway|cloudfront|lambda|dynamodb|kms|cloudwatch|vpc|subnet|load balancer|rds|s3)\b/i.test(normalized)) {
+    return true;
+  }
+
+  return normalized.split(/\s+/).filter(Boolean).length >= 12;
+}
+
+function clampPercent(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+type RenderableCanvas = HTMLCanvasElement | OffscreenCanvas;
+
+function createRenderableCanvas(width: number, height: number): RenderableCanvas {
+  if (typeof document !== "undefined") {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    return canvas;
+  }
+
+  return new OffscreenCanvas(width, height);
+}
+
+async function canvasToBlob(canvas: RenderableCanvas) {
+  if ("convertToBlob" in canvas) {
+    return canvas.convertToBlob({ type: "image/png" });
+  }
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+        return;
+      }
+
+      reject(new Error("Browser PDF OCR could not convert the rendered page to an image."));
+    }, "image/png");
+  });
+}
+
+function releaseCanvas(canvas: RenderableCanvas) {
+  if ("width" in canvas) {
+    canvas.width = 1;
+  }
+
+  if ("height" in canvas) {
+    canvas.height = 1;
+  }
+}
+
+async function renderPdfPageBlob(page: any) {
+  const baseViewport = page.getViewport({ scale: 1 });
+  const longestEdge = Math.max(baseViewport.width, baseViewport.height, 1);
+  const scale = Math.max(1.25, Math.min(2, PDF_OCR_MAX_LONG_EDGE / longestEdge));
+  const viewport = page.getViewport({ scale });
+  const canvas = createRenderableCanvas(Math.max(1, Math.ceil(viewport.width)), Math.max(1, Math.ceil(viewport.height)));
+  const canvasContext = canvas.getContext("2d", { alpha: false });
+
+  if (!canvasContext) {
+    releaseCanvas(canvas);
+    throw new Error("Browser PDF OCR could not allocate a canvas context.");
+  }
+
+  try {
+    await page.render({
+      canvasContext,
+      viewport,
+    }).promise;
+
+    return await canvasToBlob(canvas);
+  } finally {
+    releaseCanvas(canvas);
+  }
+}
 
 export async function extractPdfTextEvidence(file: File, options?: ExtractPdfTextOptions) {
   const timeoutMs = Math.max(5_000, Math.round(options?.timeoutMs ?? PDF_TEXT_TIMEOUT_MS));
   const maxPages = Math.max(1, Math.round(options?.maxPages ?? PDF_TEXT_MAX_PAGES));
+  const maxOcrPages = Math.max(1, Math.round(options?.maxOcrPages ?? PDF_OCR_MAX_PAGES));
   const pdfBytes = new Uint8Array(await file.arrayBuffer());
   const pdfjs = await import("pdfjs-dist/legacy/webpack.mjs");
   const loadingTask = pdfjs.getDocument({ data: pdfBytes });
@@ -130,19 +222,86 @@ export async function extractPdfTextEvidence(file: File, options?: ExtractPdfTex
       }
 
       options?.onProgress?.({
-        percent: Math.max(0, Math.min(100, Math.round((pageNumber / totalPages) * 100))),
-        status: `page-${pageNumber}`,
+        percent: clampPercent((pageNumber / totalPages) * 45),
+        status: `text-page-${pageNumber}`,
       });
       page.cleanup();
     }
 
-    return pageTexts.join(" ").replace(/\s+/g, " ").trim();
+    const extractedText = normalizeExtractedText(pageTexts.join(" "));
+    if (hasUsablePdfEvidence(extractedText)) {
+      return extractedText;
+    }
+
+    if (file.size > PDF_OCR_MAX_FILE_BYTES) {
+      throw new Error(
+        `Scanned PDF OCR is limited to files up to ${Math.round(PDF_OCR_MAX_FILE_BYTES / 1024 / 1024)}MB in privacy mode. Compress the PDF or use standard mode.`,
+      );
+    }
+
+    if (pdf.numPages > maxOcrPages) {
+      throw new Error(
+        `Scanned PDF OCR is limited to ${maxOcrPages} pages in privacy mode. Split the PDF or use standard mode.`,
+      );
+    }
+
+    const { createWorker } = await import("tesseract.js");
+    let currentPage = 1;
+    const worker = await createWorker("eng", 1, {
+      logger: (message) => {
+        if (typeof message.progress !== "number") {
+          return;
+        }
+
+        options?.onProgress?.({
+          percent: clampPercent(45 + (((currentPage - 1) + message.progress) / totalPages) * 55),
+          status: typeof message.status === "string" ? `ocr-${message.status}` : `ocr-page-${currentPage}`,
+        });
+      },
+    });
+
+    try {
+      const ocrTexts: string[] = [];
+
+      for (let pageNumber = 1; pageNumber <= totalPages; pageNumber += 1) {
+        currentPage = pageNumber;
+        options?.onProgress?.({
+          percent: clampPercent(45 + ((pageNumber - 1) / totalPages) * 55),
+          status: `ocr-page-${pageNumber}`,
+        });
+
+        const page = await pdf.getPage(pageNumber);
+
+        try {
+          const imageBlob = await renderPdfPageBlob(page);
+          const ocrResult = await worker.recognize(imageBlob);
+          const pageText = normalizeExtractedText(ocrResult.data.text || "");
+
+          if (pageText) {
+            ocrTexts.push(pageText);
+          }
+        } finally {
+          page.cleanup();
+        }
+      }
+
+      const ocrText = normalizeExtractedText(ocrTexts.join(" "));
+      if (!hasUsablePdfEvidence(ocrText)) {
+        throw new Error(
+          "Browser PDF OCR could not find enough architecture evidence. Try a cleaner export, fewer pages, or standard mode.",
+        );
+      }
+
+      return ocrText;
+    } finally {
+      await worker.terminate();
+    }
   })();
 
   let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
   const timeoutPromise = new Promise<never>((_, reject) => {
     timeoutHandle = setTimeout(() => {
-      reject(new Error("Browser PDF text extraction timed out."));
+      reject(new Error("Browser PDF OCR timed out while processing the PDF."));
     }, timeoutMs);
   });
 

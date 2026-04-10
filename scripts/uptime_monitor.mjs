@@ -2,6 +2,8 @@
 
 import { pathToFileURL } from "node:url";
 
+import { APP_ROOT_EXPECTATION } from "./playwright_audit_contract.mjs";
+
 function userAgent() {
   return "ZoKorpUptimeMonitor/1.0";
 }
@@ -82,15 +84,14 @@ export async function runUptimeMonitor({
       },
     },
     {
-      id: "app_root_redirect",
-      label: "App root redirects to /software",
+      id: "app_root_landing",
+      label: "App root renders the app landing page",
       run: async () => {
-        const { response, location } = await fetchRedirect(appBaseUrl, timeoutMs);
+        const { response, body } = await fetchText(appBaseUrl, timeoutMs);
 
         return {
-          ok: [301, 308].includes(response.status) && matchesRedirectLocation(location, `${appBaseUrl}/software`, "/software"),
+          ok: htmlResponseOk(response) && body.includes(APP_ROOT_EXPECTATION.marker),
           status: response.status,
-          location,
         };
       },
     },

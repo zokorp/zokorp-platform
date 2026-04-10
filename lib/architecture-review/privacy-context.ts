@@ -10,6 +10,20 @@ export function buildArchitecturePrivacySourceRecordKey(fingerprintId: string) {
   return `${ARCHITECTURE_REVIEW_TOOL_SOURCE}:privacy:${fingerprintId}`;
 }
 
+export function buildArchitecturePrivacyDeliveryIdempotencyKey(input: {
+  userId: string;
+  fingerprintId: string;
+}) {
+  return `${ARCHITECTURE_REVIEW_TOOL_SOURCE}:privacy-email:${input.userId}:${input.fingerprintId}`;
+}
+
+export function buildArchitecturePrivacyInteractionEventId(input: {
+  fingerprintId: string;
+  action: "run_completed" | "delivery_requested" | "delivery_sent" | "delivery_fallback";
+}) {
+  return `${ARCHITECTURE_REVIEW_TOOL_SOURCE}:privacy:${input.fingerprintId}:${input.action}`;
+}
+
 export async function ensureArchitectureReviewLead(input: {
   userId: string;
   email: string;

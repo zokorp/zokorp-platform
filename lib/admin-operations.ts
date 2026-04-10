@@ -226,6 +226,7 @@ export type AdminOperationsSnapshot = {
     failedArchitectureEmail: number;
     crmNeedsAttention: number;
     failedQuoteCompanions: number;
+    recentArchitectureRuns: number;
     recentValidatorRuns: number;
     recentMlopsRuns: number;
     recentBookedCalls: number;
@@ -345,6 +346,14 @@ export async function getAdminOperationsSnapshot(): Promise<AdminOperationsSnaps
     (async () => {
       try {
         return await db.toolRun.findMany({
+          include: {
+            user: {
+              select: {
+                email: true,
+                name: true,
+              },
+            },
+          },
           orderBy: {
             createdAt: "desc",
           },
@@ -608,6 +617,46 @@ export async function getAdminOperationsSnapshot(): Promise<AdminOperationsSnaps
   });
   const toolRunSignals = hasPersistedToolRuns
     ? toolRuns.map((item) => {
+        if (item.toolSlug === "architecture-diagram-reviewer") {
+          const metadata = asRecord(item.metadataJson);
+          const operatorHint = item.user?.email ?? item.user?.name ?? "unknown account";
+
+          return {
+            id: item.id,
+            createdAt: item.createdAt,
+            title: "Architecture reviewer run",
+            statusLabel:
+              item.deliveryStatus === "fallback"
+                ? "fallback"
+                : item.score !== null
+                  ? `${item.score}/100`
+                  : item.deliveryStatus ?? item.status.toLowerCase(),
+            statusTone:
+              item.deliveryStatus === "failed"
+                ? "danger"
+                : item.deliveryStatus === "fallback"
+                  ? "warning"
+                  : item.score !== null && item.score < 60
+                    ? "warning"
+                    : item.deliveryStatus === "sent"
+                      ? "success"
+                      : "info",
+            summary: [
+              operatorHint,
+              readString(metadata, "executionMode") ? `${readString(metadata, "executionMode")} mode` : null,
+              item.score !== null ? `Score ${item.score}/100` : null,
+            ]
+              .filter(Boolean)
+              .join(" · "),
+            details: [
+              item.deliveryStatus ? `Delivery ${item.deliveryStatus}` : null,
+              item.estimateReferenceCode ? `Estimate ${item.estimateReferenceCode}` : null,
+              item.inputFileName,
+            ].filter((value): value is string => Boolean(value)),
+            href: "/admin/leads?source=architecture-review",
+          } satisfies OperationsIssue;
+        }
+
         if (item.toolSlug === "zokorp-validator") {
           return {
             id: item.id,
@@ -623,6 +672,7 @@ export async function getAdminOperationsSnapshot(): Promise<AdminOperationsSnaps
                     ? "info"
                     : "secondary",
             summary: [
+              item.user?.email ?? item.user?.name ?? "unknown account",
               item.targetLabel ?? "Checklist target",
               item.score !== null ? `Score ${item.score}%` : null,
               item.estimateAmountUsd !== null ? `Quote $${item.estimateAmountUsd}` : null,
@@ -653,6 +703,7 @@ export async function getAdminOperationsSnapshot(): Promise<AdminOperationsSnaps
                 ? "info"
                 : "warning",
           summary: [
+            item.user?.email ?? item.user?.name ?? "unknown account",
             item.sourceName ?? item.summary,
             item.sourceType ? item.sourceType.toUpperCase() : null,
             item.confidenceLabel ? `${item.confidenceLabel} confidence` : null,
@@ -811,6 +862,7 @@ export async function getAdminOperationsSnapshot(): Promise<AdminOperationsSnaps
       failedArchitectureEmail: emailOutboxes.filter((item) => item.status === "failed").length,
       crmNeedsAttention: crmLeads.length + serviceRequestCrmAttention.length,
       failedQuoteCompanions: estimateCompanions.length,
+      recentArchitectureRuns: toolRunSignals.filter((item) => item.title === "Architecture reviewer run").length,
       recentValidatorRuns: toolRunSignals.filter((item) => item.href === "/software/zokorp-validator").length,
       recentMlopsRuns: toolRunSignals.filter((item) => item.href === "/software/mlops-foundation-platform").length,
       recentBookedCalls: bookedCalls.length + flaggedBookedCallSignals.length,
@@ -874,7 +926,9 @@ export async function getAdminOperationsSnapshot(): Promise<AdminOperationsSnaps
         maximumFractionDigits: 0,
       }).format(item.amountUsd)}`,
       details: [item.referenceCode, item.externalNumber, item.provider].filter((value): value is string => Boolean(value)),
-      href: "/account",
+      href: `/admin/leads?${new URLSearchParams({
+        q: item.referenceCode,
+      }).toString()}`,
     })),
     bookedCallSignals: [
       ...bookedCalls.map((item) => ({
@@ -908,7 +962,9 @@ export async function getAdminOperationsSnapshot(): Promise<AdminOperationsSnaps
           item.sourceLabel,
           `${Math.max(1, Math.round((Date.now() - item.updatedAt.getTime()) / (24 * 60 * 60 * 1000)))} day(s) without booked follow-up`,
         ],
-        href: "/admin/operations",
+        href: `/admin/leads?${new URLSearchParams({
+          q: item.referenceCode,
+        }).toString()}`,
       })),
       ...staleServiceRequests.map((item) => ({
         id: item.id,

@@ -25,6 +25,7 @@ import {
   persistDiagnostics,
   readBoolean,
   readNumber,
+  resolveVercelProtectionBypassHeaders,
   resolveOutputPath,
   writeJsonFile,
   writePageScreenshot,
@@ -161,6 +162,9 @@ export async function runAccessibilityAudit(options = {}) {
   const timeoutMs = readNumber(readSetting("JOURNEY_TIMEOUT_MS", "30000"), 30000);
   const loginEmail = readSetting("JOURNEY_EMAIL", "");
   const loginPassword = readSetting("JOURNEY_PASSWORD", "");
+  const protectionBypassHeaders = resolveVercelProtectionBypassHeaders(readSetting, {
+    setCookie: true,
+  });
 
   ensureDir(outputDir);
   ensureDir(screenshotsDir);
@@ -198,6 +202,7 @@ export async function runAccessibilityAudit(options = {}) {
     }
 
     context = await browser.newContext({
+      extraHTTPHeaders: protectionBypassHeaders,
       viewport: desktopViewport,
       reducedMotion: "reduce",
     });

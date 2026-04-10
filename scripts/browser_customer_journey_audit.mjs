@@ -33,6 +33,7 @@ import {
   readBoolean,
   readNumber,
   resolveExpectedCanonicalBaseUrl,
+  resolveVercelProtectionBypassHeaders,
   resolveOutputPath,
   shouldUseCompatibilityBaseUrl,
   writeJsonFile,
@@ -645,6 +646,9 @@ export async function runBrowserCustomerJourneyAudit(options = {}) {
   const loginEmail = readSetting("JOURNEY_EMAIL", "");
   const loginPassword = readSetting("JOURNEY_PASSWORD", "");
   const diagnostics = createBrowserDiagnostics();
+  const protectionBypassHeaders = resolveVercelProtectionBypassHeaders(readSetting, {
+    setCookie: true,
+  });
   const hostSplitSkipped = sameOrigin(marketingBaseUrl, appBaseUrl);
   const config = {
     marketingBaseUrl,
@@ -694,6 +698,7 @@ export async function runBrowserCustomerJourneyAudit(options = {}) {
   }
 
   const context = await browser.newContext({
+    extraHTTPHeaders: protectionBypassHeaders,
     viewport: { width: 1440, height: 960 },
   });
   attachContextDiagnostics(context, diagnostics);

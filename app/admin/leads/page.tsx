@@ -13,6 +13,7 @@ import {
   getLeadDirectory,
   LEAD_ACCOUNT_FILTERS,
   LEAD_AUDIENCE_FILTERS,
+  LEAD_EXECUTION_FILTERS,
   LEAD_OPS_FILTERS,
   LEAD_SIGNAL_LABELS,
   LEAD_SORTS,
@@ -76,6 +77,10 @@ function deliveryLabel(state: LeadDeliveryState) {
     return "Email sent";
   }
 
+  if (state === "fallback") {
+    return "Email fallback";
+  }
+
   if (state === "pending") {
     return "Email pending";
   }
@@ -85,6 +90,16 @@ function deliveryLabel(state: LeadDeliveryState) {
   }
 
   return "Email unknown";
+}
+
+function humanizeInteractionAction(action: string | null) {
+  if (!action) {
+    return "No interaction yet";
+  }
+
+  return action
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (value) => value.toUpperCase());
 }
 
 function crmLabel(state: LeadCrmState) {
@@ -218,7 +233,7 @@ export default async function AdminLeadsPage({
             <h2 className="font-display text-2xl font-semibold text-slate-900">Filters and export</h2>
             <p className="text-sm text-slate-600">Search, suppress QA noise, focus on ops issues, or export the filtered view.</p>
           </div>
-          <form className="grid gap-3 lg:grid-cols-[2fr_repeat(5,minmax(0,1fr))_auto_auto]">
+          <form className="grid gap-3 lg:grid-cols-[2fr_repeat(6,minmax(0,1fr))_auto_auto]">
             <Input name="q" defaultValue={directory.filters.q} placeholder="Search by email, company, source, or next action" />
 
             <Select name="audience" defaultValue={directory.filters.audience}>
@@ -257,7 +272,21 @@ export default async function AdminLeadsPage({
             <Select name="ops" defaultValue={directory.filters.ops}>
               {LEAD_OPS_FILTERS.map((value) => (
                 <option key={value} value={value}>
-                  {value === "all" ? "All ops states" : value === "needs-attention" ? "Needs attention" : "Healthy only"}
+                  {value === "all"
+                    ? "All ops states"
+                    : value === "needs-attention"
+                      ? "Needs attention"
+                      : value === "no-follow-up"
+                        ? "No follow-up yet"
+                        : "Healthy only"}
+                </option>
+              ))}
+            </Select>
+
+            <Select name="execution" defaultValue={directory.filters.execution}>
+              {LEAD_EXECUTION_FILTERS.map((value) => (
+                <option key={value} value={value}>
+                  {value === "all" ? "All execution modes" : value === "privacy" ? "Privacy mode" : "Standard mode"}
                 </option>
               ))}
             </Select>
@@ -342,6 +371,20 @@ export default async function AdminLeadsPage({
                     <div className="rounded-2xl border border-border bg-background-elevated px-4 py-3 text-sm text-slate-600">
                       <span className="font-semibold text-slate-900">Next action:</span> {entry.nextAction}
                     </div>
+
+                    <div className="rounded-2xl border border-border bg-background-elevated px-4 py-3 text-sm text-slate-600">
+                      <span className="font-semibold text-slate-900">Support context:</span>{" "}
+                      {[
+                        entry.latestToolRunSummary ? `${entry.latestToolRunSummary}${entry.latestToolRunExecutionMode ? ` (${entry.latestToolRunExecutionMode})` : ""}` : null,
+                        entry.latestInteractionAction ? humanizeInteractionAction(entry.latestInteractionAction) : null,
+                        entry.latestServiceRequestTrackingCode
+                          ? `${entry.latestServiceRequestTrackingCode}${entry.latestServiceRequestStatus ? ` · ${entry.latestServiceRequestStatus}` : ""}`
+                          : null,
+                        entry.latestEstimateReferenceCode ? `Estimate ${entry.latestEstimateReferenceCode}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || "No recent support context captured yet"}
+                    </div>
                   </div>
 
                   <div className="grid gap-3 text-sm text-slate-600 md:grid-cols-2 xl:min-w-[360px]">
@@ -372,6 +415,26 @@ export default async function AdminLeadsPage({
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">WorkDrive archive</p>
                       <p>{entry.workdriveUploadStatus ?? "unknown"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Latest interaction</p>
+                      <p>{humanizeInteractionAction(entry.latestInteractionAction)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Latest tool run</p>
+                      <p>{entry.latestToolRunSlug ?? "unknown"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Service request</p>
+                      <p>
+                        {entry.latestServiceRequestTrackingCode
+                          ? `${entry.latestServiceRequestTrackingCode}${entry.latestServiceRequestStatus ? ` · ${entry.latestServiceRequestStatus}` : ""}`
+                          : "none linked"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Estimate reference</p>
+                      <p>{entry.latestEstimateReferenceCode ?? "none captured"}</p>
                     </div>
                   </div>
                 </div>
