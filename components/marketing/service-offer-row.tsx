@@ -12,6 +12,7 @@ type ServiceOfferRowProps = {
   index?: number;
   className?: string;
   compact?: boolean;
+  id?: string;
   action?: {
     href: string;
     label: string;
@@ -28,12 +29,14 @@ export function ServiceOfferRow({
   index,
   className,
   compact = false,
+  id,
   action,
 }: ServiceOfferRowProps) {
   return (
     <article
+      id={id}
       className={cn(
-        "table-row",
+        "table-row scroll-mt-28",
         className,
       )}
     >

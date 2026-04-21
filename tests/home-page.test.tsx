@@ -29,6 +29,8 @@ describe("HomePage", () => {
     const html = renderToStaticMarkup(await HomePage());
 
     expect(html).toContain("Scoped cloud reviews, starting at $249.");
+    expect(html).toContain("Start with an Architecture Review \u2014 $249");
+    expect(html).toContain("Most engagements start with a $249 Architecture Review.");
     expect(html).toContain("Small practice. Clear scope. Direct follow-through.");
     expect(html).toContain("Selected background");
     expect(html).toContain(
@@ -44,8 +46,15 @@ describe("HomePage", () => {
     expect(html).toContain("Landing Zone Setup");
     expect(html).toContain("Advisory Retainer");
     expect(html).toContain("Public tools first");
-    expect(html).toContain("Request a call");
-    expect(html).not.toContain("Microsoft");
+    expect(html).toContain("Who ZoKorp works with.");
+    expect(html).toContain("Good fit");
+    expect(html).toContain("Not the right fit");
+    expect(html).toContain("How it works");
+    expect(html).toContain("77%");
+    expect(html).toContain("$60M+");
+    expect(html).toContain("$200M+");
+    expect(html).toContain("Book a 15-min fit check");
+    expect(html).toContain("zokorpconsulting.zohobookings.com");
     expect(html).not.toContain("AWS Readiness / FTR Validation");
     expect(html).not.toContain("Scoped Implementation");
     expect(html).not.toContain("AI/ML advisory");

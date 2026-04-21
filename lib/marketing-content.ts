@@ -163,11 +163,50 @@ export const SOFTWARE_HIGHLIGHTS = [
   },
 ] as const;
 
+export const HOME_ICP_CONTENT = {
+  eyebrow: "Who this is for",
+  title: "Who ZoKorp works with.",
+  goodFit: {
+    heading: "Good fit",
+    items: [
+      "Engineering teams at 10–200 person companies making a first cloud move or scaling an existing one",
+      "CTOs and VPs of Engineering who need a fast, credible outside read before committing to a direction",
+      "Startups preparing for Series A infrastructure audits or SOC 2 / HIPAA readiness",
+      "Teams that have cloud costs growing faster than they can explain",
+      "Organizations building or operationalizing AI/ML pipelines on AWS or Azure",
+    ],
+  },
+  notFit: {
+    heading: "Not the right fit",
+    items: [
+      "Companies that need a large systems integration team or staff augmentation",
+      "Projects requiring on-site presence or embedded resourcing",
+      "Organizations that want a vendor managing infrastructure long-term — we scope, deliver, and hand off, we don't operate",
+    ],
+  },
+} as const;
+
+export const HOME_PROCESS_STEPS = [
+  {
+    title: "Pick a starting point",
+    body: "Choose the service that matches your situation. If you're unsure, start with the $249 Architecture Review — it's designed to clarify the next step.",
+  },
+  {
+    title: "Short fit check, or just buy",
+    body: "For the $249 Architecture Review, no call is required — submit and we begin. For larger engagements, a 15-minute fit check comes first to confirm scope and timeline.",
+  },
+  {
+    title: "Scoped delivery and written handoff",
+    body: "Every engagement runs under a signed SOW. Deliverables are written, not presentation-based. You own the output.",
+  },
+] as const;
+
 export const HOME_PAGE_CONTENT = {
   hero: {
     eyebrow: "Founder-led cloud consulting",
     title: "Scoped cloud reviews, starting at $249.",
     lede: "Architecture reviews, cost audits, and landing-zone setup — fixed scope, visible price, delivered by a certified founder. No retainers to unwind, no surprises at invoice time.",
+    postLede: "Most engagements start with a $249 Architecture Review. No call required to begin.",
     supportingBullets: [
       "Fixed price, before you commit",
       "Initial response within one business day",
@@ -195,11 +234,39 @@ export const SERVICES_PAGE_CONTENT = {
   },
   primaryTitle: "Primary services",
   primaryIntro: "Pick the first move, not a generic package.",
+  entryPointNote:
+    "Not sure where to start? The Architecture Review ($249) is designed to answer exactly that.",
   secondaryTitle: "Additional scoped work",
   secondarySummary: "Validation and implementation stay available, but not as the first buy.",
   requestTitle: "Follow-up",
   requestIntro: "Request a scoped response.",
 } as const;
+
+export const SERVICES_INCLUDED_ITEMS: readonly {
+  label: string;
+  detail: string;
+}[] = [
+  {
+    label: "Signed SOW before work begins",
+    detail: "No billable work starts without a written scope both sides have agreed to.",
+  },
+  {
+    label: "Written deliverables — reports, not slide decks",
+    detail: "Findings and recommendations land as documents you can circulate and act on.",
+  },
+  {
+    label: "Founder delivery",
+    detail: "Zohaib on every project — not a junior analyst, not an account manager.",
+  },
+  {
+    label: "Written follow-up included",
+    detail: "Each engagement includes a set number of written follow-up questions. Terms vary by engagement.",
+  },
+  {
+    label: "One-business-day response",
+    detail: "Initial response within one business day of contact.",
+  },
+] as const;
 
 export const ABOUT_PAGE_CONTENT = {
   hero: {
@@ -250,6 +317,6 @@ export const SOFTWARE_PAGE_CONTENT = {
 
 export const CONTACT_PAGE_CONTENT = {
   eyebrow: "Contact",
-  title: "Tell me what you need.",
-  lede: "Public requests go to consulting@zokorp.com. Initial response within one business day.",
+  title: "Two ways to get started.",
+  lede: "Book a fit check (fastest) or send a message below. Public requests go to consulting@zokorp.com. Initial response within one business day.",
 } as const;

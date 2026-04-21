@@ -19,6 +19,7 @@ type MarketingHeroProps = {
   eyebrow: string;
   title: string;
   lede: string;
+  postLede?: string;
   supportingBullets?: readonly string[];
   proofChips?: readonly string[];
   primaryAction: MarketingAction;
@@ -68,6 +69,7 @@ export function MarketingHero({
   eyebrow,
   title,
   lede,
+  postLede,
   supportingBullets = [],
   proofChips = [],
   primaryAction,
@@ -149,6 +151,18 @@ export function MarketingHero({
           >
             {lede}
           </p>
+
+          {postLede ? (
+            <p
+              data-measure="post-lede"
+              className={cn(
+                "mt-4 max-w-[48ch] text-[0.98rem] font-medium leading-7",
+                isPoster || isPanel ? "text-card-foreground" : "text-white",
+              )}
+            >
+              {postLede}
+            </p>
+          ) : null}
 
           {supportingBullets.length > 0 ? (
             <ul className={cn("mt-7 grid gap-x-8 gap-y-3.5 sm:grid-cols-2", isPoster ? "max-w-[44rem]" : "")}>

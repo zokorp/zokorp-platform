@@ -11,6 +11,7 @@ import { auth } from "@/lib/auth";
 import {
   PRIMARY_CONSULTING_OFFERS,
   SECONDARY_CONSULTING_OFFERS,
+  SERVICES_INCLUDED_ITEMS,
   SERVICES_PAGE_CONTENT,
   SPECIALIST_ADVISORY,
 } from "@/lib/marketing-content";
@@ -81,6 +82,17 @@ export default async function ServicesPage() {
           description={SERVICES_PAGE_CONTENT.primaryIntro}
         />
 
+        <p className="max-w-[58ch] text-sm leading-7 text-card-foreground">
+          Not sure where to start? The{" "}
+          <Link
+            href="#architecture-review"
+            className="underline decoration-border underline-offset-4 transition hover:text-brand"
+          >
+            Architecture Review ($249)
+          </Link>{" "}
+          is designed to answer exactly that.
+        </p>
+
         <div className="table-band px-5 py-5 md:px-6" style={serviceTableColumns}>
           <div className="table-head">
             <span>Offer</span>
@@ -91,6 +103,7 @@ export default async function ServicesPage() {
           {PRIMARY_CONSULTING_OFFERS.map((service, index) => (
             <ServiceOfferRow
               key={service.slug}
+              id={service.slug}
               eyebrow={service.eyebrow}
               title={service.title}
               priceAnchor={service.priceAnchor}
@@ -134,6 +147,7 @@ export default async function ServicesPage() {
           {SECONDARY_CONSULTING_OFFERS.map((service, index) => (
             <ServiceOfferRow
               key={service.slug}
+              id={service.slug}
               eyebrow={service.eyebrow}
               title={service.title}
               priceAnchor={service.priceAnchor}
@@ -176,6 +190,30 @@ export default async function ServicesPage() {
           </article>
         </div>
       </LearnMore>
+
+      <section className="space-y-6">
+        <MarketingSectionHeading
+          eyebrow="Standards"
+          title="What's included in every engagement."
+          description="The same delivery floor applies to a $249 review and a multi-week landing zone."
+        />
+
+        <div className="section-band px-5 py-6 md:px-6 md:py-7">
+          <dl className="grid gap-5 md:grid-cols-2 md:gap-x-8 md:gap-y-6">
+            {SERVICES_INCLUDED_ITEMS.map((item) => (
+              <div
+                key={item.label}
+                className="space-y-2 border-t border-border/70 pt-4"
+              >
+                <dt className="text-[0.98rem] font-semibold leading-6 tracking-[-0.015em] text-card-foreground">
+                  {item.label}
+                </dt>
+                <dd className="text-sm leading-7 text-muted-foreground">{item.detail}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
 
       <section className="table-band px-5 py-5 md:px-6">
         <div className="table-row" style={followUpColumns}>

@@ -5,12 +5,15 @@ import Link from "next/link";
 import { FounderProfileCard } from "@/components/marketing/founder-profile-card";
 import { FounderProofBlock } from "@/components/marketing/founder-proof-block";
 import { MarketingHero } from "@/components/marketing/marketing-hero";
+import { HOME_PROOF_STATS, ProofNumbersStrip } from "@/components/marketing/proof-numbers-strip";
 import { MarketingSectionHeading } from "@/components/marketing/section-heading";
 import { ServiceOfferRow } from "@/components/marketing/service-offer-row";
 import { buttonVariants } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import {
+  HOME_ICP_CONTENT,
   HOME_PAGE_CONTENT,
+  HOME_PROCESS_STEPS,
   PRIMARY_CONSULTING_OFFERS,
   SOFTWARE_HIGHLIGHTS,
 } from "@/lib/marketing-content";
@@ -38,6 +41,15 @@ export default async function HomePage() {
     signedIn,
     utmMedium: "homepage",
   });
+  const bookingAction = signedIn
+    ? { ...primaryCta, variant: "secondary" as const }
+    : {
+        href: PUBLIC_LAUNCH_CONTACT.bookingUrl,
+        label: "Book a 15-min fit check",
+        variant: "secondary" as const,
+        external: true,
+        openInNewTab: true,
+      };
 
   const structuredData = [
     {
@@ -82,9 +94,14 @@ export default async function HomePage() {
         eyebrow={HOME_PAGE_CONTENT.hero.eyebrow}
         title={HOME_PAGE_CONTENT.hero.title}
         lede={HOME_PAGE_CONTENT.hero.lede}
+        postLede={HOME_PAGE_CONTENT.hero.postLede}
         supportingBullets={HOME_PAGE_CONTENT.hero.supportingBullets}
-        primaryAction={primaryCta}
-        secondaryAction={{ href: "/services", label: "View services", variant: "secondary" }}
+        primaryAction={{
+          href: "/services#architecture-review",
+          label: "Start with an Architecture Review — $249",
+        }}
+        secondaryAction={bookingAction}
+        tertiaryAction={{ href: "/services", label: "View services", variant: "ghost" }}
         bodyColumnClassName="lg:col-span-6"
         railColumnClassName="lg:col-span-6"
         rail={
@@ -121,6 +138,12 @@ export default async function HomePage() {
         }
       />
 
+      <ProofNumbersStrip
+        eyebrow="By the numbers"
+        title="Enterprise delivery, visible in the work."
+        stats={HOME_PROOF_STATS}
+      />
+
       <FounderProofBlock
         mode="strip"
         eyebrow={FOUNDER_PROOF_PAGE_CONTENT.home.eyebrow}
@@ -146,6 +169,7 @@ export default async function HomePage() {
           {PRIMARY_CONSULTING_OFFERS.map((offer, index) => (
             <ServiceOfferRow
               key={offer.slug}
+              id={offer.slug}
               eyebrow={offer.eyebrow}
               title={offer.title}
               priceAnchor={offer.priceAnchor}
@@ -155,6 +179,70 @@ export default async function HomePage() {
               index={index + 1}
             />
           ))}
+        </div>
+      </section>
+
+      <section className="space-y-6">
+        <MarketingSectionHeading
+          eyebrow={HOME_ICP_CONTENT.eyebrow}
+          title={HOME_ICP_CONTENT.title}
+          description="A short filter — so the work starts with teams it fits."
+        />
+
+        <div className="section-band px-5 py-6 md:px-6 md:py-7">
+          <div className="grid gap-8 md:grid-cols-2 md:gap-x-10">
+            <div className="space-y-4">
+              <p className="enterprise-kicker">{HOME_ICP_CONTENT.goodFit.heading}</p>
+              <ul className="space-y-3">
+                {HOME_ICP_CONTENT.goodFit.items.map((item) => (
+                  <li
+                    key={item}
+                    className="relative border-t border-border/70 pl-0 pt-3 text-sm leading-7 text-card-foreground"
+                  >
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="space-y-4">
+              <p className="enterprise-kicker">{HOME_ICP_CONTENT.notFit.heading}</p>
+              <ul className="space-y-3">
+                {HOME_ICP_CONTENT.notFit.items.map((item) => (
+                  <li
+                    key={item}
+                    className="relative border-t border-border/70 pt-3 text-sm leading-7 text-muted-foreground"
+                  >
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-6">
+        <MarketingSectionHeading
+          eyebrow="How it works"
+          title="From first click to signed SOW."
+          description="Three steps. No discovery call required to begin."
+        />
+
+        <div className="section-band px-5 py-6 md:px-6 md:py-7">
+          <ol className="grid gap-6 md:grid-cols-3 md:gap-8">
+            {HOME_PROCESS_STEPS.map((step, index) => (
+              <li
+                key={step.title}
+                className="space-y-3 border-t border-border/70 pt-4"
+              >
+                <p className="table-kicker">{`0${index + 1}`}</p>
+                <p className="font-display text-[1.25rem] font-semibold leading-[1.15] tracking-[-0.02em] text-card-foreground">
+                  {step.title}
+                </p>
+                <p className="text-sm leading-7 text-muted-foreground">{step.body}</p>
+              </li>
+            ))}
+          </ol>
         </div>
       </section>
 
