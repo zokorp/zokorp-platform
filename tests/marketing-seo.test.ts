@@ -16,7 +16,7 @@ describe("marketing SEO surfaces", () => {
     expect(rules[0]?.disallow).toContain("/account");
     expect(entries.some((entry) => entry.url === "https://www.zokorp.com/")).toBe(true);
     expect(entries.some((entry) => entry.url.startsWith("https://app.zokorp.com"))).toBe(false);
-    expect(entries.some((entry) => entry.url === "https://www.zokorp.com/case-studies")).toBe(false);
+    expect(entries.some((entry) => entry.url === "https://www.zokorp.com/case-studies")).toBe(true);
   });
 
   it("keeps marketing metadata canonicalized to www", () => {

@@ -216,13 +216,9 @@ export const LEGACY_REDIRECT_EXPECTATIONS = [
     from: "/blog/example-post",
     to: "/media",
   },
-  {
-    from: "/case-studies",
-    to: "/about",
-  },
 ];
 
-export const MARKETING_PRIMARY_NAV_LABELS = ["Services", "Software", "Pricing", "About", "Contact"];
+export const MARKETING_PRIMARY_NAV_LABELS = ["Services", "Software", "Pricing", "About", "Case Studies", "Contact"];
 export const MARKETING_MORE_MENU_LABELS = ["Insights", "Support"];
 export const FOOTER_LEGAL_LINK_LABELS = ["Security", "Privacy", "Refunds", "Terms", "Support"];
 

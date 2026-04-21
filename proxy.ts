@@ -24,6 +24,7 @@ const LEGACY_PAGE_REDIRECTS = new Map([
 ]);
 const APP_HOST_MARKETING_PATH_PREFIXES = [
   "/about",
+  "/case-studies",
   "/contact",
   "/media",
   "/pricing",
@@ -50,10 +51,6 @@ function redirectToHost(request: NextRequest, nextHost: string, pathname: string
 }
 
 function normalizedPathname(pathname: string) {
-  if (pathname === "/case-studies") {
-    return "/about";
-  }
-
   const legacyPageRedirect = LEGACY_PAGE_REDIRECTS.get(pathname);
   if (legacyPageRedirect) {
     return legacyPageRedirect;

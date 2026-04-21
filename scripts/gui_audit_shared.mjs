@@ -340,12 +340,6 @@ export const LEGACY_REDIRECT_CHECKS = [
     path: "/blog/example-post",
     location: "/media",
   },
-  {
-    id: "legacy_case_studies",
-    label: "Deferred case studies redirect",
-    path: "/case-studies",
-    location: "/about",
-  },
 ];
 
 export const APP_HOST_MARKETING_SEO_CHECKS = [

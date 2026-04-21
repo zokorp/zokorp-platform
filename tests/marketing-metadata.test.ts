@@ -62,6 +62,6 @@ describe("site metadata", () => {
     expect(robotsMetadata.host).toBe("https://www.zokorp.com");
     expect(robotsMetadata.sitemap).toBe("https://www.zokorp.com/sitemap.xml");
     expect(sitemapEntries.every((entry) => entry.url.startsWith("https://www.zokorp.com"))).toBe(true);
-    expect(sitemapEntries.some((entry) => entry.url.includes("/case-studies"))).toBe(false);
+    expect(sitemapEntries.some((entry) => entry.url.includes("/case-studies"))).toBe(true);
   });
 });
