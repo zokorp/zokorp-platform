@@ -40,7 +40,10 @@ function renderAction(action: MarketingAction | undefined, fallbackVariant: Butt
 
   const variant = action.variant ?? fallbackVariant;
   const size = action.size ?? "lg";
-  const className = buttonVariants({ variant, size });
+  const className = cn(
+    buttonVariants({ variant, size }),
+    "max-w-full whitespace-normal text-center leading-snug",
+  );
   const isExternal = action.external ?? /^(https?:|mailto:)/.test(action.href);
   const target = action.openInNewTab ? "_blank" : undefined;
 
