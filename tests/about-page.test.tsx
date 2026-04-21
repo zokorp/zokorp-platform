@@ -32,7 +32,7 @@ describe("AboutPage", () => {
     expect(html).toContain("Zohaib Khawaja");
     expect(html).toContain("AWS Partner Solutions Architect");
     expect(html).toContain("$60M+ in partner contracts");
-    expect(html).toContain("$200M+ in customer cloud spend");
+    expect(html).toContain("$200M+ in cloud spend");
     expect(html).toContain("94 minutes to 22");
     expect(html).toContain("Larger-environment judgment. Smaller-practice delivery.");
     expect(html).toContain("Selected background");

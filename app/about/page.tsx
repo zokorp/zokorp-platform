@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { AboutReveal } from "@/components/marketing/about-reveal";
+import { PrivacyStance } from "@/components/marketing/privacy-stance";
 import { buttonVariants } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { getConsultationCta } from "@/lib/marketing-cta";
@@ -400,15 +401,11 @@ export default async function AboutPage() {
             <div className="space-y-4">
               <p className="max-w-[44ch] text-base leading-8 text-card-foreground">
                 Before ZoKorp, Zohaib spent years as an AWS Partner Solutions Architect and enterprise
-                AI architect — closing $60M+ in partner contracts, influencing $200M+ in customer
-                cloud spend, and building production AI systems at organizations including Warner
-                Bros., the NHL, D.R. Horton, and Cohere.
-              </p>
-              <p className="max-w-[44ch] text-base leading-8 text-card-foreground">
-                One project: a HIPAA-compliant AI-powered IVR for an urgent care network that cut
-                average wait times from 94 minutes to 22. Another: an LLMOps platform on Azure for
-                the NHL running multi-GPU distributed training with vLLM inference and per-request
-                cost attribution.
+                AI architect — closing $60M+ in partner contracts, influencing $200M+ in cloud
+                spend, and building production AI at organizations including Warner Bros., the NHL,
+                D.R. Horton, and Cohere. That includes a HIPAA-compliant AI IVR that cut urgent-care
+                wait time from 94 minutes to 22, and an Azure LLMOps platform for the NHL with
+                multi-GPU training and per-request cost attribution.
               </p>
               <p className="max-w-[44ch] text-base leading-8 text-card-foreground">
                 ZoKorp is intentionally small. Fixed-scope engagements, visible pricing, and Zohaib
@@ -418,35 +415,53 @@ export default async function AboutPage() {
             </div>
           </AboutReveal>
 
-          <div
-            className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(12.5rem,0.38fr)] lg:items-center"
-            data-about-proof-media=""
-          >
-            <AboutReveal variant="media" delay={90}>
-              <AboutMediaCard
-                role="editorialMedia"
-                src={ABOUT_PORTFOLIO_MEDIA.panel.src}
-                alt={ABOUT_PORTFOLIO_MEDIA.panel.alt}
-                eyebrow={ABOUT_PORTFOLIO_MEDIA.panel.eyebrow}
-                title={ABOUT_PORTFOLIO_MEDIA.panel.title}
-                caption={ABOUT_PORTFOLIO_MEDIA.panel.caption}
-                sizes="(max-width: 1280px) 100vw, 42vw"
-                mediaClassName="aspect-[16/10] sm:min-h-[18.5rem]"
-                imageClassName={ABOUT_PORTFOLIO_MEDIA.panel.imageClassName}
-              />
-            </AboutReveal>
+          <div className="space-y-6" data-about-proof-media="">
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(12.5rem,0.38fr)] lg:items-start">
+              <AboutReveal variant="media" delay={90}>
+                <AboutMediaCard
+                  role="editorialMedia"
+                  src={ABOUT_PORTFOLIO_MEDIA.panel.src}
+                  alt={ABOUT_PORTFOLIO_MEDIA.panel.alt}
+                  eyebrow={ABOUT_PORTFOLIO_MEDIA.panel.eyebrow}
+                  title={ABOUT_PORTFOLIO_MEDIA.panel.title}
+                  caption={ABOUT_PORTFOLIO_MEDIA.panel.caption}
+                  sizes="(max-width: 1280px) 100vw, 42vw"
+                  mediaClassName="aspect-[16/10] sm:min-h-[18.5rem]"
+                  imageClassName={ABOUT_PORTFOLIO_MEDIA.panel.imageClassName}
+                />
+              </AboutReveal>
 
-            <AboutReveal variant="detail" delay={170} className="lg:self-center">
-              <AboutMediaCard
-                role="artifactPanel"
-                src={ABOUT_PORTFOLIO_MEDIA.workshop.src}
-                alt={ABOUT_PORTFOLIO_MEDIA.workshop.alt}
-                eyebrow={ABOUT_PORTFOLIO_MEDIA.workshop.eyebrow}
-                title={ABOUT_PORTFOLIO_MEDIA.workshop.title}
-                caption={ABOUT_PORTFOLIO_MEDIA.workshop.caption}
-                sizes="(max-width: 1280px) 72vw, 24vw"
-                mediaClassName="aspect-[4/4.7] sm:min-h-[16.5rem]"
-              />
+              <AboutReveal variant="detail" delay={170}>
+                <AboutMediaCard
+                  role="artifactPanel"
+                  src={ABOUT_PORTFOLIO_MEDIA.workshop.src}
+                  alt={ABOUT_PORTFOLIO_MEDIA.workshop.alt}
+                  eyebrow={ABOUT_PORTFOLIO_MEDIA.workshop.eyebrow}
+                  title={ABOUT_PORTFOLIO_MEDIA.workshop.title}
+                  caption={ABOUT_PORTFOLIO_MEDIA.workshop.caption}
+                  sizes="(max-width: 1280px) 72vw, 24vw"
+                  mediaClassName="aspect-[4/4.7] sm:min-h-[16.5rem]"
+                />
+              </AboutReveal>
+            </div>
+
+            <AboutReveal variant="detail" delay={220}>
+              <dl className="grid grid-cols-3 gap-3 border-t border-border/70 pt-5 sm:gap-4">
+                {[
+                  { value: "77%", label: "Urgent-care wait time cut" },
+                  { value: "$60M+", label: "Partner contracts closed" },
+                  { value: "$200M+", label: "Customer revenue influenced" },
+                ].map((stat) => (
+                  <div key={stat.label} className="space-y-1">
+                    <dt className="font-display text-[1.35rem] font-semibold leading-[1.02] tracking-[-0.03em] text-card-foreground md:text-[1.55rem]">
+                      {stat.value}
+                    </dt>
+                    <dd className="text-xs leading-5 text-muted-foreground md:text-[0.8rem]">
+                      {stat.label}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
             </AboutReveal>
           </div>
         </div>
@@ -562,6 +577,14 @@ export default async function AboutPage() {
             ))}
           </ul>
         </div>
+
+        <div className="mt-12">
+          <div className="band-divider" />
+        </div>
+
+        <AboutReveal variant="copy" className="pt-10">
+          <PrivacyStance />
+        </AboutReveal>
 
         <div className="mt-12">
           <div className="band-divider" />
