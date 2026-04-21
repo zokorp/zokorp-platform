@@ -13,6 +13,7 @@ const primaryLinks = [
   { href: "/software", label: "Software" },
   { href: "/pricing", label: "Pricing" },
   { href: "/about", label: "About" },
+  { href: "/case-studies", label: "Case Studies" },
   { href: "/contact", label: "Contact" },
 ];
 

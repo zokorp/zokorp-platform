@@ -13,6 +13,7 @@ const platformLinks = [
 
 const companyLinks = [
   { href: "/about", label: "About" },
+  { href: "/case-studies", label: "Case Studies" },
   { href: "/contact", label: "Contact" },
   { href: "/media", label: "Insights" },
 ];
@@ -45,12 +46,24 @@ export function SiteFooter() {
             <div className="space-y-1 text-sm text-muted-foreground">
               <p>{PUBLIC_LAUNCH_CONTACT.location}</p>
               <p className="font-medium text-foreground">{PUBLIC_LAUNCH_CONTACT.primaryEmail}</p>
-              <a
-                href={PUBLIC_LAUNCH_CONTACT.linkedInUrl}
-                className="inline-flex text-sm underline decoration-border underline-offset-4 transition hover:text-foreground"
-              >
-                LinkedIn
-              </a>
+              <div className="flex flex-wrap gap-x-4 gap-y-1">
+                <a
+                  href={PUBLIC_LAUNCH_CONTACT.linkedInUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex text-sm underline decoration-border underline-offset-4 transition hover:text-foreground"
+                >
+                  LinkedIn
+                </a>
+                <a
+                  href={PUBLIC_LAUNCH_CONTACT.githubUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex text-sm underline decoration-border underline-offset-4 transition hover:text-foreground"
+                >
+                  GitHub
+                </a>
+              </div>
             </div>
           </section>
 
