@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { buttonVariants } from "@/components/ui/button";
+import { PrivacyStance } from "@/components/marketing/privacy-stance";
+import { Reveal } from "@/components/marketing/reveal";
 import { SoftwareCatalogShell } from "@/components/software-catalog-shell";
 import { CatalogUnavailableError, getSoftwareCatalogCached } from "@/lib/catalog";
 import { buildMarketingPageMetadata } from "@/lib/site";
@@ -86,6 +88,10 @@ export default async function SoftwarePage() {
       ) : (
         <SoftwareCatalogShell products={products} />
       )}
+
+      <Reveal variant="copy">
+        <PrivacyStance />
+      </Reveal>
     </div>
   );
 }
