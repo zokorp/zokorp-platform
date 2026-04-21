@@ -6,6 +6,7 @@ type ToolPageLayoutProps = {
   eyebrow: string;
   title: string;
   description: string;
+  descriptionAccent?: React.ReactNode;
   meta?: React.ReactNode;
   alert?: React.ReactNode;
   actions?: React.ReactNode;
@@ -21,6 +22,7 @@ export function ToolPageLayout({
   eyebrow,
   title,
   description,
+  descriptionAccent,
   meta,
   alert,
   actions,
@@ -64,6 +66,16 @@ export function ToolPageLayout({
         >
           {description}
         </p>
+        {descriptionAccent ? (
+          <p
+            className={cn(
+              "mt-3 max-w-3xl text-sm leading-7",
+              heroTone === "hero" ? "text-slate-100/90" : "text-slate-700",
+            )}
+          >
+            {descriptionAccent}
+          </p>
+        ) : null}
         {meta ? <div className="mt-5 flex flex-wrap gap-2">{meta}</div> : null}
         {alert ? <div className="mt-5">{alert}</div> : null}
         {actions ? <div className="mt-5 flex flex-wrap gap-3">{actions}</div> : null}

@@ -23,23 +23,21 @@ vi.mock("@/lib/auth", () => ({
 import AboutPage from "@/app/about/page";
 
 describe("AboutPage", () => {
-  it("keeps the founder-led positioning, restrained proof, and interview media explicit", async () => {
+  it("keeps the founder-led positioning, quantified enterprise proof, and interview media explicit", async () => {
     authMock.mockResolvedValue(null);
 
     const html = renderToStaticMarkup(await AboutPage());
 
     expect(html).toContain("Founder-led cloud work, shown in public.");
     expect(html).toContain("Zohaib Khawaja");
-    expect(html).toContain("Former AWS Partner Solutions Architect");
-    expect(html).toContain("Microsoft");
+    expect(html).toContain("AWS Partner Solutions Architect");
+    expect(html).toContain("$60M+ in partner contracts");
+    expect(html).toContain("$200M+ in customer cloud spend");
+    expect(html).toContain("94 minutes to 22");
     expect(html).toContain("Larger-environment judgment. Smaller-practice delivery.");
     expect(html).toContain("Selected background");
-    expect(html).toContain("What clients actually get.");
-    expect(html).toContain(
-      "Experience includes work involving organizations such as D.R. Horton, SiriusXM, Warner Bros., JE Dunn, Cohere, Glean, Anthropic, and the National Hockey League.",
-    );
-    expect(html).toContain("Organization names are included as background context and do not imply endorsement.");
-    expect(html).toContain("AWS Certified Solutions Architect - Professional");
+    expect(html).toContain("Credentials");
+    expect(html).toContain("AWS Certified Solutions Architect");
     expect(html).toContain("Initial response within one business day");
     expect(html).toContain("Interview footage, embedded here.");
     expect(html).toContain(
@@ -50,6 +48,7 @@ describe("AboutPage", () => {
     expect(html).toContain("panel-stage.jpeg");
     expect(html).toContain("cloudathon-stage.jpeg");
     expect(html).toContain('target="_blank"');
+    expect(html).toContain("zokorpconsulting.zohobookings.com");
     expect(html).not.toContain("AI/ML advisory");
   });
 });

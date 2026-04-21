@@ -669,6 +669,20 @@ export default async function SoftwareDetailPage({
       eyebrow="Software Tool"
       title={productDisplayName}
       description={productDescription}
+      descriptionAccent={
+        isArchitectureReviewer ? (
+          <>
+            If the findings point to deeper gaps, a{" "}
+            <Link
+              href={toMarketingSiteUrl("/services#architecture-review")}
+              className="underline decoration-slate-300 underline-offset-4 transition hover:text-brand"
+            >
+              full Architecture Review
+            </Link>{" "}
+            (written, $249) covers your actual infrastructure — not just a diagram.
+          </>
+        ) : undefined
+      }
       meta={toolMeta}
       alert={
         <div className="space-y-3">

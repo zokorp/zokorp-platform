@@ -398,15 +398,22 @@ export default async function AboutPage() {
             </div>
 
             <div className="space-y-4">
-              <p className="max-w-[42ch] text-base leading-8 text-card-foreground">
-                ZoKorp stays intentionally small, but the delivery standard behind it was shaped in
-                larger technical environments with broader stakeholder groups and less tolerance for
-                vague recommendations.
+              <p className="max-w-[44ch] text-base leading-8 text-card-foreground">
+                Before ZoKorp, Zohaib spent years as an AWS Partner Solutions Architect and enterprise
+                AI architect — closing $60M+ in partner contracts, influencing $200M+ in customer
+                cloud spend, and building production AI systems at organizations including Warner
+                Bros., the NHL, D.R. Horton, and Cohere.
               </p>
-              <p className="max-w-[42ch] text-base leading-8 text-card-foreground">
-                That includes prior work as a Former AWS Partner Solutions Architect and current
-                work at Microsoft. What carries forward is tighter scoping, clearer communication,
-                and cleaner follow-through.
+              <p className="max-w-[44ch] text-base leading-8 text-card-foreground">
+                One project: a HIPAA-compliant AI-powered IVR for an urgent care network that cut
+                average wait times from 94 minutes to 22. Another: an LLMOps platform on Azure for
+                the NHL running multi-GPU distributed training with vLLM inference and per-request
+                cost attribution.
+              </p>
+              <p className="max-w-[44ch] text-base leading-8 text-card-foreground">
+                ZoKorp is intentionally small. Fixed-scope engagements, visible pricing, and Zohaib
+                on every project — not a junior analyst, not an account manager. The background is
+                enterprise. The delivery is direct.
               </p>
             </div>
           </AboutReveal>
@@ -528,6 +535,38 @@ export default async function AboutPage() {
       <section className="marketing-container px-4 md:px-6 xl:px-8">
         <div className="band-divider" />
 
+        <div className="grid grid-cols-1 gap-10 pt-10 lg:grid-cols-[minmax(0,0.84fr)_minmax(0,1.16fr)] lg:items-start">
+          <div className="space-y-4">
+            <p className="enterprise-kicker">Credentials</p>
+            <h2 className="font-display max-w-[12ch] text-balance text-[2rem] font-semibold leading-[0.98] tracking-[-0.04em] text-card-foreground md:text-[2.35rem]">
+              Named background, named credentials.
+            </h2>
+            <p className="max-w-[38ch] text-sm leading-7 text-muted-foreground">
+              Certifications are direct. The speaking and teaching work is public and verifiable.
+            </p>
+          </div>
+
+          <ul className="grid grid-cols-1 gap-0 border-t border-border/70 sm:grid-cols-2">
+            {[
+              "AWS Certified Solutions Architect — Professional",
+              "AI Solutions Engineer, Microsoft Azure",
+              "AI Professor, Houston Community College",
+              "AWS Summit | NVIDIA AI Summit | StrongDM Workshop facilitator",
+            ].map((credential) => (
+              <li
+                key={credential}
+                className="border-b border-border/70 py-4 pr-4 text-sm leading-7 text-card-foreground sm:odd:border-r sm:odd:pr-6 sm:even:pl-6"
+              >
+                {credential}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="mt-12">
+          <div className="band-divider" />
+        </div>
+
         <div className="grid grid-cols-1 gap-8 pt-10 xl:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] xl:items-end">
           <AboutReveal variant="copy" className="space-y-5">
             <p className="enterprise-kicker">Interview</p>
@@ -573,20 +612,33 @@ export default async function AboutPage() {
         </div>
 
         <AboutReveal variant="detail" delay={80}>
-          <div className="mt-8 flex flex-col gap-3 border-t border-border/70 pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-8 flex flex-col gap-4 border-t border-border/70 pt-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1.5">
-              <p className="enterprise-kicker">Contact</p>
+              <p className="enterprise-kicker">Next step</p>
               <p className="text-lg font-semibold leading-[1.15] tracking-[-0.02em] text-card-foreground">
-                Use the contact form for first reach-out.
+                Book a fit check, or start with the $249 Architecture Review.
               </p>
               <p className="text-sm leading-7 text-muted-foreground">
                 {PUBLIC_LAUNCH_CONTACT.responseWindowLabel}
               </p>
             </div>
 
-            <Link href="/contact" className={buttonVariants()}>
-              Request a call
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href={PUBLIC_LAUNCH_CONTACT.bookingUrl}
+                target="_blank"
+                rel="noreferrer"
+                className={buttonVariants()}
+              >
+                Book a 15-min fit check
+              </a>
+              <Link
+                href="/services#architecture-review"
+                className={buttonVariants({ variant: "secondary" })}
+              >
+                Start a review
+              </Link>
+            </div>
           </div>
         </AboutReveal>
       </section>
