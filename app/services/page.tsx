@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FounderProofBlock } from "@/components/marketing/founder-proof-block";
 import { LearnMore } from "@/components/marketing/learn-more";
 import { MarketingHero } from "@/components/marketing/marketing-hero";
+import { Reveal } from "@/components/marketing/reveal";
 import { MarketingSectionHeading } from "@/components/marketing/section-heading";
 import { ServiceOfferRow } from "@/components/marketing/service-offer-row";
 import { buttonVariants } from "@/components/ui/button";
@@ -75,7 +76,7 @@ export default async function ServicesPage() {
         }
       />
 
-      <section className="space-y-6">
+      <Reveal as="section" variant="copy" className="space-y-6">
         <MarketingSectionHeading
           eyebrow="Primary services"
           title={SERVICES_PAGE_CONTENT.primaryTitle}
@@ -114,15 +115,16 @@ export default async function ServicesPage() {
             />
           ))}
         </div>
-      </section>
+      </Reveal>
 
-      <FounderProofBlock
-        mode="section"
-        eyebrow={FOUNDER_PROOF_PAGE_CONTENT.services.eyebrow}
-        title={FOUNDER_PROOF_PAGE_CONTENT.services.title}
-        support={FOUNDER_PROOF_PAGE_CONTENT.services.support}
-        statement={FOUNDER_PROOF_PAGE_CONTENT.services.statement}
-      >
+      <Reveal variant="copy">
+        <FounderProofBlock
+          mode="section"
+          eyebrow={FOUNDER_PROOF_PAGE_CONTENT.services.eyebrow}
+          title={FOUNDER_PROOF_PAGE_CONTENT.services.title}
+          support={FOUNDER_PROOF_PAGE_CONTENT.services.support}
+          statement={FOUNDER_PROOF_PAGE_CONTENT.services.statement}
+        >
         <div className="grid gap-5 md:grid-cols-2 md:gap-x-8">
           {FOUNDER_PROOF_PAGE_CONTENT.services.benefits.map((benefit) => (
             <article key={benefit.title} className="space-y-2 border-t border-border/70 pt-4 first:pt-4">
@@ -131,7 +133,8 @@ export default async function ServicesPage() {
             </article>
           ))}
         </div>
-      </FounderProofBlock>
+        </FounderProofBlock>
+      </Reveal>
 
       <LearnMore
         title={SERVICES_PAGE_CONTENT.secondaryTitle}
@@ -191,7 +194,7 @@ export default async function ServicesPage() {
         </div>
       </LearnMore>
 
-      <section className="space-y-6">
+      <Reveal as="section" variant="copy" className="space-y-6">
         <MarketingSectionHeading
           eyebrow="Standards"
           title="What's included in every engagement."
@@ -213,7 +216,7 @@ export default async function ServicesPage() {
             ))}
           </dl>
         </div>
-      </section>
+      </Reveal>
 
       <section className="table-band px-5 py-5 md:px-6">
         <div className="table-row" style={followUpColumns}>

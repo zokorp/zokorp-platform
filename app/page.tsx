@@ -6,6 +6,7 @@ import { FounderProfileCard } from "@/components/marketing/founder-profile-card"
 import { FounderProofBlock } from "@/components/marketing/founder-proof-block";
 import { MarketingHero } from "@/components/marketing/marketing-hero";
 import { HOME_PROOF_STATS, ProofNumbersStrip } from "@/components/marketing/proof-numbers-strip";
+import { Reveal } from "@/components/marketing/reveal";
 import { MarketingSectionHeading } from "@/components/marketing/section-heading";
 import { ServiceOfferRow } from "@/components/marketing/service-offer-row";
 import { buttonVariants } from "@/components/ui/button";
@@ -138,21 +139,25 @@ export default async function HomePage() {
         }
       />
 
-      <ProofNumbersStrip
-        eyebrow="By the numbers"
-        title="Enterprise delivery, visible in the work."
-        stats={HOME_PROOF_STATS}
-      />
+      <Reveal variant="detail">
+        <ProofNumbersStrip
+          eyebrow="By the numbers"
+          title="Enterprise delivery, visible in the work."
+          stats={HOME_PROOF_STATS}
+        />
+      </Reveal>
 
-      <FounderProofBlock
-        mode="strip"
-        eyebrow={FOUNDER_PROOF_PAGE_CONTENT.home.eyebrow}
-        statement={FOUNDER_PROOF_PAGE_CONTENT.home.statement}
-        support={FOUNDER_PROOF_PAGE_CONTENT.home.support}
-        sectorLine={FOUNDER_PROOF_PAGE_CONTENT.home.sectorLine}
-      />
+      <Reveal variant="copy">
+        <FounderProofBlock
+          mode="strip"
+          eyebrow={FOUNDER_PROOF_PAGE_CONTENT.home.eyebrow}
+          statement={FOUNDER_PROOF_PAGE_CONTENT.home.statement}
+          support={FOUNDER_PROOF_PAGE_CONTENT.home.support}
+          sectorLine={FOUNDER_PROOF_PAGE_CONTENT.home.sectorLine}
+        />
+      </Reveal>
 
-      <section className="space-y-6">
+      <Reveal as="section" variant="copy" className="space-y-6">
         <MarketingSectionHeading
           eyebrow="Services"
           title={HOME_PAGE_CONTENT.offersTitle}
@@ -180,9 +185,9 @@ export default async function HomePage() {
             />
           ))}
         </div>
-      </section>
+      </Reveal>
 
-      <section className="space-y-6">
+      <Reveal as="section" variant="copy" className="space-y-6">
         <MarketingSectionHeading
           eyebrow={HOME_ICP_CONTENT.eyebrow}
           title={HOME_ICP_CONTENT.title}
@@ -219,9 +224,9 @@ export default async function HomePage() {
             </div>
           </div>
         </div>
-      </section>
+      </Reveal>
 
-      <section className="space-y-6">
+      <Reveal as="section" variant="copy" className="space-y-6">
         <MarketingSectionHeading
           eyebrow="How it works"
           title="From first click to signed SOW."
@@ -244,9 +249,9 @@ export default async function HomePage() {
             ))}
           </ol>
         </div>
-      </section>
+      </Reveal>
 
-      <section className="space-y-6">
+      <Reveal as="section" variant="copy" className="space-y-6">
         <MarketingSectionHeading
           eyebrow="Software"
           title={HOME_PAGE_CONTENT.softwareTitle}
@@ -294,7 +299,7 @@ export default async function HomePage() {
             </article>
           ))}
         </div>
-      </section>
+      </Reveal>
     </div>
   );
 }

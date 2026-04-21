@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { Reveal } from "@/components/marketing/reveal";
 import { MarketingSectionHeading } from "@/components/marketing/section-heading";
 import { buttonVariants } from "@/components/ui/button";
 import { CASE_STUDIES } from "@/lib/case-studies";
@@ -30,7 +31,13 @@ export default function CaseStudiesPage() {
         <div className="section-band px-5 py-6 md:px-6 md:py-7">
           <ul className="divide-y divide-border/70">
             {CASE_STUDIES.map((study, index) => (
-              <li key={study.slug} className="grid gap-4 py-6 md:grid-cols-[6ch_minmax(0,1fr)_auto] md:items-center md:gap-6">
+              <Reveal
+                key={study.slug}
+                as="li"
+                variant="copy"
+                delay={index * 80}
+                className="grid gap-4 py-6 md:grid-cols-[6ch_minmax(0,1fr)_auto] md:items-center md:gap-6"
+              >
                 <p className="table-kicker">{`0${index + 1}`}</p>
                 <div className="space-y-2">
                   <Link
@@ -52,7 +59,7 @@ export default function CaseStudiesPage() {
                 >
                   Read study
                 </Link>
-              </li>
+              </Reveal>
             ))}
           </ul>
         </div>

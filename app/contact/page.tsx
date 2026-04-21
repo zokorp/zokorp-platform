@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { FounderProofBlock } from "@/components/marketing/founder-proof-block";
+import { Reveal } from "@/components/marketing/reveal";
 import { MarketingSectionHeading } from "@/components/marketing/section-heading";
 import { ServiceRequestPanel } from "@/components/service-request-panel";
 import { buttonVariants } from "@/components/ui/button";
@@ -31,7 +32,7 @@ export default async function ContactPage() {
           titleAs="h1"
         />
 
-        <div className="section-band px-5 py-5 md:px-6 md:py-6">
+        <Reveal variant="copy" className="section-band px-5 py-5 md:px-6 md:py-6">
           <div className="grid gap-5 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:items-center lg:gap-8">
             <div className="space-y-2">
               <p className="enterprise-kicker">Fastest path</p>
@@ -61,20 +62,22 @@ export default async function ContactPage() {
               </div>
             </div>
           </div>
-        </div>
+        </Reveal>
 
         <FounderProofBlock
           mode="micro"
           statement={FOUNDER_PROOF_PAGE_CONTENT.contact.statement}
         />
 
-        <ServiceRequestPanel
-          signedIn={Boolean(session?.user?.email)}
-          currentEmail={session?.user?.email ?? null}
-          loginHref="/login?callbackUrl=/contact"
-          registerHref="/register"
-          accountHref="/account"
-        />
+        <Reveal variant="copy">
+          <ServiceRequestPanel
+            signedIn={Boolean(session?.user?.email)}
+            currentEmail={session?.user?.email ?? null}
+            loginHref="/login?callbackUrl=/contact"
+            registerHref="/register"
+            accountHref="/account"
+          />
+        </Reveal>
       </section>
     </div>
   );
