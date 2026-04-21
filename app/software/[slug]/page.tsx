@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { ToolPageLayout } from "@/components/ui/tool-page-layout";
-import { ValidatorForm } from "@/components/validator-form";
+import { ValidatorForm } from "@/components/validator/ValidatorForm";
 import { auth } from "@/lib/auth";
 import { isPasswordAuthEnabled } from "@/lib/auth-config";
 import { shouldHidePublicProductPricing } from "@/lib/billing-readiness";

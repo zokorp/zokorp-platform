@@ -12,7 +12,7 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-import { ValidatorForm } from "@/components/validator-form";
+import { ValidatorForm } from "@/components/validator/ValidatorForm";
 
 describe("ValidatorForm", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
