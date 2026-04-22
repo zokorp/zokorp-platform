@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { getMediaArticles } from "@/data/media-articles";
 import { ARCHITECTURE_BENCHMARK_LIBRARY } from "@/lib/architecture-benchmarks";
+import { CASE_STUDIES } from "@/lib/case-studies";
 import { CatalogUnavailableError, getSoftwareCatalog } from "@/lib/catalog";
 import { getMarketingSiteUrl } from "@/lib/site";
 
@@ -57,6 +58,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...mediaArticles.map((article) => ({
       url: `${baseUrl}/media/${article.slug}`,
       lastModified: new Date(article.publishedAt),
+    })),
+    ...CASE_STUDIES.map((study) => ({
+      url: `${baseUrl}/case-studies/${study.slug}`,
+      lastModified: now,
     })),
     ...benchmarkRoutes.map((path) => ({
       url: `${baseUrl}${path}`,

@@ -320,6 +320,9 @@ export default async function AboutPage() {
                 <Link href="/services" className={buttonVariants({ variant: "secondary" })}>
                   View services
                 </Link>
+                <Link href="/case-studies" className={buttonVariants({ variant: "ghost" })}>
+                  See case studies
+                </Link>
               </div>
 
               <dl className="grid grid-cols-2 gap-x-6 gap-y-3 border-t border-border/70 pt-4 sm:flex sm:flex-wrap">

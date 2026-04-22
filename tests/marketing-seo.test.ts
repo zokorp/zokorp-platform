@@ -17,9 +17,11 @@ describe("marketing SEO surfaces", () => {
     expect(entries.some((entry) => entry.url === "https://www.zokorp.com/")).toBe(true);
     expect(entries.some((entry) => entry.url.startsWith("https://app.zokorp.com"))).toBe(false);
     expect(entries.some((entry) => entry.url === "https://www.zokorp.com/case-studies")).toBe(true);
-    // Individual /case-studies/<slug> URLs redirect to #<slug> on the index
-    // page, so they intentionally do not appear in the sitemap.
-    expect(entries.some((entry) => entry.url.startsWith("https://www.zokorp.com/case-studies/"))).toBe(false);
+    expect(
+      entries.some(
+        (entry) => entry.url === "https://www.zokorp.com/case-studies/series-b-ai-cost-audit",
+      ),
+    ).toBe(true);
   });
 
   it("keeps marketing metadata canonicalized to www", () => {

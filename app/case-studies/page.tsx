@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { CaseStudyAccordion } from "@/components/marketing/case-study-accordion";
+import { CaseStudyCard } from "@/components/marketing/case-study-card";
 import { Reveal } from "@/components/marketing/reveal";
 import { MarketingSectionHeading } from "@/components/marketing/section-heading";
 import { buttonVariants } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { buildMarketingPageMetadata } from "@/lib/site";
 export const metadata: Metadata = buildMarketingPageMetadata({
   title: "Case Studies",
   description:
-    "STAR-format case studies from ZoKorp's founder background — AI infrastructure, Well-Architected delivery, and production LLMOps. Public summaries, client-confidential details redacted.",
+    "Concrete outcomes from cloud architecture and AI engagements — AWS cost audits, HIPAA-compliant AI IVR, production LLMOps, and partner architecture delivery.",
   path: "/case-studies",
 });
 
@@ -24,16 +24,17 @@ export default function CaseStudiesPage() {
       <section className="space-y-6">
         <MarketingSectionHeading
           eyebrow="Case Studies"
-          title="Selected work, sanitized."
-          description="Public summaries of prior engagements, written in STAR format. Outcomes are quantified. Client-confidential specifics are not published."
+          title="Concrete outcomes from cloud architecture and AI engagements."
+          description="Public summaries of prior work, written in the same register as the engagements themselves. Numbers are as delivered. Client-confidential specifics are not published."
           titleAs="h1"
         />
 
         <Reveal variant="copy">
-          <CaseStudyAccordion
-            studies={CASE_STUDIES}
-            bookingUrl={PUBLIC_LAUNCH_CONTACT.bookingUrl}
-          />
+          <div className="grid gap-5 md:grid-cols-2 lg:gap-6">
+            {CASE_STUDIES.map((study) => (
+              <CaseStudyCard key={study.slug} study={study} />
+            ))}
+          </div>
         </Reveal>
       </section>
 

@@ -94,6 +94,21 @@ export default async function ServicesPage() {
           is designed to answer exactly that.
         </p>
 
+        <aside className="flex flex-col gap-2 rounded-[1.35rem] border border-border bg-white/80 px-5 py-4 text-sm leading-7 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] md:flex-row md:items-center md:justify-between md:gap-6">
+          <div className="space-y-1">
+            <p className="enterprise-kicker">Recent example</p>
+            <p className="text-card-foreground">
+              AWS cost audit for a Series B AI startup: $38.4K → $22.4K monthly, $192K annualized at 256× ROI.
+            </p>
+          </div>
+          <Link
+            href="/case-studies/series-b-ai-cost-audit"
+            className="shrink-0 font-semibold text-brand underline decoration-border underline-offset-4 transition hover:text-brand-strong md:text-right"
+          >
+            Read case study →
+          </Link>
+        </aside>
+
         <div className="table-band px-5 py-5 md:px-6" style={serviceTableColumns}>
           <div className="table-head">
             <span>Offer</span>
