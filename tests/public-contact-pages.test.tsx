@@ -44,8 +44,8 @@ describe("public contact and policy pages", () => {
     expect(contactMetadata.alternates?.canonical).toBe("https://www.zokorp.com/contact");
     expect(contactMetadata.description).toContain("Public requests go to consulting@zokorp.com");
     expect(contactHtml).toContain("Two ways to get started.");
-    expect(contactHtml).toContain("Book a 15-minute fit check.");
-    expect(contactHtml).toContain("zokorpconsulting.zohobookings.com");
+    expect(contactHtml).toContain("Book a 30-min discovery call.");
+    expect(contactHtml).toContain("calendly.com/zokorp/zokorp-discovery-call");
     expect(contactHtml).toContain(
       "Small practice. Founder-led. Background includes work involving organizations across homebuilding, construction, media, enterprise software, frontier AI, and sports.",
     );

@@ -3,7 +3,7 @@ export const PUBLIC_LAUNCH_CONTACT = {
   location: "Houston, TX",
   linkedInUrl: "https://www.linkedin.com/in/zohaib-khawaja/",
   githubUrl: "https://github.com/zokorp/zokorp-platform",
-  bookingUrl: "https://zokorpconsulting.zohobookings.com/#/4757126000000052054",
+  bookingUrl: "https://calendly.com/zokorp/zokorp-discovery-call",
   responseWindowLabel: "Initial response within one business day",
   securityResponseLabel: "Urgent security issues are prioritized the same business day when possible",
   bookingLabel: "Request a call",

@@ -234,7 +234,7 @@ export function CaseStudyAccordion({
                           rel="noreferrer"
                           className={buttonVariants({ variant: "secondary", size: "md" })}
                         >
-                          Book a fit check
+                          Book a 30-min discovery call
                         </a>
                       </div>
                     </div>

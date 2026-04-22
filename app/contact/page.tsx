@@ -37,12 +37,12 @@ export default async function ContactPage() {
             <div className="space-y-2">
               <p className="enterprise-kicker">Fastest path</p>
               <p className="font-display text-[1.6rem] font-semibold leading-[1.02] text-card-foreground md:text-[1.95rem]">
-                Book a 15-minute fit check.
+                Book a 30-min discovery call.
               </p>
             </div>
             <div className="space-y-3">
               <p className="text-sm leading-7 text-muted-foreground">
-                Pick a time directly on the calendar. No form, no back-and-forth.
+                Grab a 30-minute slot directly on the calendar. No form, no back-and-forth.
               </p>
               <div className="flex flex-wrap gap-3">
                 <a

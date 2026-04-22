@@ -53,8 +53,8 @@ describe("HomePage", () => {
     expect(html).toContain("77%");
     expect(html).toContain("$60M+");
     expect(html).toContain("$200M+");
-    expect(html).toContain("Book a 15-min fit check");
-    expect(html).toContain("zokorpconsulting.zohobookings.com");
+    expect(html).toContain("Book a 30-min discovery call");
+    expect(html).toContain("calendly.com/zokorp/zokorp-discovery-call");
     expect(html).not.toContain("AWS Readiness / FTR Validation");
     expect(html).not.toContain("Scoped Implementation");
     expect(html).not.toContain("AI/ML advisory");

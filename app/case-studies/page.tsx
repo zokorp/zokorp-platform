@@ -48,7 +48,7 @@ export default function CaseStudiesPage() {
             </div>
             <div className="space-y-3">
               <p className="text-sm leading-7 text-muted-foreground">
-                Start with a $249 Architecture Review, or book a 15-minute fit check for larger scope.
+                Start with a $249 Architecture Review, or book a 30-min discovery call for larger scope.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link href="/services#architecture-review" className={buttonVariants()}>
@@ -60,7 +60,7 @@ export default function CaseStudiesPage() {
                   rel="noreferrer"
                   className={buttonVariants({ variant: "secondary" })}
                 >
-                  Book a fit check
+                  Book a 30-min discovery call
                 </a>
               </div>
             </div>

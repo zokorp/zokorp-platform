@@ -639,7 +639,7 @@ export default async function AboutPage() {
             <div className="space-y-1.5">
               <p className="enterprise-kicker">Next step</p>
               <p className="text-lg font-semibold leading-[1.15] tracking-[-0.02em] text-card-foreground">
-                Book a fit check, or start with the $249 Architecture Review.
+                Book a 30-min discovery call, or start with the $249 Architecture Review.
               </p>
               <p className="text-sm leading-7 text-muted-foreground">
                 {PUBLIC_LAUNCH_CONTACT.responseWindowLabel}
@@ -653,7 +653,7 @@ export default async function AboutPage() {
                 rel="noreferrer"
                 className={buttonVariants()}
               >
-                Book a 15-min fit check
+                Book a 30-min discovery call
               </a>
               <Link
                 href="/services#architecture-review"

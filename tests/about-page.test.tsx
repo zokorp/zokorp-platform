@@ -48,7 +48,7 @@ describe("AboutPage", () => {
     expect(html).toContain("panel-stage.jpeg");
     expect(html).toContain("cloudathon-stage.jpeg");
     expect(html).toContain('target="_blank"');
-    expect(html).toContain("zokorpconsulting.zohobookings.com");
+    expect(html).toContain("calendly.com/zokorp/zokorp-discovery-call");
     expect(html).not.toContain("AI/ML advisory");
   });
 });

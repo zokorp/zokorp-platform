@@ -46,7 +46,7 @@ export default async function HomePage() {
     ? { ...primaryCta, variant: "secondary" as const }
     : {
         href: PUBLIC_LAUNCH_CONTACT.bookingUrl,
-        label: "Book a 15-min fit check",
+        label: "Book a 30-min discovery call",
         variant: "secondary" as const,
         external: true,
         openInNewTab: true,

@@ -192,8 +192,8 @@ export const HOME_PROCESS_STEPS = [
     body: "Choose the service that matches your situation. If you're unsure, start with the $249 Architecture Review — it's designed to clarify the next step.",
   },
   {
-    title: "Short fit check, or just buy",
-    body: "For the $249 Architecture Review, no call is required — submit and we begin. For larger engagements, a 15-minute fit check comes first to confirm scope and timeline.",
+    title: "Short discovery call, or just buy",
+    body: "For the $249 Architecture Review, no call is required — submit and we begin. For larger engagements, a 30-min discovery call comes first to confirm scope and timeline.",
   },
   {
     title: "Scoped delivery and written handoff",
@@ -318,5 +318,5 @@ export const SOFTWARE_PAGE_CONTENT = {
 export const CONTACT_PAGE_CONTENT = {
   eyebrow: "Contact",
   title: "Two ways to get started.",
-  lede: "Book a fit check (fastest) or send a message below. Public requests go to consulting@zokorp.com. Initial response within one business day.",
+  lede: "Book a 30-min discovery call (fastest) or send a message below. Public requests go to consulting@zokorp.com. Initial response within one business day.",
 } as const;
