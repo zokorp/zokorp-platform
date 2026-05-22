@@ -4,6 +4,14 @@ import type {
   ArchitectureReviewReport,
 } from "@/lib/architecture-review/types";
 import { buildFallbackArchitectureEstimateSnapshot } from "@/lib/architecture-review/estimate-snapshot";
+import { getArchitectureReviewPricingCatalogEntry } from "@/lib/architecture-review/pricing-catalog";
+import {
+  calculatePillarScores,
+  getFindingSeverityLabel,
+  selectQuickWins,
+  type FindingSeverityLabel,
+  type PillarScoreTone,
+} from "@/lib/architecture-review/quote";
 import { reviewScopeLabel } from "@/lib/architecture-review/scope";
 import { buildEmailPreferenceFooter } from "@/lib/email-preferences";
 import { getArchitectureCallUrl } from "@/lib/marketing-cta";
@@ -70,6 +78,38 @@ function resolveDefaultCtaLinks() {
       utmMedium: "architecture-review-email",
     }),
   } satisfies EmailCtaLinks;
+}
+
+function severityStyles(label: FindingSeverityLabel) {
+  if (label === "CRITICAL") {
+    return { bg: "#fef2f2", border: "#fecaca", text: "#991b1b" };
+  }
+
+  if (label === "HIGH") {
+    return { bg: "#fff7ed", border: "#fed7aa", text: "#9a3412" };
+  }
+
+  if (label === "MEDIUM") {
+    return { bg: "#fefce8", border: "#fde68a", text: "#854d0e" };
+  }
+
+  return { bg: "#f3f4f6", border: "#e5e7eb", text: "#374151" };
+}
+
+function pillarStyles(tone: PillarScoreTone) {
+  if (tone === "critical") {
+    return { bar: "#dc2626", text: "#991b1b", track: "#fee2e2" };
+  }
+
+  if (tone === "weak") {
+    return { bar: "#ea580c", text: "#9a3412", track: "#ffedd5" };
+  }
+
+  if (tone === "watch") {
+    return { bar: "#2563eb", text: "#1d4ed8", track: "#dbeafe" };
+  }
+
+  return { bar: "#16a34a", text: "#15803d", track: "#dcfce7" };
 }
 
 function confidenceStyles(confidence: ArchitectureReviewReport["analysisConfidence"]) {
@@ -164,6 +204,28 @@ function buildHtmlEmail(
   });
   const confidence = confidenceStyles(report.analysisConfidence);
   const snapshotByRuleId = new Map(estimateSnapshot.lineItems.map((lineItem) => [lineItem.ruleId, lineItem]));
+  const pillarScores = calculatePillarScores(report.findings);
+  const activePillarScores = pillarScores.filter(
+    (pillar) => pillar.findingsCount > 0 || pillar.score < 100,
+  );
+  const quickWins = selectQuickWins(
+    mandatoryFindings.map((finding) => ({
+      ruleId: finding.ruleId,
+      category: finding.category,
+      pointsDeducted: finding.pointsDeducted,
+      why: finding.why,
+      howToFix: finding.howToFix,
+    })),
+    {
+      ruleHoursLookup: (ruleId) => {
+        const entry = getArchitectureReviewPricingCatalogEntry(ruleId);
+        if (!entry) {
+          return null;
+        }
+        return { low: entry.remediationHoursLow, high: entry.remediationHoursHigh };
+      },
+    },
+  );
 
   const topDeductionsHtml =
     mandatoryFindings.length > 0
@@ -172,12 +234,15 @@ function buildHtmlEmail(
           .map(
             (finding, index) => {
               const lineItem = snapshotByRuleId.get(finding.ruleId);
+              const severity = getFindingSeverityLabel(finding.pointsDeducted);
+              const severityColor = severityStyles(severity);
+              const severityBadge = `<span style="display:inline-block;padding:2px 8px;margin-right:8px;border-radius:9999px;background:${severityColor.bg};border:1px solid ${severityColor.border};color:${severityColor.text};font-size:11px;font-weight:700;letter-spacing:0.06em;">${severity}</span>`;
 
               return `
                 <tr>
                   <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;color:#0f172a;font-size:13px;width:44px;">${index + 1}</td>
                   <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;vertical-align:top;color:#0f172a;font-size:13px;">
-                    <div style="font-weight:700;">-${finding.pointsDeducted} points | ${escapeHtml(finding.ruleId)}</div>
+                    <div style="font-weight:700;">${severityBadge}-${finding.pointsDeducted} points · ${escapeHtml(finding.ruleId)}</div>
                     <div style="margin-top:6px;color:#0f172a;"><strong>Why:</strong> ${escapeHtml(finding.why)}</div>
                     <div style="margin-top:4px;color:#334155;"><strong>Evidence seen:</strong> ${escapeHtml(finding.evidenceSeen)}</div>
                     <div style="margin-top:4px;color:#334155;"><strong>How to fix:</strong> ${escapeHtml(finding.howToFix)}</div>
@@ -260,6 +325,60 @@ function buildHtmlEmail(
   const assumptionsHtml = estimateSnapshot.assumptions.map((line) => `<li>${escapeHtml(line)}</li>`).join("");
   const exclusionsHtml = estimateSnapshot.exclusions.map((line) => `<li>${escapeHtml(line)}</li>`).join("");
 
+  const pillarsHtml =
+    activePillarScores.length > 0
+      ? `
+        <div style="margin-top:18px;font-size:18px;font-weight:700;color:#0f172a;">Where the score lands by pillar</div>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;border-collapse:collapse;border:1px solid #dbe3ef;border-radius:10px;overflow:hidden;background:#ffffff;">
+          ${activePillarScores
+            .map((pillar) => {
+              const styles = pillarStyles(pillar.tone);
+              const barWidth = Math.max(2, Math.min(100, pillar.score));
+              const findingsLabel = pillar.findingsCount === 0
+                ? "No findings"
+                : `${pillar.findingsCount} finding${pillar.findingsCount === 1 ? "" : "s"} · -${pillar.pointsDeducted} pts`;
+              return `
+              <tr>
+                <td style="padding:10px 14px;border-bottom:1px solid #eef2f7;font-size:13px;color:#0f172a;vertical-align:middle;width:38%;">
+                  <div style="font-weight:700;">${escapeHtml(pillar.label)}</div>
+                  <div style="margin-top:2px;color:#64748b;font-size:11px;letter-spacing:0.04em;">${escapeHtml(findingsLabel)}</div>
+                </td>
+                <td style="padding:10px 14px;border-bottom:1px solid #eef2f7;vertical-align:middle;">
+                  <div style="height:8px;background:${styles.track};border-radius:9999px;overflow:hidden;">
+                    <div style="height:8px;width:${barWidth}%;background:${styles.bar};"></div>
+                  </div>
+                </td>
+                <td align="right" style="padding:10px 14px;border-bottom:1px solid #eef2f7;font-size:14px;font-weight:800;color:${styles.text};width:18%;white-space:nowrap;">
+                  ${pillar.score}/100
+                </td>
+              </tr>`;
+            })
+            .join("")}
+        </table>`
+      : "";
+
+  const quickWinsHtml =
+    quickWins.length > 0
+      ? `
+        <div style="margin-top:22px;font-size:18px;font-weight:700;color:#0f172a;">Quick wins to ship this week</div>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;border-collapse:collapse;border:1px solid #bbf7d0;border-radius:10px;overflow:hidden;background:#f0fdf4;">
+          <tr>
+            <td style="padding:10px 14px;border-bottom:1px solid #bbf7d0;font-size:12px;font-weight:700;color:#166534;letter-spacing:0.06em;text-transform:uppercase;">If you only do 3 things this week — biggest impact-per-hour wins from this review</td>
+          </tr>
+          ${quickWins
+            .map((win, index) => `
+            <tr>
+              <td style="padding:12px 14px;border-bottom:${index === quickWins.length - 1 ? "0" : "1px solid #bbf7d0"};font-size:13px;color:#14532d;vertical-align:top;">
+                <div style="font-weight:700;color:#0f172a;">${index + 1}. ${escapeHtml(win.ruleId)}</div>
+                <div style="margin-top:4px;color:#166534;font-size:11px;letter-spacing:0.04em;">~${formatHours(win.estimatedHoursLow)}–${formatHours(win.estimatedHoursHigh)} · saves ${win.pointsDeducted} points off the overall score</div>
+                ${win.why ? `<div style="margin-top:6px;color:#0f172a;"><strong>Why:</strong> ${escapeHtml(win.why)}</div>` : ""}
+                ${win.howToFix ? `<div style="margin-top:4px;color:#14532d;"><strong>How to fix:</strong> ${escapeHtml(win.howToFix)}</div>` : ""}
+              </td>
+            </tr>`)
+            .join("")}
+        </table>`
+      : "";
+
   return `
 <!doctype html>
 <html>
@@ -341,7 +460,9 @@ function buildHtmlEmail(
                   </tr>
                 </table>
 
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;border:1px solid #dbe3ef;border-radius:10px;background:#f8fafc;">
+                ${pillarsHtml}
+
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;border:1px solid #dbe3ef;border-radius:10px;background:#f8fafc;">
                   <tr>
                     <td style="padding:14px;">
                       <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">Flow Narrative</div>
@@ -378,6 +499,8 @@ function buildHtmlEmail(
                   </tr>
                   ${topDeductionsHtml}
                 </table>
+
+                ${quickWinsHtml}
 
                 <div style="margin-top:22px;font-size:18px;font-weight:700;color:#0f172a;">${escapeHtml(estimateSectionTitle(estimateSnapshot))}</div>
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;border-collapse:collapse;border:1px solid #dbe3ef;border-radius:10px;overflow:hidden;">
@@ -472,6 +595,29 @@ export function buildArchitectureReviewEmailContent(
     ? buildEmailPreferenceFooter(options.emailPreferenceLinks)
     : null;
 
+  const pillarScoresLocal = calculatePillarScores(report.findings);
+  const activePillarScoresLocal = pillarScoresLocal.filter(
+    (pillar) => pillar.findingsCount > 0 || pillar.score < 100,
+  );
+  const quickWinsLocal = selectQuickWins(
+    mandatoryFindings.map((finding) => ({
+      ruleId: finding.ruleId,
+      category: finding.category,
+      pointsDeducted: finding.pointsDeducted,
+      why: finding.why,
+      howToFix: finding.howToFix,
+    })),
+    {
+      ruleHoursLookup: (ruleId) => {
+        const entry = getArchitectureReviewPricingCatalogEntry(ruleId);
+        if (!entry) {
+          return null;
+        }
+        return { low: entry.remediationHoursLow, high: entry.remediationHoursHigh };
+      },
+    },
+  );
+
   const lines = [
     `Architecture Diagram Review (${providerLabel(report)})`,
     `Generated: ${report.generatedAtISO}`,
@@ -485,6 +631,20 @@ export function buildArchitectureReviewEmailContent(
     `${estimateSectionTextLabel(estimateSnapshot)}: ${
       estimateSnapshot.policy.payableQuoteEnabled ? toUsd(estimateSnapshot.totalUsd) : "Consultation first"
     }`,
+    ...(activePillarScoresLocal.length > 0
+      ? [
+          "",
+          "Where the score lands by pillar:",
+          ...activePillarScoresLocal.map(
+            (pillar) =>
+              `- ${pillar.label}: ${pillar.score}/100${
+                pillar.findingsCount > 0
+                  ? ` (${pillar.findingsCount} finding${pillar.findingsCount === 1 ? "" : "s"}, -${pillar.pointsDeducted} pts)`
+                  : ""
+              }`,
+          ),
+        ]
+      : []),
     "",
     "Flow narrative:",
     report.flowNarrative,
@@ -497,13 +657,24 @@ export function buildArchitectureReviewEmailContent(
     "Top deductions:",
     ...(mandatoryFindings.length > 0
       ? mandatoryFindings.slice(0, 6).flatMap((finding) => [
-          `- ${finding.ruleId} | -${finding.pointsDeducted} points | ${finding.recommendationType.toUpperCase()}`,
+          `- [${getFindingSeverityLabel(finding.pointsDeducted)}] ${finding.ruleId} | -${finding.pointsDeducted} points | ${finding.recommendationType.toUpperCase()}`,
           `  Why: ${finding.why}`,
           `  Evidence seen: ${finding.evidenceSeen}`,
           `  How to fix: ${finding.howToFix}`,
           `  Official references: ${finding.officialSourceLinks.map((link) => `${link.label} (${link.url})`).join(", ")}`,
         ])
       : ["No mandatory deductions."]),
+    ...(quickWinsLocal.length > 0
+      ? [
+          "",
+          "Quick wins to ship this week (highest impact-per-hour):",
+          ...quickWinsLocal.flatMap((win, index) => [
+            `${index + 1}. ${win.ruleId} (~${formatHours(win.estimatedHoursLow)}-${formatHours(win.estimatedHoursHigh)}, saves ${win.pointsDeducted} points)`,
+            ...(win.why ? [`   Why: ${win.why}`] : []),
+            ...(win.howToFix ? [`   How to fix: ${win.howToFix}`] : []),
+          ]),
+        ]
+      : []),
     "",
     `${estimateSectionTextLabel(estimateSnapshot)}:`,
     ...(estimateSnapshot.lineItems.length > 0

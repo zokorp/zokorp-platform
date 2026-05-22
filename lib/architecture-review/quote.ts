@@ -313,6 +313,182 @@ export function calculateOverallScoreByCategoryCaps(findings: Array<Pick<Archite
   return clamp(100 - cappedDeduction, 0, 100);
 }
 
+export type PillarScoreTone = "ok" | "watch" | "weak" | "critical";
+
+export type PillarScore = {
+  category: ArchitectureCategory;
+  label: string;
+  score: number;
+  pointsDeducted: number;
+  findingsCount: number;
+  tone: PillarScoreTone;
+};
+
+const PILLAR_CATEGORY_LABELS: Record<ArchitectureCategory, string> = {
+  security: "Security",
+  reliability: "Reliability",
+  operations: "Operations",
+  performance: "Performance",
+  cost: "Cost",
+  sustainability: "Sustainability",
+  clarity: "Diagram clarity",
+};
+
+const PILLAR_DISPLAY_ORDER: ArchitectureCategory[] = [
+  "security",
+  "reliability",
+  "operations",
+  "performance",
+  "cost",
+  "clarity",
+];
+
+function pillarToneForScore(score: number, findingsCount: number, hasCriticalSeverity: boolean): PillarScoreTone {
+  if (findingsCount === 0) {
+    return "ok";
+  }
+
+  // A single CRITICAL-severity finding (>=12 points deducted) gets the pillar
+  // tagged "critical" regardless of average score — a 15-point "public database
+  // exposure" should not visually feel like a "watch" item just because the
+  // rest of the pillar is fine.
+  if (hasCriticalSeverity) {
+    return "critical";
+  }
+
+  if (score < 50) {
+    return "critical";
+  }
+
+  if (score < 70) {
+    return "weak";
+  }
+
+  if (score < 90) {
+    return "watch";
+  }
+
+  return "ok";
+}
+
+export function calculatePillarScores(
+  findings: Array<Pick<ArchitectureFindingDraft, "category" | "pointsDeducted">>,
+): PillarScore[] {
+  const totals = new Map<ArchitectureCategory, { deducted: number; count: number; hasCritical: boolean }>();
+
+  for (const finding of findings) {
+    const pointsDeducted = Math.max(0, finding.pointsDeducted);
+    const running = totals.get(finding.category) ?? { deducted: 0, count: 0, hasCritical: false };
+    running.deducted += pointsDeducted;
+    if (pointsDeducted > 0) {
+      running.count += 1;
+    }
+    if (pointsDeducted >= 12) {
+      running.hasCritical = true;
+    }
+    totals.set(finding.category, running);
+  }
+
+  return PILLAR_DISPLAY_ORDER.map((category) => {
+    const aggregated = totals.get(category) ?? { deducted: 0, count: 0, hasCritical: false };
+    const cap = CATEGORY_DEDUCTION_CAPS[category];
+    const cappedDeducted = Math.min(cap, aggregated.deducted);
+    const score = clamp(100 - cappedDeducted, 0, 100);
+    return {
+      category,
+      label: PILLAR_CATEGORY_LABELS[category],
+      score,
+      pointsDeducted: cappedDeducted,
+      findingsCount: aggregated.count,
+      tone: pillarToneForScore(score, aggregated.count, aggregated.hasCritical),
+    };
+  });
+}
+
+export type FindingSeverityLabel = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+
+export function getFindingSeverityLabel(pointsDeducted: number): FindingSeverityLabel {
+  if (pointsDeducted >= 12) {
+    return "CRITICAL";
+  }
+
+  if (pointsDeducted >= 8) {
+    return "HIGH";
+  }
+
+  if (pointsDeducted >= 4) {
+    return "MEDIUM";
+  }
+
+  return "LOW";
+}
+
+export type QuickWin = {
+  ruleId: string;
+  category: ArchitectureCategory;
+  why: string;
+  howToFix: string;
+  estimatedHoursLow: number;
+  estimatedHoursHigh: number;
+  pointsDeducted: number;
+};
+
+// A "quick win" is a mandatory finding whose fix is bounded enough that the
+// customer could realistically tackle it within their next sprint. We want the
+// email to call out the top 3 so the customer feels they can act today, not
+// wait for the implementation engagement.
+export function selectQuickWins(
+  findings: Array<{
+    ruleId: string;
+    category: ArchitectureCategory;
+    pointsDeducted: number;
+    why?: string;
+    howToFix?: string;
+  }>,
+  options: {
+    ruleHoursLookup?: (ruleId: string) => { low: number; high: number } | null;
+    maxItems?: number;
+  } = {},
+): QuickWin[] {
+  const maxItems = options.maxItems ?? 3;
+  const lookup = options.ruleHoursLookup ?? (() => null);
+  const candidates: QuickWin[] = [];
+
+  for (const finding of findings) {
+    if (finding.pointsDeducted <= 0) {
+      continue;
+    }
+
+    const hours = lookup(finding.ruleId) ?? { low: 0, high: 0 };
+    if (hours.high <= 0 || hours.high > 8) {
+      // Skip items that have no hours estimate or that exceed a single
+      // working day — those belong in the implementation sprint, not a
+      // quick win.
+      continue;
+    }
+
+    candidates.push({
+      ruleId: finding.ruleId,
+      category: finding.category,
+      pointsDeducted: finding.pointsDeducted,
+      why: finding.why ?? "",
+      howToFix: finding.howToFix ?? "",
+      estimatedHoursLow: hours.low,
+      estimatedHoursHigh: hours.high,
+    });
+  }
+
+  return candidates
+    .slice()
+    .sort((a, b) => {
+      // Highest impact-per-hour first.
+      const impactA = a.pointsDeducted / Math.max(0.5, a.estimatedHoursHigh);
+      const impactB = b.pointsDeducted / Math.max(0.5, b.estimatedHoursHigh);
+      return impactB - impactA;
+    })
+    .slice(0, maxItems);
+}
+
 export function calculateConsultationQuoteUSD(
   findings: ArchitectureFindingLike[],
   overallScore: number,

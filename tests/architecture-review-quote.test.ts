@@ -5,7 +5,10 @@ import {
   calculateConsultationQuoteUSD,
   calculateFixCostUSD,
   calculateOverallScore,
+  calculatePillarScores,
   determineQuoteTier,
+  getFindingSeverityLabel,
+  selectQuickWins,
 } from "@/lib/architecture-review/quote";
 
 describe("architecture quote calculator", () => {
@@ -195,5 +198,101 @@ describe("architecture quote calculator", () => {
 
     expect(quote).toBe(249);
     expect(quoteTier).toBe("implementation-partner");
+  });
+
+  it("breaks the score down by pillar so the customer sees where they are weakest", () => {
+    const findings = [
+      { ruleId: "aws:public_database_exposure", category: "security" as const, pointsDeducted: 15 },
+      { ruleId: "aws:internet_facing_endpoint_without_tls", category: "security" as const, pointsDeducted: 8 },
+      { ruleId: "aws:single_instance_production_compute", category: "reliability" as const, pointsDeducted: 6 },
+      { ruleId: "aws:centralized_application_logging", category: "operations" as const, pointsDeducted: 4 },
+    ];
+
+    const pillars = calculatePillarScores(findings);
+    const byCategory = Object.fromEntries(pillars.map((pillar) => [pillar.category, pillar]));
+
+    expect(byCategory.security.score).toBe(100 - 23);
+    expect(byCategory.security.tone).toBe("critical");
+    expect(byCategory.security.findingsCount).toBe(2);
+    expect(byCategory.security.pointsDeducted).toBe(23);
+
+    expect(byCategory.reliability.score).toBe(94);
+    expect(byCategory.reliability.tone).toBe("ok");
+
+    expect(byCategory.operations.score).toBe(96);
+    expect(byCategory.operations.findingsCount).toBe(1);
+
+    expect(byCategory.performance.score).toBe(100);
+    expect(byCategory.performance.findingsCount).toBe(0);
+    expect(byCategory.performance.tone).toBe("ok");
+
+    // Display order is stable and security-first.
+    expect(pillars.map((pillar) => pillar.category)).toEqual([
+      "security",
+      "reliability",
+      "operations",
+      "performance",
+      "cost",
+      "clarity",
+    ]);
+  });
+
+  it("maps points to severity labels customers actually scan for", () => {
+    expect(getFindingSeverityLabel(12)).toBe("CRITICAL");
+    expect(getFindingSeverityLabel(15)).toBe("CRITICAL");
+    expect(getFindingSeverityLabel(8)).toBe("HIGH");
+    expect(getFindingSeverityLabel(11)).toBe("HIGH");
+    expect(getFindingSeverityLabel(4)).toBe("MEDIUM");
+    expect(getFindingSeverityLabel(7)).toBe("MEDIUM");
+    expect(getFindingSeverityLabel(2)).toBe("LOW");
+    expect(getFindingSeverityLabel(0)).toBe("LOW");
+  });
+
+  it("picks quick wins by impact-per-hour and respects the 'do this week' cap", () => {
+    const ruleHours: Record<string, { low: number; high: number }> = {
+      "aws:fast-fix-big-impact": { low: 1, high: 2 },
+      "aws:slow-fix-bigger-impact": { low: 6, high: 12 },
+      "aws:tiny-fix-tiny-impact": { low: 0.5, high: 1 },
+      "aws:medium-fix-medium-impact": { low: 2, high: 4 },
+      "aws:zero-hour-fix": { low: 0, high: 0 },
+    };
+
+    const findings = [
+      { ruleId: "aws:fast-fix-big-impact", category: "security" as const, pointsDeducted: 10, why: "Why A", howToFix: "Fix A" },
+      { ruleId: "aws:slow-fix-bigger-impact", category: "security" as const, pointsDeducted: 18, why: "Why B", howToFix: "Fix B" },
+      { ruleId: "aws:tiny-fix-tiny-impact", category: "operations" as const, pointsDeducted: 1, why: "Why C", howToFix: "Fix C" },
+      { ruleId: "aws:medium-fix-medium-impact", category: "security" as const, pointsDeducted: 6, why: "Why D", howToFix: "Fix D" },
+      { ruleId: "aws:zero-hour-fix", category: "clarity" as const, pointsDeducted: 4, why: "Why E", howToFix: "Fix E" },
+    ];
+
+    const wins = selectQuickWins(findings, {
+      ruleHoursLookup: (ruleId) => ruleHours[ruleId] ?? null,
+    });
+
+    // 3 picks, all within the 8-hour ceiling.
+    expect(wins).toHaveLength(3);
+    expect(wins.map((win) => win.ruleId)).toEqual([
+      "aws:fast-fix-big-impact",   // 10 pts / 2 hrs = 5.0
+      "aws:medium-fix-medium-impact", // 6 pts / 4 hrs = 1.5
+      "aws:tiny-fix-tiny-impact",   // 1 pt / 1 hr = 1.0
+    ]);
+
+    // Slow-fix-bigger-impact got dropped because high hours > 8 (sprint scope, not quick win).
+    expect(wins.find((win) => win.ruleId === "aws:slow-fix-bigger-impact")).toBeUndefined();
+    // Zero-hour fix got dropped because the rule has no hours to estimate.
+    expect(wins.find((win) => win.ruleId === "aws:zero-hour-fix")).toBeUndefined();
+  });
+
+  it("returns no quick wins when every mandatory finding requires more than a day", () => {
+    const findings = [
+      { ruleId: "aws:multi-day-1", category: "security" as const, pointsDeducted: 12 },
+      { ruleId: "aws:multi-day-2", category: "reliability" as const, pointsDeducted: 10 },
+    ];
+
+    const wins = selectQuickWins(findings, {
+      ruleHoursLookup: () => ({ low: 12, high: 24 }),
+    });
+
+    expect(wins).toEqual([]);
   });
 });
