@@ -1,7 +1,11 @@
 import { buildCalendlyBookingUrl } from "@/lib/calendly";
 
+// Routed to the Discovery Call event so a single Calendly event covers both
+// first-time discovery and post-architecture-review follow-up bookings. The
+// utm_campaign="architecture-follow-up" tag (set elsewhere) still
+// distinguishes these in analytics.
 const DEFAULT_ARCHITECTURE_CALL_URL =
-  "https://calendly.com/zokorp/zokorp-architecture-review-follow-up";
+  "https://calendly.com/zokorp/zokorp-discovery-call";
 
 type ConsultationCtaOptions = {
   signedIn: boolean;

@@ -27,7 +27,7 @@ describe("ServicesPage", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.ARCH_REVIEW_BOOK_CALL_URL = "https://calendly.com/zokorp/zokorp-architecture-review-follow-up";
+    process.env.ARCH_REVIEW_BOOK_CALL_URL = "https://calendly.com/zokorp/zokorp-discovery-call";
     authMock.mockResolvedValue({
       user: {
         email: "consulting@zokorp.com",
