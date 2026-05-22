@@ -3,6 +3,16 @@ import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { getArchitectureReviewPricingCatalogEntry } from "@/lib/architecture-review/pricing-catalog";
+import {
+  buildReviewerSynthesis,
+  calculatePillarScores,
+  configuredArchitectureRemediationRateUsdPerHour,
+  getFindingSeverityLabel,
+  selectQuickWins,
+  type FindingSeverityLabel,
+  type PillarScoreTone,
+} from "@/lib/architecture-review/quote";
 import { buildArchitectureReviewReport } from "@/lib/architecture-review/report";
 import { reviewScopeLabel } from "@/lib/architecture-review/scope";
 import { buildMarketingPageMetadata } from "@/lib/site";
@@ -98,8 +108,81 @@ const sampleReport = buildArchitectureReviewReport({
   },
 });
 
+function severityBadgeClasses(label: FindingSeverityLabel) {
+  if (label === "CRITICAL") {
+    return "border-red-200 bg-red-50 text-red-800";
+  }
+  if (label === "HIGH") {
+    return "border-orange-200 bg-orange-50 text-orange-900";
+  }
+  if (label === "MEDIUM") {
+    return "border-yellow-200 bg-yellow-50 text-yellow-900";
+  }
+  return "border-slate-200 bg-slate-50 text-slate-700";
+}
+
+function pillarBarClasses(tone: PillarScoreTone) {
+  if (tone === "critical") {
+    return { bar: "bg-red-600", text: "text-red-700", track: "bg-red-100" };
+  }
+  if (tone === "weak") {
+    return { bar: "bg-orange-500", text: "text-orange-700", track: "bg-orange-100" };
+  }
+  if (tone === "watch") {
+    return { bar: "bg-blue-500", text: "text-blue-700", track: "bg-blue-100" };
+  }
+  return { bar: "bg-emerald-500", text: "text-emerald-700", track: "bg-emerald-100" };
+}
+
+function formatHours(value: number) {
+  const rounded = Math.round(value * 10) / 10;
+  const label = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+  return `${label} hr${rounded === 1 ? "" : "s"}`;
+}
+
+function toUsd(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
 export default function ArchitectureReviewerSampleReportPage() {
   const positiveFindings = sampleReport.findings.filter((finding) => finding.pointsDeducted > 0);
+  const optionalRecommendations = sampleReport.findings.filter((finding) => finding.pointsDeducted === 0);
+  const pillarScores = calculatePillarScores(sampleReport.findings);
+  const activePillarScores = pillarScores.filter(
+    (pillar) => pillar.findingsCount > 0 || pillar.score < 100,
+  );
+  const reviewerSynthesis = buildReviewerSynthesis({
+    findings: sampleReport.findings,
+    pillarScores,
+    overallScore: sampleReport.overallScore,
+    analysisConfidence: sampleReport.analysisConfidence,
+  });
+  const quickWins = selectQuickWins(
+    positiveFindings.map((finding) => ({
+      ruleId: finding.ruleId,
+      category: finding.category,
+      pointsDeducted: finding.pointsDeducted,
+      why: finding.why,
+      howToFix: finding.howToFix,
+    })),
+    {
+      ruleHoursLookup: (ruleId) => {
+        const entry = getArchitectureReviewPricingCatalogEntry(ruleId);
+        if (!entry) {
+          // The sample finding rule IDs don't map to real pricing-catalog
+          // entries, so emit a reasonable demo range so the Quick Wins
+          // section actually surfaces on the sample page.
+          return { low: 1, high: 4 };
+        }
+        return { low: entry.remediationHoursLow, high: entry.remediationHoursHigh };
+      },
+    },
+  );
+  const rateUsdPerHour = configuredArchitectureRemediationRateUsdPerHour();
 
   return (
     <div className="space-y-8">
@@ -125,6 +208,14 @@ export default function ArchitectureReviewerSampleReportPage() {
         </AlertDescription>
       </Alert>
 
+      <section className="surface rounded-2xl border border-slate-200 bg-slate-50/70 p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Reviewer&apos;s note</p>
+        <p className="mt-3 text-base leading-7 text-slate-900">{reviewerSynthesis}</p>
+        <p className="mt-3 text-xs uppercase tracking-[0.06em] text-slate-500">
+          — Zohaib Khawaja · AWS Certified Solutions Architect, Professional · Houston, TX
+        </p>
+      </section>
+
       <section className="grid gap-5 lg:grid-cols-4">
         <article className="surface rounded-2xl p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Provider</p>
@@ -144,6 +235,34 @@ export default function ArchitectureReviewerSampleReportPage() {
         </article>
       </section>
 
+      {activePillarScores.length > 0 ? (
+        <section className="surface rounded-2xl p-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Where the score lands by pillar</p>
+          <div className="mt-4 space-y-3">
+            {activePillarScores.map((pillar) => {
+              const styles = pillarBarClasses(pillar.tone);
+              const barWidth = Math.max(2, Math.min(100, pillar.score));
+              const findingsLabel =
+                pillar.findingsCount === 0
+                  ? "No findings"
+                  : `${pillar.findingsCount} finding${pillar.findingsCount === 1 ? "" : "s"} · -${pillar.pointsDeducted} pts`;
+              return (
+                <div key={pillar.category} className="grid grid-cols-[minmax(0,180px)_1fr_72px] items-center gap-3 md:gap-5">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{pillar.label}</p>
+                    <p className="text-[11px] uppercase tracking-[0.05em] text-slate-500">{findingsLabel}</p>
+                  </div>
+                  <div className={`h-2 rounded-full ${styles.track}`}>
+                    <div className={`h-2 rounded-full ${styles.bar}`} style={{ width: `${barWidth}%` }} />
+                  </div>
+                  <p className={`text-right text-sm font-bold ${styles.text}`}>{pillar.score}/100</p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
       <section className="surface rounded-2xl p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Flow Narrative</p>
         <p className="mt-3 text-sm leading-7 text-slate-700">{sampleReport.flowNarrative}</p>
@@ -152,31 +271,80 @@ export default function ArchitectureReviewerSampleReportPage() {
       <section className="surface rounded-2xl p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Top Deductions</p>
         <div className="mt-4 space-y-4">
-          {positiveFindings.map((finding) => (
-            <article key={finding.ruleId} className="rounded-xl border border-slate-200 bg-white p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-base font-semibold text-slate-900">{finding.ruleId}</h2>
-                <Badge variant="secondary">-{finding.pointsDeducted} points</Badge>
-              </div>
-              <p className="mt-3 text-sm leading-6 text-slate-700">Why: {finding.why}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Evidence seen: {finding.evidenceSeen}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">How to fix: {finding.howToFix}</p>
-              {finding.officialSourceLinks.length > 0 ? (
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Official references: {finding.officialSourceLinks.map((link) => link.label).join(" · ")}
-                </p>
-              ) : null}
-              <p className="mt-2 text-sm leading-6 text-slate-500">Estimated fix-effort driver: ${finding.fixCostUSD}</p>
-            </article>
-          ))}
+          {positiveFindings.map((finding) => {
+            const severity = getFindingSeverityLabel(finding.pointsDeducted);
+            return (
+              <article key={finding.ruleId} className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold tracking-[0.08em] ${severityBadgeClasses(severity)}`}
+                    >
+                      {severity}
+                    </span>
+                    <h2 className="text-base font-semibold text-slate-900">{finding.ruleId}</h2>
+                  </div>
+                  <Badge variant="secondary">-{finding.pointsDeducted} points</Badge>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-slate-700"><strong>Why:</strong> {finding.why}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600"><strong>Evidence seen:</strong> {finding.evidenceSeen}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600"><strong>How to fix:</strong> {finding.howToFix}</p>
+                {finding.officialSourceLinks.length > 0 ? (
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Official references: {finding.officialSourceLinks.map((link) => link.label).join(" · ")}
+                  </p>
+                ) : null}
+                <p className="mt-2 text-sm leading-6 text-slate-500">Estimated fix-effort driver: {toUsd(finding.fixCostUSD)}</p>
+              </article>
+            );
+          })}
         </div>
       </section>
+
+      {quickWins.length > 0 ? (
+        <section className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-6">
+          <p className="text-xs font-bold uppercase tracking-[0.1em] text-emerald-800">Quick wins to ship this week</p>
+          <p className="mt-2 text-xs text-emerald-700">If you only do 3 things this week — biggest impact-per-hour wins from this review</p>
+          <div className="mt-4 space-y-3">
+            {quickWins.map((win, index) => (
+              <article key={win.ruleId} className="rounded-xl border border-emerald-200 bg-white p-4">
+                <p className="text-sm font-semibold text-slate-900">{index + 1}. {win.ruleId}</p>
+                <p className="mt-1 text-[11px] uppercase tracking-[0.05em] text-emerald-700">
+                  ~{formatHours(win.estimatedHoursLow)}–{formatHours(win.estimatedHoursHigh)} · saves {win.pointsDeducted} pts
+                </p>
+                {win.why ? <p className="mt-2 text-sm leading-6 text-slate-700"><strong>Why:</strong> {win.why}</p> : null}
+                {win.howToFix ? <p className="mt-2 text-sm leading-6 text-slate-600"><strong>How to fix:</strong> {win.howToFix}</p> : null}
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {optionalRecommendations.length > 0 ? (
+        <section className="surface rounded-2xl p-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Optional Recommendations</p>
+          <div className="mt-4 space-y-3">
+            {optionalRecommendations.map((finding, index) => (
+              <article key={finding.ruleId} className="rounded-xl border border-slate-200 bg-white p-4">
+                <p className="text-sm font-semibold text-slate-900">{index + 1}. {finding.ruleId}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600"><strong>Why:</strong> {finding.why}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600"><strong>How to fix:</strong> {finding.howToFix}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="surface rounded-2xl p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">How ZoKorp handles the next step</p>
         <div className="mt-4 space-y-3 text-sm leading-7 text-slate-700">
           <p>The free report points out the likely issues and recommends the next paid step.</p>
-          <p>The diagnostic call stays fixed and lightweight. Larger delivery work is only estimated when the evidence is clear enough and the scope is actually safe for a solo operator to commit to.</p>
+          <p>
+            The diagnostic call stays fixed and lightweight. Larger delivery work is only estimated when the evidence is
+            clear enough and the scope is actually safe for a solo operator to commit to. The current default remediation
+            rate is <strong>{toUsd(rateUsdPerHour)}/hr</strong> — your real quote shows the hour breakdown alongside the
+            total so the number is never arbitrary.
+          </p>
           <p>Regulated or complex environments move toward manual scoping rather than an auto-approved implementation estimate.</p>
         </div>
       </section>
