@@ -28,9 +28,9 @@ describe("architecture review email content", () => {
 
     const content = buildArchitectureReviewEmailContent(report);
 
-    expect(content.text).toContain("https://calendly.com/zokorp/architecture-follow-up");
+    expect(content.text).toContain("https://calendly.com/zokorp/zokorp-architecture-review-follow-up");
     expect(content.text).toContain("utm_medium=architecture-review-email");
-    expect(content.html).toContain("https://calendly.com/zokorp/architecture-follow-up");
+    expect(content.html).toContain("https://calendly.com/zokorp/zokorp-architecture-review-follow-up");
     expect(content.html).toContain("utm_medium=architecture-review-email");
 
     if (previousBookingUrl) {

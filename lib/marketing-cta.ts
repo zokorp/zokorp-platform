@@ -1,6 +1,7 @@
 import { buildCalendlyBookingUrl } from "@/lib/calendly";
 
-const DEFAULT_ARCHITECTURE_CALL_URL = "https://calendly.com/zokorp/architecture-follow-up";
+const DEFAULT_ARCHITECTURE_CALL_URL =
+  "https://calendly.com/zokorp/zokorp-architecture-review-follow-up";
 
 type ConsultationCtaOptions = {
   signedIn: boolean;
