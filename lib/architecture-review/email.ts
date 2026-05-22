@@ -4,6 +4,7 @@ import type {
   ArchitectureReviewReport,
 } from "@/lib/architecture-review/types";
 import { buildFallbackArchitectureEstimateSnapshot } from "@/lib/architecture-review/estimate-snapshot";
+import { buildArchitectureObservation } from "@/lib/architecture-review/observation";
 import { getArchitectureReviewPricingCatalogEntry } from "@/lib/architecture-review/pricing-catalog";
 import {
   buildReviewerSynthesis,
@@ -210,6 +211,11 @@ function buildHtmlEmail(
   const activePillarScores = pillarScores.filter(
     (pillar) => pillar.findingsCount > 0 || pillar.score < 100,
   );
+  const observation = buildArchitectureObservation({
+    flowNarrative: report.flowNarrative,
+    provider: report.provider,
+    platforms: report.reviewScope.platforms,
+  });
   const reviewerSynthesis = buildReviewerSynthesis({
     findings: report.findings,
     pillarScores,
@@ -337,6 +343,32 @@ function buildHtmlEmail(
 
   const assumptionsHtml = estimateSnapshot.assumptions.map((line) => `<li>${escapeHtml(line)}</li>`).join("");
   const exclusionsHtml = estimateSnapshot.exclusions.map((line) => `<li>${escapeHtml(line)}</li>`).join("");
+
+  const observationHtml =
+    observation.tiersInOrder.length > 0
+      ? `
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;">
+          <tr>
+            <td style="padding:14px 16px;">
+              <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">What I saw</div>
+              <div style="margin-top:6px;font-size:11px;color:#94a3b8;letter-spacing:0.04em;">Recognized components extracted from your narrative + diagram</div>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;border-collapse:collapse;">
+                ${observation.tiersInOrder
+                  .map(
+                    (tier) => `
+                <tr>
+                  <td style="padding:6px 0;vertical-align:top;font-size:12px;color:#64748b;letter-spacing:0.04em;width:170px;">${escapeHtml(tier.label)}</td>
+                  <td style="padding:6px 0;vertical-align:top;font-size:14px;color:#0f172a;">${tier.services
+                    .map((service) => `<span style="display:inline-block;margin:2px 6px 2px 0;padding:2px 8px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:9999px;font-size:12px;">${escapeHtml(service)}</span>`)
+                    .join("")}</td>
+                </tr>`,
+                  )
+                  .join("")}
+              </table>
+            </td>
+          </tr>
+        </table>`
+      : "";
 
   const pillarsHtml =
     activePillarScores.length > 0
@@ -472,6 +504,8 @@ function buildHtmlEmail(
                     </td>
                   </tr>
                 </table>
+
+                ${observationHtml}
 
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;border:1px solid #cbd5e1;border-radius:10px;background:#f1f5f9;">
                   <tr>
@@ -648,6 +682,11 @@ export function buildArchitectureReviewEmailContent(
     },
   );
 
+  const observationLocal = buildArchitectureObservation({
+    flowNarrative: report.flowNarrative,
+    provider: report.provider,
+    platforms: report.reviewScope.platforms,
+  });
   const reviewerSynthesisLocal = buildReviewerSynthesis({
     findings: report.findings,
     pillarScores: pillarScoresLocal,
@@ -665,6 +704,15 @@ export function buildArchitectureReviewEmailContent(
     `Generated: ${report.generatedAtISO}`,
     `Email: ${report.userEmail}`,
     "",
+    ...(observationLocal.tiersInOrder.length > 0
+      ? [
+          "What I saw:",
+          ...observationLocal.tiersInOrder.map(
+            (tier) => `  ${tier.label}: ${tier.services.join(", ")}`,
+          ),
+          "",
+        ]
+      : []),
     "Reviewer's note:",
     reviewerSynthesisLocal,
     "— Zohaib Khawaja, AWS Certified Solutions Architect, Professional, Houston TX",

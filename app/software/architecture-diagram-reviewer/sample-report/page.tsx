@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { buildArchitectureObservation } from "@/lib/architecture-review/observation";
 import { getArchitectureReviewPricingCatalogEntry } from "@/lib/architecture-review/pricing-catalog";
 import {
   buildReviewerSynthesis,
@@ -155,6 +156,11 @@ export default function ArchitectureReviewerSampleReportPage() {
   const activePillarScores = pillarScores.filter(
     (pillar) => pillar.findingsCount > 0 || pillar.score < 100,
   );
+  const observation = buildArchitectureObservation({
+    flowNarrative: sampleReport.flowNarrative,
+    provider: sampleReport.provider,
+    platforms: sampleReport.reviewScope.platforms,
+  });
   const reviewerSynthesis = buildReviewerSynthesis({
     findings: sampleReport.findings,
     pillarScores,
@@ -207,6 +213,32 @@ export default function ArchitectureReviewerSampleReportPage() {
           and real remediation scope is never promised from a sample alone.
         </AlertDescription>
       </Alert>
+
+      {observation.tiersInOrder.length > 0 ? (
+        <section className="surface rounded-2xl p-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">What I saw</p>
+          <p className="mt-1 text-xs uppercase tracking-[0.04em] text-slate-400">
+            Recognized components extracted from your narrative + diagram
+          </p>
+          <div className="mt-4 space-y-3">
+            {observation.tiersInOrder.map((tier) => (
+              <div key={tier.tier} className="grid grid-cols-[180px_1fr] items-start gap-4">
+                <p className="text-xs uppercase tracking-[0.05em] text-slate-500">{tier.label}</p>
+                <div className="flex flex-wrap gap-2">
+                  {tier.services.map((service) => (
+                    <span
+                      key={service}
+                      className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-700"
+                    >
+                      {service}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="surface rounded-2xl border border-slate-200 bg-slate-50/70 p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Reviewer&apos;s note</p>
