@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildReviewerSynthesis,
   calculateAnalysisConfidence,
   calculateConsultationQuoteUSD,
   calculateFixCostUSD,
@@ -294,5 +295,71 @@ describe("architecture quote calculator", () => {
     });
 
     expect(wins).toEqual([]);
+  });
+
+  it("writes a reviewer's note that names the top critical finding when there are 3+ criticals", () => {
+    const findings = [
+      { ruleId: "aws:public_database_exposure", category: "security" as const, pointsDeducted: 15, why: "A production database is publicly reachable" },
+      { ruleId: "aws:no_backup_strategy_for_stateful_data", category: "reliability" as const, pointsDeducted: 14, why: "Stateful data has no backup story" },
+      { ruleId: "aws:internet_facing_endpoint_without_tls", category: "security" as const, pointsDeducted: 12, why: "Public traffic is unencrypted" },
+    ];
+    const pillarScores = calculatePillarScores(findings);
+
+    const note = buildReviewerSynthesis({
+      findings,
+      pillarScores,
+      overallScore: 59,
+      analysisConfidence: "high",
+    });
+
+    expect(note).toContain("Three or more critical risks");
+    expect(note).toContain("A production database is publicly reachable");
+  });
+
+  it("collapses to consultation framing when analysis confidence is low", () => {
+    const findings = [
+      { ruleId: "aws:rule-a", category: "security" as const, pointsDeducted: 6 },
+    ];
+    const pillarScores = calculatePillarScores(findings);
+
+    const note = buildReviewerSynthesis({
+      findings,
+      pillarScores,
+      overallScore: 94,
+      analysisConfidence: "low",
+    });
+
+    expect(note).toContain("can't draw a strong conclusion");
+  });
+
+  it("celebrates when the score is high and there are no mandatory deductions", () => {
+    const note = buildReviewerSynthesis({
+      findings: [],
+      pillarScores: [],
+      overallScore: 100,
+      analysisConfidence: "high",
+    });
+
+    expect(note).toContain("No mandatory deductions");
+  });
+
+  it("identifies cumulative pressure when there are no criticals but enough findings", () => {
+    const findings = [
+      { ruleId: "aws:rule-a", category: "security" as const, pointsDeducted: 5, why: "x" },
+      { ruleId: "aws:rule-b", category: "reliability" as const, pointsDeducted: 4, why: "y" },
+      { ruleId: "aws:rule-c", category: "operations" as const, pointsDeducted: 3, why: "z" },
+      { ruleId: "aws:rule-d", category: "operations" as const, pointsDeducted: 3, why: "w" },
+    ];
+    const pillarScores = calculatePillarScores(findings);
+
+    const note = buildReviewerSynthesis({
+      findings,
+      pillarScores,
+      overallScore: 85,
+      analysisConfidence: "high",
+    });
+
+    expect(note).toContain("cumulative");
+    expect(note).toMatch(/security|reliability|operations/);
   });
 });

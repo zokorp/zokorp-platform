@@ -433,6 +433,90 @@ export type QuickWin = {
   pointsDeducted: number;
 };
 
+const PILLAR_NAME_FOR_CATEGORY: Record<ArchitectureCategory, string> = {
+  security: "security",
+  reliability: "reliability",
+  operations: "operations",
+  performance: "performance",
+  cost: "cost",
+  sustainability: "sustainability",
+  clarity: "diagram clarity",
+};
+
+function joinWithAnd(parts: string[]): string {
+  if (parts.length === 0) {
+    return "";
+  }
+  if (parts.length === 1) {
+    return parts[0];
+  }
+  if (parts.length === 2) {
+    return `${parts[0]} and ${parts[1]}`;
+  }
+  return `${parts.slice(0, -1).join(", ")}, and ${parts[parts.length - 1]}`;
+}
+
+export type ReviewerSynthesisInput = {
+  findings: Array<{
+    ruleId: string;
+    category: ArchitectureCategory;
+    pointsDeducted: number;
+    why?: string;
+  }>;
+  pillarScores: PillarScore[];
+  overallScore: number;
+  analysisConfidence: ArchitectureAnalysisConfidence;
+};
+
+// A 1–3 sentence plain-language synthesis the email leads with. Sounds like a
+// human reviewer made a judgment call, not a robot listed rules. Fully
+// deterministic — same input always produces the same text.
+export function buildReviewerSynthesis(input: ReviewerSynthesisInput): string {
+  const positiveFindings = input.findings
+    .filter((finding) => finding.pointsDeducted > 0)
+    .slice()
+    .sort((a, b) => b.pointsDeducted - a.pointsDeducted);
+
+  const criticalFindings = positiveFindings.filter((finding) => finding.pointsDeducted >= 12);
+
+  if (input.analysisConfidence === "low") {
+    return "I can't draw a strong conclusion from the evidence in the submission. The estimate below covers only what's clearly visible — book the review call so we can confirm hidden scope before committing to remediation work.";
+  }
+
+  if (positiveFindings.length === 0) {
+    return "No mandatory deductions surfaced from the submitted material. If there are hidden dependencies or operational gaps not on the diagram, the consultation call is the cheapest way to surface them before they cost you in production.";
+  }
+
+  // 3+ critical findings — focus on the first one
+  if (criticalFindings.length >= 3) {
+    const topWhy = criticalFindings[0].why?.replace(/\.$/, "") ?? criticalFindings[0].ruleId;
+    return `Three or more critical risks are visible in this design. Fix this one first: ${topWhy}. The rest fit a single Remediation Sprint once that's done.`;
+  }
+
+  if (criticalFindings.length >= 1) {
+    const topWhy = criticalFindings[0].why?.replace(/\.$/, "") ?? criticalFindings[0].ruleId;
+    const noun = criticalFindings.length === 1 ? "issue" : "issues";
+    return `${criticalFindings.length} critical ${noun} ${criticalFindings.length === 1 ? "needs" : "need"} to be handled before anything else. Start with: ${topWhy}. Everything else below is sequenced behind that.`;
+  }
+
+  // No critical but enough non-critical findings to matter
+  if (positiveFindings.length >= 3) {
+    const affectedPillars = input.pillarScores
+      .filter((pillar) => pillar.findingsCount > 0)
+      .slice()
+      .sort((a, b) => b.pointsDeducted - a.pointsDeducted)
+      .map((pillar) => PILLAR_NAME_FOR_CATEGORY[pillar.category]);
+    const pillarLabel = affectedPillars.length > 0 ? joinWithAnd(affectedPillars.slice(0, 3)) : "multiple areas";
+    return `No single fire, but ${positiveFindings.length} cumulative findings across ${pillarLabel} push this below the score I'd ship to production. The Quick Wins below clear the easy ones; the Remediation Sprint handles the rest.`;
+  }
+
+  if (input.overallScore >= 90) {
+    return "Solid architecture overall. The remaining items are polish — useful but not urgent. The fixed Advisory Review is the cheapest way to validate the polish path before spending on remediation.";
+  }
+
+  return "A small number of issues are visible in the design. The fixed Advisory Review is the cleanest first step — we'll validate findings, sequence the fixes, and agree on the right scope from there.";
+}
+
 // A "quick win" is a mandatory finding whose fix is bounded enough that the
 // customer could realistically tackle it within their next sprint. We want the
 // email to call out the top 3 so the customer feels they can act today, not

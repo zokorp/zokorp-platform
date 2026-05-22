@@ -6,7 +6,9 @@ import type {
 import { buildFallbackArchitectureEstimateSnapshot } from "@/lib/architecture-review/estimate-snapshot";
 import { getArchitectureReviewPricingCatalogEntry } from "@/lib/architecture-review/pricing-catalog";
 import {
+  buildReviewerSynthesis,
   calculatePillarScores,
+  configuredArchitectureRemediationRateUsdPerHour,
   getFindingSeverityLabel,
   selectQuickWins,
   type FindingSeverityLabel,
@@ -207,6 +209,17 @@ function buildHtmlEmail(
   const pillarScores = calculatePillarScores(report.findings);
   const activePillarScores = pillarScores.filter(
     (pillar) => pillar.findingsCount > 0 || pillar.score < 100,
+  );
+  const reviewerSynthesis = buildReviewerSynthesis({
+    findings: report.findings,
+    pillarScores,
+    overallScore: report.overallScore,
+    analysisConfidence: report.analysisConfidence,
+  });
+  const remediationRateUsdPerHour = configuredArchitectureRemediationRateUsdPerHour();
+  const totalEstimatedHours = estimateSnapshot.lineItems.reduce(
+    (sum, item) => sum + item.estimatedHours,
+    0,
   );
   const quickWins = selectQuickWins(
     mandatoryFindings.map((finding) => ({
@@ -460,6 +473,16 @@ function buildHtmlEmail(
                   </tr>
                 </table>
 
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;border:1px solid #cbd5e1;border-radius:10px;background:#f1f5f9;">
+                  <tr>
+                    <td style="padding:14px 16px;">
+                      <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">Reviewer's note</div>
+                      <div style="margin-top:8px;line-height:1.55;font-size:14px;color:#0f172a;">${escapeHtml(reviewerSynthesis)}</div>
+                      <div style="margin-top:10px;font-size:11px;color:#64748b;letter-spacing:0.04em;">— Zohaib Khawaja · AWS Certified Solutions Architect, Professional · Houston, TX</div>
+                    </td>
+                  </tr>
+                </table>
+
                 ${pillarsHtml}
 
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;border:1px solid #dbe3ef;border-radius:10px;background:#f8fafc;">
@@ -510,7 +533,14 @@ function buildHtmlEmail(
                   </tr>
                   ${quoteRows}
                   <tr>
-                    <td style="padding:12px;font-size:14px;font-weight:800;color:#0f172a;">Estimated total (based on submitted materials)</td>
+                    <td style="padding:12px;font-size:14px;font-weight:800;color:#0f172a;">
+                      Estimated total (based on submitted materials)
+                      ${
+                        estimateSnapshot.policy.payableQuoteEnabled && totalEstimatedHours > 0
+                          ? `<div style="margin-top:4px;font-size:11px;font-weight:600;color:#64748b;letter-spacing:0.04em;">≈ ${formatHours(totalEstimatedHours)} at ${escapeHtml(toUsd(remediationRateUsdPerHour))}/hr</div>`
+                          : ""
+                      }
+                    </td>
                     <td align="right" style="padding:12px;font-size:16px;font-weight:900;color:#0f172a;">${escapeHtml(
                       estimateSnapshot.policy.payableQuoteEnabled ? toUsd(estimateSnapshot.totalUsd) : "Consultation first",
                     )}</td>
@@ -618,10 +648,26 @@ export function buildArchitectureReviewEmailContent(
     },
   );
 
+  const reviewerSynthesisLocal = buildReviewerSynthesis({
+    findings: report.findings,
+    pillarScores: pillarScoresLocal,
+    overallScore: report.overallScore,
+    analysisConfidence: report.analysisConfidence,
+  });
+  const remediationRateUsdPerHourLocal = configuredArchitectureRemediationRateUsdPerHour();
+  const totalEstimatedHoursLocal = estimateSnapshot.lineItems.reduce(
+    (sum, item) => sum + item.estimatedHours,
+    0,
+  );
+
   const lines = [
     `Architecture Diagram Review (${providerLabel(report)})`,
     `Generated: ${report.generatedAtISO}`,
     `Email: ${report.userEmail}`,
+    "",
+    "Reviewer's note:",
+    reviewerSynthesisLocal,
+    "— Zohaib Khawaja, AWS Certified Solutions Architect, Professional, Houston TX",
     "",
     `Overall score: ${report.overallScore}/100`,
     `Analysis confidence: ${confidenceLabel(report.analysisConfidence)}`,
@@ -691,6 +737,10 @@ export function buildArchitectureReviewEmailContent(
         : ["No implementation estimate was produced because no mandatory fix scope was detected."]),
     `Estimated total (based on submitted materials): ${
       estimateSnapshot.policy.payableQuoteEnabled ? toUsd(estimateSnapshot.totalUsd) : "Consultation first"
+    }${
+      estimateSnapshot.policy.payableQuoteEnabled && totalEstimatedHoursLocal > 0
+        ? ` (≈ ${formatHours(totalEstimatedHoursLocal)} at ${toUsd(remediationRateUsdPerHourLocal)}/hr)`
+        : ""
     }`,
     "",
     "Estimate assumptions:",
