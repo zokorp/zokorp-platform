@@ -471,7 +471,78 @@ export type ReviewerSynthesisInput = {
 // A 1–3 sentence plain-language synthesis the email leads with. Sounds like a
 // human reviewer made a judgment call, not a robot listed rules. Fully
 // deterministic — same input always produces the same text.
+function computeSequencingText(input: ReviewerSynthesisInput): string {
+  const positiveFindings = input.findings
+    .filter((finding) => finding.pointsDeducted > 0)
+    .slice()
+    .sort((a, b) => b.pointsDeducted - a.pointsDeducted);
+
+  const criticalFindings = positiveFindings.filter((finding) => finding.pointsDeducted >= 12);
+
+  if (input.analysisConfidence === "low") {
+    return "If this were my workload: I'd book the review call before committing any remediation hours. The visible evidence is too thin to give the work a confident estimate from a diagram alone.";
+  }
+
+  if (positiveFindings.length === 0) {
+    return "If this were my workload: I'd still book the review call to validate hidden dependencies that don't show on the diagram. The remediation sprint is the wrong starting point when nothing's broken on paper.";
+  }
+
+  if (criticalFindings.length >= 3) {
+    const topCategory = PILLAR_NAME_FOR_CATEGORY[criticalFindings[0].category];
+    return `If this were my workload: I'd ship the top ${topCategory} fix this sprint to close the immediate exposure. The second critical right after. Everything else fits into the Remediation Sprint once those two are done — they unlock the rest.`;
+  }
+
+  if (criticalFindings.length >= 1) {
+    const topCategory = PILLAR_NAME_FOR_CATEGORY[criticalFindings[0].category];
+    return `If this were my workload: I'd handle the ${topCategory} critical this week, then walk through the remaining items in the Advisory Review to confirm sequencing before committing remediation hours.`;
+  }
+
+  if (positiveFindings.length >= 3) {
+    const affectedPillars = input.pillarScores
+      .filter((pillar) => pillar.findingsCount > 0)
+      .slice()
+      .sort((a, b) => b.pointsDeducted - a.pointsDeducted)
+      .map((pillar) => PILLAR_NAME_FOR_CATEGORY[pillar.category]);
+    const firstPillar = affectedPillars[0];
+    const secondPillar = affectedPillars[1];
+
+    if (firstPillar && secondPillar) {
+      return `If this were my workload: I'd clear the Quick Wins below this week, then sequence the Remediation Sprint to fix ${firstPillar} first — ${secondPillar} gets easier once ${firstPillar} is clean. Most of the work compounds.`;
+    }
+
+    return "If this were my workload: I'd clear the Quick Wins below this week, then handle the Remediation Sprint in one focused sprint. Most of the work compounds — fixing the first pillar usually makes the next easier.";
+  }
+
+  if (input.overallScore >= 90) {
+    return "If this were my workload: I'd defer these to the next planned release. The polish items aren't worth the cycle-time hit today, and the architecture is in good enough shape to ship.";
+  }
+
+  return "If this were my workload: I'd start with the fixed Advisory Review — fastest way to lock in sequencing before paying for remediation. The visible scope is small enough that a full sprint isn't justified yet.";
+}
+
 export function buildReviewerSynthesis(input: ReviewerSynthesisInput): string {
+  return buildReviewerSynthesisLines(input).synthesis;
+}
+
+// Second-paragraph sequencing recommendation that opens with
+// "If this were my workload" — adds the senior-consultant voice
+// after the main synthesis. Also deterministic.
+export function buildSequencingNote(input: ReviewerSynthesisInput): string {
+  return buildReviewerSynthesisLines(input).sequencing;
+}
+
+export type ReviewerSynthesisLines = {
+  synthesis: string;
+  sequencing: string;
+};
+
+export function buildReviewerSynthesisLines(input: ReviewerSynthesisInput): ReviewerSynthesisLines {
+  const synthesis = computeSynthesisText(input);
+  const sequencing = computeSequencingText(input);
+  return { synthesis, sequencing };
+}
+
+function computeSynthesisText(input: ReviewerSynthesisInput): string {
   const positiveFindings = input.findings
     .filter((finding) => finding.pointsDeducted > 0)
     .slice()

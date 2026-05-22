@@ -6,7 +6,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { buildArchitectureObservation } from "@/lib/architecture-review/observation";
 import { getArchitectureReviewPricingCatalogEntry } from "@/lib/architecture-review/pricing-catalog";
 import {
-  buildReviewerSynthesis,
+  buildReviewerSynthesisLines,
   calculatePillarScores,
   configuredArchitectureRemediationRateUsdPerHour,
   getFindingSeverityLabel,
@@ -161,12 +161,14 @@ export default function ArchitectureReviewerSampleReportPage() {
     provider: sampleReport.provider,
     platforms: sampleReport.reviewScope.platforms,
   });
-  const reviewerSynthesis = buildReviewerSynthesis({
+  const reviewerLines = buildReviewerSynthesisLines({
     findings: sampleReport.findings,
     pillarScores,
     overallScore: sampleReport.overallScore,
     analysisConfidence: sampleReport.analysisConfidence,
   });
+  const reviewerSynthesis = reviewerLines.synthesis;
+  const reviewerSequencing = reviewerLines.sequencing;
   const quickWins = selectQuickWins(
     positiveFindings.map((finding) => ({
       ruleId: finding.ruleId,
@@ -243,6 +245,7 @@ export default function ArchitectureReviewerSampleReportPage() {
       <section className="surface rounded-2xl border border-slate-200 bg-slate-50/70 p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Reviewer&apos;s note</p>
         <p className="mt-3 text-base leading-7 text-slate-900">{reviewerSynthesis}</p>
+        <p className="mt-3 text-base italic leading-7 text-slate-800">{reviewerSequencing}</p>
         <p className="mt-3 text-xs uppercase tracking-[0.06em] text-slate-500">
           — Zohaib Khawaja · AWS Certified Solutions Architect, Professional · Houston, TX
         </p>

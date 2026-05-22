@@ -7,7 +7,7 @@ import { buildFallbackArchitectureEstimateSnapshot } from "@/lib/architecture-re
 import { buildArchitectureObservation } from "@/lib/architecture-review/observation";
 import { getArchitectureReviewPricingCatalogEntry } from "@/lib/architecture-review/pricing-catalog";
 import {
-  buildReviewerSynthesis,
+  buildReviewerSynthesisLines,
   calculatePillarScores,
   configuredArchitectureRemediationRateUsdPerHour,
   getFindingSeverityLabel,
@@ -216,12 +216,14 @@ function buildHtmlEmail(
     provider: report.provider,
     platforms: report.reviewScope.platforms,
   });
-  const reviewerSynthesis = buildReviewerSynthesis({
+  const reviewerLines = buildReviewerSynthesisLines({
     findings: report.findings,
     pillarScores,
     overallScore: report.overallScore,
     analysisConfidence: report.analysisConfidence,
   });
+  const reviewerSynthesis = reviewerLines.synthesis;
+  const reviewerSequencing = reviewerLines.sequencing;
   const remediationRateUsdPerHour = configuredArchitectureRemediationRateUsdPerHour();
   const totalEstimatedHours = estimateSnapshot.lineItems.reduce(
     (sum, item) => sum + item.estimatedHours,
@@ -512,6 +514,7 @@ function buildHtmlEmail(
                     <td style="padding:14px 16px;">
                       <div style="font-size:12px;color:#475569;text-transform:uppercase;letter-spacing:0.07em;">Reviewer's note</div>
                       <div style="margin-top:8px;line-height:1.55;font-size:14px;color:#0f172a;">${escapeHtml(reviewerSynthesis)}</div>
+                      <div style="margin-top:10px;line-height:1.55;font-size:14px;color:#0f172a;font-style:italic;">${escapeHtml(reviewerSequencing)}</div>
                       <div style="margin-top:10px;font-size:11px;color:#64748b;letter-spacing:0.04em;">— Zohaib Khawaja · AWS Certified Solutions Architect, Professional · Houston, TX</div>
                     </td>
                   </tr>
@@ -687,12 +690,14 @@ export function buildArchitectureReviewEmailContent(
     provider: report.provider,
     platforms: report.reviewScope.platforms,
   });
-  const reviewerSynthesisLocal = buildReviewerSynthesis({
+  const reviewerLinesLocal = buildReviewerSynthesisLines({
     findings: report.findings,
     pillarScores: pillarScoresLocal,
     overallScore: report.overallScore,
     analysisConfidence: report.analysisConfidence,
   });
+  const reviewerSynthesisLocal = reviewerLinesLocal.synthesis;
+  const reviewerSequencingLocal = reviewerLinesLocal.sequencing;
   const remediationRateUsdPerHourLocal = configuredArchitectureRemediationRateUsdPerHour();
   const totalEstimatedHoursLocal = estimateSnapshot.lineItems.reduce(
     (sum, item) => sum + item.estimatedHours,
@@ -715,6 +720,8 @@ export function buildArchitectureReviewEmailContent(
       : []),
     "Reviewer's note:",
     reviewerSynthesisLocal,
+    "",
+    reviewerSequencingLocal,
     "— Zohaib Khawaja, AWS Certified Solutions Architect, Professional, Houston TX",
     "",
     `Overall score: ${report.overallScore}/100`,

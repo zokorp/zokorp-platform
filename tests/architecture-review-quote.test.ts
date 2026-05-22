@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildReviewerSynthesis,
+  buildReviewerSynthesisLines,
+  buildSequencingNote,
   calculateAnalysisConfidence,
   calculateConsultationQuoteUSD,
   calculateFixCostUSD,
@@ -341,6 +343,60 @@ describe("architecture quote calculator", () => {
     });
 
     expect(note).toContain("No mandatory deductions");
+  });
+
+  it("emits a sequencing paragraph that names the top critical's pillar", () => {
+    const findings = [
+      { ruleId: "aws:public_database_exposure", category: "security" as const, pointsDeducted: 15, why: "Public DB" },
+      { ruleId: "aws:no_backup_strategy_for_stateful_data", category: "reliability" as const, pointsDeducted: 14, why: "No backups" },
+      { ruleId: "aws:internet_facing_endpoint_without_tls", category: "security" as const, pointsDeducted: 12, why: "No TLS" },
+    ];
+    const pillarScores = calculatePillarScores(findings);
+
+    const lines = buildReviewerSynthesisLines({
+      findings,
+      pillarScores,
+      overallScore: 59,
+      analysisConfidence: "high",
+    });
+
+    expect(lines.sequencing).toContain("If this were my workload");
+    expect(lines.sequencing).toContain("security");
+    expect(lines.sequencing).toContain("Remediation Sprint");
+  });
+
+  it("emits a deferral sequencing paragraph when score is polish-tier", () => {
+    const findings = [
+      { ruleId: "aws:waf_on_public_endpoints", category: "security" as const, pointsDeducted: 1 },
+    ];
+    const pillarScores = calculatePillarScores(findings);
+
+    const note = buildSequencingNote({
+      findings,
+      pillarScores,
+      overallScore: 95,
+      analysisConfidence: "high",
+    });
+
+    expect(note).toContain("If this were my workload");
+    expect(note).toMatch(/defer|polish|next planned release/);
+  });
+
+  it("emits a book-the-call sequencing paragraph when confidence is low", () => {
+    const findings = [
+      { ruleId: "aws:rule-a", category: "security" as const, pointsDeducted: 6 },
+    ];
+    const pillarScores = calculatePillarScores(findings);
+
+    const note = buildSequencingNote({
+      findings,
+      pillarScores,
+      overallScore: 88,
+      analysisConfidence: "low",
+    });
+
+    expect(note).toContain("If this were my workload");
+    expect(note).toMatch(/book the review call|too thin/i);
   });
 
   it("identifies cumulative pressure when there are no criticals but enough findings", () => {
