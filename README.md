@@ -17,7 +17,7 @@ Production-oriented Next.js App Router application for ZoKorp marketing, free di
 - Launch products:
   - `Architecture Diagram Reviewer`
   - `ZoKorpValidator`
-  - `ZoKorp MLOps Foundation Platform`
+  - `ZoKorp Forecasting Beta` (DB slug remains `mlops-foundation-platform` for URL stability)
 
 ## Current platform rules
 - Architecture Diagram Reviewer requires a signed-in, verified business-email account before full consulting-style output is delivered.

@@ -34,6 +34,10 @@ export default async function RegisterPage({
         <p className="enterprise-copy mt-3 text-sm md:text-base">
           Register with a business email and strong password. Email verification is required before sign-in.
         </p>
+        <p className="mt-2 text-xs text-slate-500">
+          Personal accounts (Gmail, Outlook, Yahoo, iCloud, ProtonMail, Tutanota, and similar) and disposable mailboxes
+          are not accepted.
+        </p>
 
         {passwordAuthEnabled ? (
           <PasswordRegisterForm callbackUrl={callbackUrl} />

@@ -37,7 +37,29 @@ describe("security helpers", () => {
 
   it("accepts business domains and blocks common personal domains", () => {
     expect(isBusinessEmail("architect@zokorp.com")).toBe(true);
+    expect(isBusinessEmail("founder@nordicgroup.io")).toBe(true);
     expect(isBusinessEmail("someone@gmail.com")).toBe(false);
+    expect(isBusinessEmail("someone@googlemail.com")).toBe(false);
     expect(isBusinessEmail("someone@outlook.com")).toBe(false);
+    expect(isBusinessEmail("someone@yahoo.com")).toBe(false);
+    expect(isBusinessEmail("someone@icloud.com")).toBe(false);
+    expect(isBusinessEmail("someone@protonmail.com")).toBe(false);
+    expect(isBusinessEmail("someone@proton.me")).toBe(false);
+    expect(isBusinessEmail("someone@tutanota.com")).toBe(false);
+    expect(isBusinessEmail("someone@zoho.com")).toBe(false);
+    expect(isBusinessEmail("someone@mail.ru")).toBe(false);
+    expect(isBusinessEmail("someone@qq.com")).toBe(false);
+    expect(isBusinessEmail("someone@fastmail.com")).toBe(false);
+  });
+
+  it("blocks disposable mailbox services", () => {
+    expect(isBusinessEmail("burner@mailinator.com")).toBe(false);
+    expect(isBusinessEmail("burner@guerrillamail.com")).toBe(false);
+    expect(isBusinessEmail("burner@sharklasers.com")).toBe(false);
+    expect(isBusinessEmail("burner@yopmail.com")).toBe(false);
+    expect(isBusinessEmail("burner@10minutemail.com")).toBe(false);
+    expect(isBusinessEmail("burner@throwaway.email")).toBe(false);
+    expect(isBusinessEmail("burner@maildrop.cc")).toBe(false);
+    expect(isBusinessEmail("burner@temp-mail.org")).toBe(false);
   });
 });

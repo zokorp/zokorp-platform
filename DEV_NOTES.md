@@ -10,7 +10,7 @@
 
 ## Duplicated component patterns
 - Primary and secondary buttons are duplicated across header auth actions, auth forms, tool flows, checkout/portal buttons, service requests, and admin screens.
-- Form controls are repeated across auth forms, service request form, validator, landing zone, cloud cost, architecture reviewer, and admin pages.
+- Form controls are repeated across auth forms, service request form, validator, architecture reviewer, forecasting workspace, and admin pages.
 - Alert states are repeated for success, warning, info, and error messaging with inconsistent padding and contrast choices.
 - Card shells repeat in `surface`, `glass-surface`, `surface-muted`, and many inline border/background combinations.
 - Step chips, status pills, entitlement notices, pricing cards, and request timeline rows all use one-off styling instead of shared primitives.
@@ -20,13 +20,13 @@
    - Highest first-impression impact and the best place to establish spacing, hierarchy, and CTA consistency.
 2. `app/software/page.tsx`
    - Core catalog surface with obvious opportunity for filtering, stronger card hierarchy, and more consistent pricing presentation.
-3. `app/software/[slug]/page.tsx` and `app/software/cloud-cost-leak-finder/page.tsx`
-   - Main product-entry surfaces where entitlement messaging, pricing, and tool execution need one consistent shell.
+3. `app/software/[slug]/page.tsx`
+   - Main product-entry surface where entitlement messaging, pricing, and tool execution need one consistent shell.
 4. Tool workflow components
-   - `components/validator-form.tsx`
-   - `components/landing-zone-readiness/LandingZoneReadinessCheckerForm.tsx`
-   - `components/cloud-cost-leak-finder/CloudCostLeakFinderForm.tsx`
+   - `components/validator/ValidatorForm.tsx`
    - `components/architecture-diagram-reviewer/ArchitectureDiagramReviewerForm.tsx`
+   - `components/mlops/ForecastingWorkspace.tsx`
+   - Note: `landing-zone-readiness` and `cloud-cost-leak-finder` tools have been retired — the component directories have been removed and the product records are deactivated in `prisma/seed.js`.
 5. `app/account/page.tsx`
    - Strong candidate for tabs and a clearer request/activity presentation.
 6. `app/admin/products/page.tsx`, `app/admin/prices/page.tsx`, `app/admin/service-requests/page.tsx`

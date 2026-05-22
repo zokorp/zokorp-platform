@@ -86,7 +86,7 @@ These are >1000 LOC and easy to break. Read carefully before editing, and prefer
 - `lib/architecture-review/jobs.ts` (~1422 LOC) — async job worker
 - `lib/architecture-review/rule-catalog.ts` (~1208 LOC)
 - `lib/architecture-review/diagram-generator.ts` (~1511 LOC)
-- `lib/validator/validator-engine.ts` (~2315 LOC)
+- `lib/zokorp-validator-engine.ts` (~2315 LOC)
 - `app/api/stripe/webhook/route.ts` (~592 LOC) — billing event handling
 
 ## Architecture review specifics
