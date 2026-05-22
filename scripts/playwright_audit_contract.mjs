@@ -17,7 +17,7 @@ export const MARKETING_ROUTE_EXPECTATIONS = [
   {
     path: "/contact",
     label: "Contact",
-    marker: "Use the form.",
+    marker: "Two ways to get started.",
   },
   {
     path: "/pricing",
