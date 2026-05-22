@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { getRelatedCaseStudy } from "@/lib/architecture-review/case-study-links";
 import { buildArchitectureObservation } from "@/lib/architecture-review/observation";
 import { getArchitectureReviewPricingCatalogEntry } from "@/lib/architecture-review/pricing-catalog";
 import {
@@ -308,6 +309,7 @@ export default function ArchitectureReviewerSampleReportPage() {
         <div className="mt-4 space-y-4">
           {positiveFindings.map((finding) => {
             const severity = getFindingSeverityLabel(finding.pointsDeducted);
+            const caseStudy = getRelatedCaseStudy({ ruleId: finding.ruleId, category: finding.category });
             return (
               <article key={finding.ruleId} className="rounded-xl border border-slate-200 bg-white p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -330,6 +332,15 @@ export default function ArchitectureReviewerSampleReportPage() {
                   </p>
                 ) : null}
                 <p className="mt-2 text-sm leading-6 text-slate-500">Estimated fix-effort driver: {toUsd(finding.fixCostUSD)}</p>
+                {caseStudy ? (
+                  <div className="mt-3 rounded-md border-l-4 border-sky-700 bg-sky-50 px-3 py-2 text-sm">
+                    <span className="font-semibold text-slate-900">Where I&apos;ve caught this pattern: </span>
+                    <Link href={caseStudy.href} className="font-medium text-sky-800 underline underline-offset-2">
+                      {caseStudy.title}
+                    </Link>
+                    <span className="text-slate-600"> — {caseStudy.outcomeStat}</span>
+                  </div>
+                ) : null}
               </article>
             );
           })}

@@ -4,8 +4,10 @@ import type {
   ArchitectureReviewReport,
 } from "@/lib/architecture-review/types";
 import { buildFallbackArchitectureEstimateSnapshot } from "@/lib/architecture-review/estimate-snapshot";
+import { getRelatedCaseStudy } from "@/lib/architecture-review/case-study-links";
 import { buildArchitectureObservation } from "@/lib/architecture-review/observation";
 import { getArchitectureReviewPricingCatalogEntry } from "@/lib/architecture-review/pricing-catalog";
+import { getMarketingSiteUrl } from "@/lib/site";
 import {
   buildReviewerSynthesisLines,
   calculatePillarScores,
@@ -248,6 +250,7 @@ function buildHtmlEmail(
     },
   );
 
+  const marketingBaseUrl = getMarketingSiteUrl();
   const topDeductionsHtml =
     mandatoryFindings.length > 0
       ? mandatoryFindings
@@ -258,6 +261,14 @@ function buildHtmlEmail(
               const severity = getFindingSeverityLabel(finding.pointsDeducted);
               const severityColor = severityStyles(severity);
               const severityBadge = `<span style="display:inline-block;padding:2px 8px;margin-right:8px;border-radius:9999px;background:${severityColor.bg};border:1px solid ${severityColor.border};color:${severityColor.text};font-size:11px;font-weight:700;letter-spacing:0.06em;">${severity}</span>`;
+              const caseStudy = getRelatedCaseStudy({ ruleId: finding.ruleId, category: finding.category });
+              const caseStudyHtml = caseStudy
+                ? `<div style="margin-top:6px;padding:8px 10px;background:#f1f5f9;border-left:3px solid #0f5c7a;border-radius:4px;color:#0f172a;font-size:12px;">
+                    <span style="font-weight:600;">Where I've caught this pattern:</span>
+                    <a href="${escapeHtml(marketingBaseUrl + caseStudy.href)}" style="color:#0f5c7a;text-decoration:underline;">${escapeHtml(caseStudy.title)}</a>
+                    — <span style="color:#475569;">${escapeHtml(caseStudy.outcomeStat)}</span>
+                  </div>`
+                : "";
 
               return `
                 <tr>
@@ -282,6 +293,7 @@ function buildHtmlEmail(
                         ? `<div style="margin-top:4px;color:#334155;">Quoted line: ${escapeHtml(lineItem.serviceLineLabel)} · ${escapeHtml(toUsd(lineItem.amountUsd))} · ${escapeHtml(formatHours(lineItem.estimatedHours))}</div>`
                         : ""
                     }
+                    ${caseStudyHtml}
                   </td>
                 </tr>
               `;
@@ -690,6 +702,7 @@ export function buildArchitectureReviewEmailContent(
     provider: report.provider,
     platforms: report.reviewScope.platforms,
   });
+  const marketingBaseUrl = getMarketingSiteUrl();
   const reviewerLinesLocal = buildReviewerSynthesisLines({
     findings: report.findings,
     pillarScores: pillarScoresLocal,
@@ -757,13 +770,19 @@ export function buildArchitectureReviewEmailContent(
     "",
     "Top deductions:",
     ...(mandatoryFindings.length > 0
-      ? mandatoryFindings.slice(0, 6).flatMap((finding) => [
-          `- [${getFindingSeverityLabel(finding.pointsDeducted)}] ${finding.ruleId} | -${finding.pointsDeducted} points | ${finding.recommendationType.toUpperCase()}`,
-          `  Why: ${finding.why}`,
-          `  Evidence seen: ${finding.evidenceSeen}`,
-          `  How to fix: ${finding.howToFix}`,
-          `  Official references: ${finding.officialSourceLinks.map((link) => `${link.label} (${link.url})`).join(", ")}`,
-        ])
+      ? mandatoryFindings.slice(0, 6).flatMap((finding) => {
+          const cs = getRelatedCaseStudy({ ruleId: finding.ruleId, category: finding.category });
+          return [
+            `- [${getFindingSeverityLabel(finding.pointsDeducted)}] ${finding.ruleId} | -${finding.pointsDeducted} points | ${finding.recommendationType.toUpperCase()}`,
+            `  Why: ${finding.why}`,
+            `  Evidence seen: ${finding.evidenceSeen}`,
+            `  How to fix: ${finding.howToFix}`,
+            `  Official references: ${finding.officialSourceLinks.map((link) => `${link.label} (${link.url})`).join(", ")}`,
+            ...(cs
+              ? [`  Where I've caught this pattern: ${cs.title} — ${cs.outcomeStat} — ${marketingBaseUrl}${cs.href}`]
+              : []),
+          ];
+        })
       : ["No mandatory deductions."]),
     ...(quickWinsLocal.length > 0
       ? [
