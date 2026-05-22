@@ -4,6 +4,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { getRelatedCaseStudy } from "@/lib/architecture-review/case-study-links";
+import {
+  getCounterfactualCost,
+  SAMPLE_COUNTERFACTUAL_COST,
+} from "@/lib/architecture-review/counterfactual-costs";
 import { buildArchitectureObservation } from "@/lib/architecture-review/observation";
 import { getArchitectureReviewPricingCatalogEntry } from "@/lib/architecture-review/pricing-catalog";
 import {
@@ -310,6 +314,7 @@ export default function ArchitectureReviewerSampleReportPage() {
           {positiveFindings.map((finding) => {
             const severity = getFindingSeverityLabel(finding.pointsDeducted);
             const caseStudy = getRelatedCaseStudy({ ruleId: finding.ruleId, category: finding.category });
+            const counterfactual = getCounterfactualCost(finding.ruleId) ?? SAMPLE_COUNTERFACTUAL_COST;
             return (
               <article key={finding.ruleId} className="rounded-xl border border-slate-200 bg-white p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -332,6 +337,10 @@ export default function ArchitectureReviewerSampleReportPage() {
                   </p>
                 ) : null}
                 <p className="mt-2 text-sm leading-6 text-slate-500">Estimated fix-effort driver: {toUsd(finding.fixCostUSD)}</p>
+                <div className="mt-3 rounded-md border-l-4 border-yellow-600 bg-yellow-50 px-3 py-2 text-sm leading-6 text-slate-800">
+                  <span className="font-semibold text-slate-900">Cost of fixing vs not: </span>
+                  {counterfactual}
+                </div>
                 {caseStudy ? (
                   <div className="mt-3 rounded-md border-l-4 border-sky-700 bg-sky-50 px-3 py-2 text-sm">
                     <span className="font-semibold text-slate-900">Where I&apos;ve caught this pattern: </span>

@@ -5,6 +5,7 @@ import type {
 } from "@/lib/architecture-review/types";
 import { buildFallbackArchitectureEstimateSnapshot } from "@/lib/architecture-review/estimate-snapshot";
 import { getRelatedCaseStudy } from "@/lib/architecture-review/case-study-links";
+import { getCounterfactualCost } from "@/lib/architecture-review/counterfactual-costs";
 import { buildArchitectureObservation } from "@/lib/architecture-review/observation";
 import { getArchitectureReviewPricingCatalogEntry } from "@/lib/architecture-review/pricing-catalog";
 import { getMarketingSiteUrl } from "@/lib/site";
@@ -269,6 +270,12 @@ function buildHtmlEmail(
                     — <span style="color:#475569;">${escapeHtml(caseStudy.outcomeStat)}</span>
                   </div>`
                 : "";
+              const counterfactualNote = getCounterfactualCost(finding.ruleId);
+              const counterfactualHtml = counterfactualNote
+                ? `<div style="margin-top:6px;padding:8px 10px;background:#fefce8;border-left:3px solid #ca8a04;border-radius:4px;color:#0f172a;font-size:12px;line-height:1.55;">
+                    <span style="font-weight:600;">Cost of fixing vs not:</span> ${escapeHtml(counterfactualNote)}
+                  </div>`
+                : "";
 
               return `
                 <tr>
@@ -293,6 +300,7 @@ function buildHtmlEmail(
                         ? `<div style="margin-top:4px;color:#334155;">Quoted line: ${escapeHtml(lineItem.serviceLineLabel)} · ${escapeHtml(toUsd(lineItem.amountUsd))} · ${escapeHtml(formatHours(lineItem.estimatedHours))}</div>`
                         : ""
                     }
+                    ${counterfactualHtml}
                     ${caseStudyHtml}
                   </td>
                 </tr>
@@ -772,12 +780,14 @@ export function buildArchitectureReviewEmailContent(
     ...(mandatoryFindings.length > 0
       ? mandatoryFindings.slice(0, 6).flatMap((finding) => {
           const cs = getRelatedCaseStudy({ ruleId: finding.ruleId, category: finding.category });
+          const counterfactual = getCounterfactualCost(finding.ruleId);
           return [
             `- [${getFindingSeverityLabel(finding.pointsDeducted)}] ${finding.ruleId} | -${finding.pointsDeducted} points | ${finding.recommendationType.toUpperCase()}`,
             `  Why: ${finding.why}`,
             `  Evidence seen: ${finding.evidenceSeen}`,
             `  How to fix: ${finding.howToFix}`,
             `  Official references: ${finding.officialSourceLinks.map((link) => `${link.label} (${link.url})`).join(", ")}`,
+            ...(counterfactual ? [`  Cost of fixing vs not: ${counterfactual}`] : []),
             ...(cs
               ? [`  Where I've caught this pattern: ${cs.title} — ${cs.outcomeStat} — ${marketingBaseUrl}${cs.href}`]
               : []),
