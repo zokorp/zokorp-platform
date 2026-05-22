@@ -565,6 +565,183 @@ describe("stripe webhook route", () => {
     );
   });
 
+  it("audit-logs customer.subscription.trial_will_end without touching entitlements", async () => {
+    constructEventMock.mockReturnValue({
+      id: "evt_trial_will_end",
+      type: "customer.subscription.trial_will_end",
+      data: {
+        object: {
+          id: "sub_trial_1",
+          status: "trialing",
+          trial_end: 1_900_000_000,
+        },
+      },
+    });
+
+    const response = await POST(
+      new Request("https://app.zokorp.com/api/stripe/webhook", {
+        method: "POST",
+        headers: { "stripe-signature": "sig_123" },
+        body: "{}",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(entitlementUpdateManyMock).not.toHaveBeenCalled();
+    expect(auditCreateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "billing.subscription_trial_will_end",
+          metadataJson: expect.objectContaining({
+            stripeSubscriptionId: "sub_trial_1",
+          }),
+        }),
+      }),
+    );
+    expect(recordStripeWebhookEventMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ processingStatus: "processed" }),
+    );
+  });
+
+  it("audit-logs checkout.session.async_payment_failed without touching entitlements", async () => {
+    constructEventMock.mockReturnValue({
+      id: "evt_checkout_async_failed",
+      type: "checkout.session.async_payment_failed",
+      data: {
+        object: {
+          id: "cs_async_failed",
+          payment_status: "unpaid",
+          customer_details: { email: "buyer@example.com" },
+        },
+      },
+    });
+
+    const response = await POST(
+      new Request("https://app.zokorp.com/api/stripe/webhook", {
+        method: "POST",
+        headers: { "stripe-signature": "sig_123" },
+        body: "{}",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(entitlementUpdateManyMock).not.toHaveBeenCalled();
+    expect(auditCreateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "billing.checkout_async_payment_failed",
+          metadataJson: expect.objectContaining({
+            stripeCheckoutSessionId: "cs_async_failed",
+            customerEmail: "buyer@example.com",
+          }),
+        }),
+      }),
+    );
+  });
+
+  it("audit-logs invoice.finalized without touching entitlements", async () => {
+    constructEventMock.mockReturnValue({
+      id: "evt_invoice_finalized",
+      type: "invoice.finalized",
+      data: {
+        object: {
+          id: "in_finalized_1",
+          customer: "cus_1",
+          subscription: "sub_finalized_1",
+          amount_due: 1000,
+          currency: "usd",
+          status: "open",
+        },
+      },
+    });
+
+    const response = await POST(
+      new Request("https://app.zokorp.com/api/stripe/webhook", {
+        method: "POST",
+        headers: { "stripe-signature": "sig_123" },
+        body: "{}",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(entitlementUpdateManyMock).not.toHaveBeenCalled();
+    expect(auditCreateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "billing.invoice_finalized",
+          metadataJson: expect.objectContaining({
+            stripeInvoiceId: "in_finalized_1",
+            stripeSubscriptionId: "sub_finalized_1",
+          }),
+        }),
+      }),
+    );
+  });
+
+  it("audit-logs payment_intent.payment_failed without touching entitlements", async () => {
+    constructEventMock.mockReturnValue({
+      id: "evt_pi_failed",
+      type: "payment_intent.payment_failed",
+      data: {
+        object: {
+          id: "pi_failed_1",
+          customer: "cus_pi",
+          amount: 5000,
+          currency: "usd",
+          last_payment_error: { message: "Your card was declined." },
+        },
+      },
+    });
+
+    const response = await POST(
+      new Request("https://app.zokorp.com/api/stripe/webhook", {
+        method: "POST",
+        headers: { "stripe-signature": "sig_123" },
+        body: "{}",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(entitlementUpdateManyMock).not.toHaveBeenCalled();
+    expect(auditCreateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "billing.payment_intent_failed",
+          metadataJson: expect.objectContaining({
+            stripePaymentIntentId: "pi_failed_1",
+            lastPaymentError: "Your card was declined.",
+          }),
+        }),
+      }),
+    );
+  });
+
+  it("records unsupported event types as ignored without touching entitlements", async () => {
+    constructEventMock.mockReturnValue({
+      id: "evt_unsupported",
+      type: "customer.tax_id.created",
+      data: { object: { id: "txid_1" } },
+    });
+
+    const response = await POST(
+      new Request("https://app.zokorp.com/api/stripe/webhook", {
+        method: "POST",
+        headers: { "stripe-signature": "sig_123" },
+        body: "{}",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(entitlementUpdateManyMock).not.toHaveBeenCalled();
+    expect(auditCreateMock).not.toHaveBeenCalled();
+    expect(recordStripeWebhookEventMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        processingStatus: "ignored",
+        metadata: expect.objectContaining({ reason: "unsupported_event" }),
+      }),
+    );
+  });
+
   it("audits signed webhook failures after signature verification", async () => {
     constructEventMock.mockReturnValue({
       id: "evt_sub_failure",
