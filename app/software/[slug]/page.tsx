@@ -62,20 +62,32 @@ function formatAmount(amount: number, currency: string) {
 }
 
 function getPriceTitle(productSlug: string, amount: number, kind: PriceKind) {
-  if (productSlug !== "zokorp-validator") {
+  if (productSlug === "zokorp-validator") {
+    if (amount === 5000) {
+      return "FTR - Single Run";
+    }
+
+    if (amount === 15000) {
+      return "SDP/SRP - Single Run";
+    }
+
+    if (amount === 50000) {
+      return "Competency - Single Run";
+    }
+
     return kind.replaceAll("_", " ");
   }
 
-  if (amount === 5000) {
-    return "FTR - Single Run";
-  }
+  if (productSlug === "mlops-foundation-platform" && kind === PriceKind.SUBSCRIPTION) {
+    if (amount === 100) {
+      return "Monthly access";
+    }
 
-  if (amount === 15000) {
-    return "SDP/SRP - Single Run";
-  }
+    if (amount === 1000) {
+      return "Annual access";
+    }
 
-  if (amount === 50000) {
-    return "Competency - Single Run";
+    return "Subscription";
   }
 
   return kind.replaceAll("_", " ");
@@ -568,7 +580,9 @@ export default async function SoftwareDetailPage({
                 <p className="text-sm leading-6 text-slate-600">
                   {price.kind === PriceKind.CREDIT_PACK
                     ? `Runs per purchase: ${price.creditsGranted}`
-                    : "Stripe checkout"}
+                    : isMLOpsPlatform
+                      ? "Upload spreadsheet revenue data, run deterministic forecasts in your browser, cancel anytime from your account."
+                      : "Stripe checkout"}
                 </p>
                 {product.slug === "zokorp-validator" && price.kind === PriceKind.CREDIT_PACK ? (
                   <p className="text-xs text-slate-500">
