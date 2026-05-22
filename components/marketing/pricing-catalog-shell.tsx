@@ -169,8 +169,11 @@ function getServiceRow(offer: PricingServiceOffer): PricingRow {
   };
 }
 
+// Last column is locked to 9.5rem so price/action variations across rows
+// (e.g. "from $1,500/month" vs "from $750") don't widen one row's last
+// cell and shift its neighbours left out of alignment.
 const tableColumns = {
-  "--table-columns": "minmax(0,1.55fr) minmax(11rem,0.78fr) minmax(12rem,0.78fr) auto",
+  "--table-columns": "minmax(0,1.55fr) minmax(11rem,0.78fr) minmax(12rem,0.78fr) 9.5rem",
 } as CSSProperties;
 
 export function PricingCatalogShell({ products, primaryOffers, secondaryOffers }: PricingCatalogShellProps) {

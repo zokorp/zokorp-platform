@@ -40,8 +40,11 @@ export default async function ServicesPage() {
   const followUpColumns = {
     "--table-columns": "minmax(0,0.82fr) minmax(0,1.08fr) auto",
   } as CSSProperties;
+  // Last column is locked to 9.5rem — see app/page.tsx for the same comment.
+  // Keeps the Advisory Retainer row (whose "from $1,500/month" price is the
+  // widest in the table) from pushing its neighbours out of alignment.
   const serviceTableColumns = {
-    "--table-columns": "minmax(0,1.12fr) minmax(15rem,0.86fr) minmax(18rem,0.9fr) minmax(6.5rem,auto)",
+    "--table-columns": "minmax(0,1.12fr) minmax(15rem,0.86fr) minmax(18rem,0.9fr) 9.5rem",
   } as CSSProperties;
 
   return (

@@ -499,7 +499,11 @@ body {
 }
 
 .table-band {
-  --table-columns: minmax(0, 1.38fr) minmax(0, 0.96fr) minmax(17rem, 0.96fr) auto;
+  /* Default last-column width is fixed at 9.5rem so that a wider price or
+     button text in one row can't widen its own row's last cell and shift
+     the other cells in that row left, breaking vertical alignment with
+     neighbouring rows. */
+  --table-columns: minmax(0, 1.38fr) minmax(0, 0.96fr) minmax(17rem, 0.96fr) 9.5rem;
   position: relative;
   overflow: hidden;
   border-radius: calc(var(--radius-panel-lg) - 0.1rem);

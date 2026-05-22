@@ -79,11 +79,14 @@ export default async function HomePage() {
       sameAs: [PUBLIC_LAUNCH_CONTACT.linkedInUrl],
     },
   ];
+  // Last column is locked to 9.5rem so a longer button/price ("Open reviewer",
+  // "from $1,500/month") doesn't widen one row and shift its neighbours left
+  // out of alignment with the rest of the table.
   const softwareTableColumns = {
-    "--table-columns": "minmax(0,1.28fr) minmax(0,0.95fr) minmax(15rem,0.9fr) auto",
+    "--table-columns": "minmax(0,1.28fr) minmax(0,0.95fr) minmax(15rem,0.9fr) 9.5rem",
   } as CSSProperties;
   const serviceTableColumns = {
-    "--table-columns": "minmax(0,1.12fr) minmax(15rem,0.86fr) minmax(18rem,0.9fr) minmax(6.5rem,auto)",
+    "--table-columns": "minmax(0,1.12fr) minmax(15rem,0.86fr) minmax(18rem,0.9fr) 9.5rem",
   } as CSSProperties;
 
   return (
