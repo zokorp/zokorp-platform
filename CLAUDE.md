@@ -24,7 +24,7 @@ Stack: Next.js 16 + React 19 + TypeScript 5 strict, Prisma 6 + Postgres, NextAut
 | Marketing | `/`, `/about`, `/services`, `/case-studies`, `/media`, `/contact` | public |
 | Software hub | `/software`, `/software/[slug]` | public (tool output gated by verified business email) |
 | Account | `/account`, `/account/billing` | session + verified email |
-| Admin | `/admin/products`, `/admin/prices`, `/admin/service-requests`, `/admin/leads` | `requireAdmin()` — `ZOKORP_ADMIN_EMAILS` env |
+| Admin | `/admin/products`, `/admin/prices`, `/admin/service-requests`, `/admin/leads`, `/admin/architecture-catalog`, `/admin/billing`, `/admin/operations`, `/admin/readiness` | `requireAdmin()` — `ZOKORP_ADMIN_EMAILS` env |
 | APIs | `/app/api/*` | per-route |
 
 Multi-host routing lives in `proxy.ts` — apex (`zokorp.com`), marketing host, app host. Marketing-only and app-only path lists are defined there.
@@ -87,7 +87,7 @@ These are >1000 LOC and easy to break. Read carefully before editing, and prefer
 - `lib/architecture-review/rule-catalog.ts` (~1208 LOC)
 - `lib/architecture-review/diagram-generator.ts` (~1511 LOC)
 - `lib/zokorp-validator-engine.ts` (~2315 LOC)
-- `app/api/stripe/webhook/route.ts` (~592 LOC) — billing event handling
+- `lib/stripe-webhook-handlers.ts` (~1020 LOC) — Stripe event dispatch + entitlement mutations; `app/api/stripe/webhook/route.ts` is a thin signature-verify + dispatch wrapper
 
 ## Architecture review specifics
 
