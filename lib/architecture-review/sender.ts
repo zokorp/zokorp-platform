@@ -10,9 +10,95 @@ type SendEmailInput = {
 
 export type SendEmailResult = {
   ok: boolean;
-  provider: "resend" | "smtp" | null;
+  provider: "zeptomail" | "resend" | "smtp" | null;
   error?: string;
 };
+
+// ZeptoMail is Zoho's dedicated transactional-email service. It exposes the
+// same REST shape as the other providers but speaks its own request schema,
+// so we keep the implementation isolated from Resend's path.
+//
+// Priority order is ZeptoMail → Resend → SMTP. ZeptoMail wins when both an
+// auth token AND a from-address are configured; otherwise we silently fall
+// through to the next provider. That makes a Resend→ZeptoMail migration a
+// pure env-var swap (no code deploys) once the Zoho account is set up.
+async function sendWithZeptoMail(input: SendEmailInput): Promise<SendEmailResult> {
+  const token = process.env.ZEPTOMAIL_TOKEN;
+  const fromEmail = process.env.ZEPTOMAIL_FROM_EMAIL;
+
+  if (!token || !fromEmail) {
+    return {
+      ok: false,
+      provider: null,
+      error: "ZEPTOMAIL_NOT_CONFIGURED",
+    };
+  }
+
+  // Default to the .com endpoint. Zoho also serves .eu / .in / .au / .jp
+  // regional hosts — let operators override via env without a code change.
+  const endpoint = process.env.ZEPTOMAIL_API_URL ?? "https://api.zeptomail.com/v1.1/email";
+  const fromName = process.env.ZEPTOMAIL_FROM_NAME ?? "ZoKorp";
+
+  try {
+    const response = await fetchWithTimeout(
+      endpoint,
+      {
+        method: "POST",
+        headers: {
+          // ZeptoMail uses its own auth scheme — NOT a bearer token.
+          Authorization: `Zoho-enczapikey ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          from: {
+            address: fromEmail,
+            name: fromName,
+          },
+          to: [
+            {
+              email_address: {
+                address: input.to,
+              },
+            },
+          ],
+          subject: input.subject,
+          textbody: input.text,
+          htmlbody: input.html,
+        }),
+      },
+      12_000,
+    );
+
+    if (!response.ok) {
+      const errorBody = readResponseBodySnippet(await response.text(), 400);
+      return {
+        ok: false,
+        provider: "zeptomail",
+        error: `ZEPTOMAIL_${response.status}:${errorBody}`,
+      };
+    }
+
+    return {
+      ok: true,
+      provider: "zeptomail",
+    };
+  } catch (error) {
+    if (error instanceof FetchTimeoutError) {
+      return {
+        ok: false,
+        provider: "zeptomail",
+        error: "ZEPTOMAIL_TIMEOUT",
+      };
+    }
+
+    return {
+      ok: false,
+      provider: "zeptomail",
+      error: error instanceof Error ? error.message : "ZEPTOMAIL_UNKNOWN_ERROR",
+    };
+  }
+}
 
 async function sendWithResend(input: SendEmailInput): Promise<SendEmailResult> {
   const apiKey = process.env.RESEND_API_KEY;
@@ -151,6 +237,14 @@ async function sendWithSmtp(input: SendEmailInput): Promise<SendEmailResult> {
 }
 
 export async function sendArchitectureReviewEmail(input: SendEmailInput): Promise<SendEmailResult> {
+  // Provider preference: ZeptoMail (in-Zoho, cheapest at scale) → Resend
+  // (best DX, kept as a transitional fallback) → SMTP (works with any
+  // provider, including Zoho Mail itself).
+  const zeptoResult = await sendWithZeptoMail(input);
+  if (zeptoResult.ok) {
+    return zeptoResult;
+  }
+
   const resendResult = await sendWithResend(input);
   if (resendResult.ok) {
     return resendResult;
@@ -163,8 +257,8 @@ export async function sendArchitectureReviewEmail(input: SendEmailInput): Promis
 
   return {
     ok: false,
-    provider: resendResult.provider ?? smtpResult.provider,
-    error: [resendResult.error, smtpResult.error].filter(Boolean).join(" | "),
+    provider: zeptoResult.provider ?? resendResult.provider ?? smtpResult.provider,
+    error: [zeptoResult.error, resendResult.error, smtpResult.error].filter(Boolean).join(" | "),
   };
 }
 

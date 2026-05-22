@@ -22,8 +22,13 @@ export function isPasswordResetEmailConfigured() {
   );
 }
 
+export function isZeptoMailConfigured() {
+  return Boolean(process.env.ZEPTOMAIL_TOKEN) && Boolean(process.env.ZEPTOMAIL_FROM_EMAIL);
+}
+
 export function isResultEmailConfigured() {
   return (
+    isZeptoMailConfigured() ||
     (Boolean(process.env.RESEND_API_KEY) && Boolean(process.env.RESEND_FROM_EMAIL)) ||
     isPasswordResetEmailConfigured()
   );

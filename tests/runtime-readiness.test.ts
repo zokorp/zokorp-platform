@@ -225,4 +225,36 @@ describe("runtime readiness report", () => {
     expect(findCheck(report, "github-actions-schedulers")).toMatchObject({ level: "warning" });
     expect(report.totals.fail).toBe(0);
   });
+
+  it("passes the email-provider check when only ZeptoMail is configured", () => {
+    const report = buildRuntimeReadinessReport({
+      NEXTAUTH_SECRET: "nextauth-secret",
+      NEXTAUTH_URL: "https://app.zokorp.com",
+      APP_SITE_URL: "https://app.zokorp.com",
+      MARKETING_SITE_URL: "https://www.zokorp.com",
+      AUTH_PASSWORD_ENABLED: "false",
+      ZEPTOMAIL_TOKEN: "zepto-token",
+      ZEPTOMAIL_FROM_EMAIL: "hello@zokorp.com",
+    });
+
+    expect(findCheck(report, "email-provider")).toMatchObject({
+      level: "pass",
+      summary: expect.stringContaining("ZeptoMail"),
+    });
+  });
+
+  it("warns on the email-provider check when no provider is configured", () => {
+    const report = buildRuntimeReadinessReport({
+      NEXTAUTH_SECRET: "nextauth-secret",
+      NEXTAUTH_URL: "https://app.zokorp.com",
+      APP_SITE_URL: "https://app.zokorp.com",
+      MARKETING_SITE_URL: "https://www.zokorp.com",
+      AUTH_PASSWORD_ENABLED: "false",
+    });
+
+    expect(findCheck(report, "email-provider")).toMatchObject({
+      level: "warning",
+      operatorAction: expect.stringContaining("ZeptoMail"),
+    });
+  });
 });

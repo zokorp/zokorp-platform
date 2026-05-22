@@ -91,6 +91,7 @@ export function buildRuntimeReadinessReport(env: RuntimeEnv = process.env): Runt
     configured(env.EMAIL_SERVER_PASSWORD) &&
     configured(env.EMAIL_FROM);
   const resendConfigured = configured(env.RESEND_API_KEY) && configured(env.RESEND_FROM_EMAIL);
+  const zeptomailConfigured = configured(env.ZEPTOMAIL_TOKEN) && configured(env.ZEPTOMAIL_FROM_EMAIL);
   const sentryServerConfigured = configured(env.SENTRY_DSN);
   const sentryClientConfigured = configured(env.NEXT_PUBLIC_SENTRY_DSN);
   const sentrySourceMapUploadConfigured =
@@ -466,21 +467,24 @@ export function buildRuntimeReadinessReport(env: RuntimeEnv = process.env): Runt
       id: "integrations",
       label: "Email and External Integrations",
       checks: [
-        resendConfigured || smtpConfigured
+        zeptomailConfigured || resendConfigured || smtpConfigured
           ? {
               id: "email-provider",
               label: "Result email provider",
               level: "pass",
-              summary: resendConfigured
-                ? "Resend is configured for result delivery."
-                : "SMTP is configured for email delivery.",
+              summary: zeptomailConfigured
+                ? "ZeptoMail (Zoho) is configured for result delivery."
+                : resendConfigured
+                  ? "Resend is configured for result delivery."
+                  : "SMTP is configured for email delivery.",
             }
           : {
               id: "email-provider",
               label: "Result email provider",
               level: "warning",
               summary: "No result-email provider is fully configured.",
-              operatorAction: "Configure Resend or SMTP before relying on verification, resets, or follow-up emails.",
+              operatorAction:
+                "Configure ZeptoMail, Resend, or SMTP before relying on verification, resets, or follow-up emails.",
             },
         zohoDirectAccessConfigured || zohoRefreshConfigured
           ? {
