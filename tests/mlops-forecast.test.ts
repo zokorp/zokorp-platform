@@ -67,4 +67,45 @@ describe("mlops forecast helpers", () => {
     expect(csv).toContain("date,revenue");
     expect(csv.split("\n")).toHaveLength(buildDemoRevenueSeries().length + 1);
   });
+
+  it("detects common alternate column headers like 'Month' and 'Total Sales'", () => {
+    const parsed = parseRevenueCsvRows([
+      "Month,Total Sales",
+      "2026-01-01,4500",
+      "2026-02-01,5100",
+      "2026-03-01,5400",
+    ].join("\n"));
+
+    expect(parsed).toEqual([
+      { dateISO: "2026-01-01", revenue: 4500 },
+      { dateISO: "2026-02-01", revenue: 5100 },
+      { dateISO: "2026-03-01", revenue: 5400 },
+    ]);
+  });
+
+  it("detects MRR/ARR-style headers", () => {
+    const parsed = parseRevenueCsvRows([
+      "Period,MRR",
+      "2026-01-01,1000",
+      "2026-02-01,1100",
+    ].join("\n"));
+
+    expect(parsed).toEqual([
+      { dateISO: "2026-01-01", revenue: 1000 },
+      { dateISO: "2026-02-01", revenue: 1100 },
+    ]);
+  });
+
+  it("detects Quarter-style and Year-Month headers", () => {
+    const parsed = parseRevenueCsvRows([
+      "Quarter,Net Revenue",
+      "2026-01-01,12000",
+      "2026-04-01,13500",
+    ].join("\n"));
+
+    expect(parsed).toEqual([
+      { dateISO: "2026-01-01", revenue: 12000 },
+      { dateISO: "2026-04-01", revenue: 13500 },
+    ]);
+  });
 });

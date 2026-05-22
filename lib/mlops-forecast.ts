@@ -161,8 +161,44 @@ function parseRows(rows: string[][]): MLOpsForecastPoint[] {
   }
 
   const firstRow = meaningfulRows[0].map(cleanHeaderCell);
-  const dateHeaderCandidates = new Set(["date", "day", "period", "timestamp", "month"]);
-  const valueHeaderCandidates = new Set(["revenue", "value", "amount", "sales", "income", "bookings"]);
+  const dateHeaderCandidates = new Set([
+    "date",
+    "day",
+    "period",
+    "timestamp",
+    "month",
+    "monthstart",
+    "monthending",
+    "week",
+    "weekstart",
+    "quarter",
+    "year",
+    "yearmonth",
+    "time",
+    "reportingperiod",
+  ]);
+  const valueHeaderCandidates = new Set([
+    "revenue",
+    "revenues",
+    "value",
+    "amount",
+    "sales",
+    "income",
+    "bookings",
+    "total",
+    "totalrevenue",
+    "totalsales",
+    "grossrevenue",
+    "netrevenue",
+    "netsales",
+    "billing",
+    "billings",
+    "mrr",
+    "arr",
+    "subscription",
+    "subscriptions",
+    "subscriptionrevenue",
+  ]);
 
   let dateColumn = 0;
   let valueColumn = 1;
