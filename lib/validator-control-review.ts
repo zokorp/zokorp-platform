@@ -533,9 +533,23 @@ function evaluateControl(input: {
   };
 }
 
-function escapeCsv(value: string) {
-  const escaped = value.replaceAll('"', '""');
-  if (/[",\n]/.test(escaped)) {
+// VAL-03: characters that make a spreadsheet treat a cell as a formula. Includes the full-width
+// variants (＝ ＋ － ＠) some clients normalize back to the ASCII trigger.
+const CSV_FORMULA_TRIGGERS = ["=", "+", "-", "@", "\t", "\r", "＝", "＋", "－", "＠"];
+
+export function escapeCsv(value: string) {
+  let safe = value;
+  // VAL-03: neutralize CSV/formula injection. The partner-supplied response cells are attacker-
+  // controlled; a value beginning with a formula trigger is prefixed with a single quote so Excel /
+  // Google Sheets render it as text, not an executable formula.
+  if (safe.length > 0 && CSV_FORMULA_TRIGGERS.some((trigger) => safe.startsWith(trigger))) {
+    safe = `'${safe}`;
+  }
+
+  const escaped = safe.replaceAll('"', '""');
+  // Quote any cell containing a separator, quote, or line/field break so a value cannot start a new
+  // cell mid-field (CR and Tab added alongside comma/newline).
+  if (/[",\r\n\t]/.test(escaped)) {
     return `"${escaped}"`;
   }
   return escaped;
