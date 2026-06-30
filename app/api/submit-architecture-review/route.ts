@@ -299,6 +299,30 @@ export async function POST(request: Request) {
     const userEmail = access.email;
     const emailDomain = getEmailDomain(userEmail);
 
+    const incomingIdempotencyKey = normalizeIdempotencyKey(request.headers.get("x-idempotency-key"));
+    const idempotencyCacheKey = incomingIdempotencyKey
+      ? `arch-review:${user.id}:${incomingIdempotencyKey}`
+      : null;
+
+    if (idempotencyCacheKey) {
+      const cached = readIdempotencyEntry(idempotencyCacheKey);
+      if (cached) {
+        const cachedRequestId = typeof cached.body.requestId === "string" ? cached.body.requestId : requestId;
+        return NextResponse.json(cached.body, {
+          status: cached.status,
+          headers: {
+            ...responseHeaders(cachedRequestId),
+            "X-Idempotent-Replay": "1",
+          },
+        });
+      }
+    }
+
+    // ARCH-02: validate the payload BEFORE consuming any rate limit. A malformed or typo'd
+    // submit must return 400 without burning the business domain's single daily slot (or the
+    // per-user window). Metering only happens once the request is known to be well-formed.
+    const { metadata, diagram } = await parsePayloadFromRequest(request);
+
     if (emailDomain) {
       const domainLimiter = await consumeRateLimit({
         key: `arch-review-domain:${emailDomain}`,
@@ -318,25 +342,6 @@ export async function POST(request: Request) {
             "Retry-After": String(domainLimiter.retryAfterSeconds),
           },
         );
-      }
-    }
-
-    const incomingIdempotencyKey = normalizeIdempotencyKey(request.headers.get("x-idempotency-key"));
-    const idempotencyCacheKey = incomingIdempotencyKey
-      ? `arch-review:${user.id}:${incomingIdempotencyKey}`
-      : null;
-
-    if (idempotencyCacheKey) {
-      const cached = readIdempotencyEntry(idempotencyCacheKey);
-      if (cached) {
-        const cachedRequestId = typeof cached.body.requestId === "string" ? cached.body.requestId : requestId;
-        return NextResponse.json(cached.body, {
-          status: cached.status,
-          headers: {
-            ...responseHeaders(cachedRequestId),
-            "X-Idempotent-Replay": "1",
-          },
-        });
       }
     }
 
@@ -369,8 +374,6 @@ export async function POST(request: Request) {
         limiterContext,
       );
     }
-
-    const { metadata, diagram } = await parsePayloadFromRequest(request);
     const saveForFollowUp = wantsFollowUpArchive(metadata);
     const diagramArchiveResult = saveForFollowUp
       ? await archiveArchitectureDiagramToWorkDrive({

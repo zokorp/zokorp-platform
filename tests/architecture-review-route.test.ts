@@ -166,6 +166,26 @@ describe("submit architecture review route", () => {
     expect(mocks.createArchitectureReviewJob).not.toHaveBeenCalled();
   });
 
+  it("validates the payload before consuming any rate limit (ARCH-02)", async () => {
+    // A malformed submit (non-multipart body) must fail validation and return 400 WITHOUT
+    // consuming the domain's single daily slot or the per-user window. Before the fix the
+    // domain limiter ran first, so a typo'd submit burned the business domain's only slot.
+    const response = await POST(
+      new Request("http://localhost/api/submit-architecture-review", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "http://localhost",
+        },
+        body: JSON.stringify({ provider: "aws" }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(mocks.consumeRateLimit).not.toHaveBeenCalled();
+    expect(mocks.createArchitectureReviewJob).not.toHaveBeenCalled();
+  });
+
   it("rejects cross-site uploads before auth or queue work", async () => {
     const formData = new FormData();
     formData.append(
