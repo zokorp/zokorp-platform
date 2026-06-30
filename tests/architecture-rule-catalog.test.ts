@@ -492,6 +492,16 @@ describe("architecture rule catalog", () => {
     expect(snapshot.lineItems[0]?.amountUsd).not.toBe(1500);
   });
 
+  it("rejects an inverted admin override band (ARCH-Q04)", () => {
+    const formData = new FormData();
+    formData.set("ruleId", "internet_facing_endpoint_without_tls");
+    formData.set("pricingMode", "OVERRIDE");
+    formData.set("overrideMinPriceUsd", "5000");
+    formData.set("overrideMaxPriceUsd", "500");
+
+    expect(() => parseArchitectureRuleCatalogFormInput(formData)).toThrow(/minimum price cannot exceed/i);
+  });
+
   it("publishes a reviewed revision and leaves immutable code-backed fields untouched", async () => {
     const codeEntry = getArchitectureReviewPricingCatalogEntry("infrastructure_as_code_indicated");
     const ruleId = codeEntry!.ruleId;

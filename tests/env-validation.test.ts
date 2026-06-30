@@ -16,7 +16,8 @@ describe("server env validation (TYPE-04 / TEST-01)", () => {
   });
 
   it("fails fast and names a missing required var", () => {
-    const { ARCHIVE_ENCRYPTION_SECRET: _omitted, ...partial } = completeEnv;
+    const partial = { ...completeEnv };
+    delete partial.ARCHIVE_ENCRYPTION_SECRET;
     const result = validateServerEnv(partial);
     expect(result.ok).toBe(false);
     if (!result.ok) {

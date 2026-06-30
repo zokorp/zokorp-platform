@@ -121,7 +121,7 @@ describe("architecture quote calculator", () => {
     const score = calculateOverallScore(findings);
     const quote = calculateConsultationQuoteUSD(findings, score, {
       tokenCount: 10,
-      mode: "webllm",
+      mode: "rules-only",
       ocrCharacterCount: 1200,
       desiredEngagement: "review-call-only",
       workloadCriticality: "standard",
@@ -152,13 +152,7 @@ describe("architecture quote calculator", () => {
       },
     ];
 
-    const confidence = calculateAnalysisConfidence(findings, {
-      tokenCount: 18,
-      ocrCharacterCount: 150,
-      mode: "rules-only",
-      desiredEngagement: "hands-on-remediation",
-      workloadCriticality: "standard",
-    });
+    const confidence = calculateAnalysisConfidence(findings);
 
     const quoteTier = determineQuoteTier({
       overallScore: calculateOverallScore(findings),

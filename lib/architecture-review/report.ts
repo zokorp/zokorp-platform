@@ -201,7 +201,7 @@ export function buildArchitectureReviewReport(input: {
     });
   const findings = finalizeFindings(input.findings, input.provider);
   const overallScore = calculateOverallScore(findings);
-  const analysisConfidence = input.analysisConfidenceOverride ?? calculateAnalysisConfidence(findings, input.quoteContext);
+  const analysisConfidence = input.analysisConfidenceOverride ?? calculateAnalysisConfidence(findings);
   const quoteTier =
     input.quoteTierOverride ??
     determineQuoteTier({
