@@ -1,4 +1,4 @@
-import pdfParse from "pdf-parse/lib/pdf-parse.js";
+import { extractText, getDocumentProxy } from "unpdf";
 
 import { reviewChecklistWorkbook } from "@/lib/validator-control-review";
 import { loadTargetReferenceMaterial } from "@/lib/validator-reference-material";
@@ -71,8 +71,11 @@ export async function parseValidatorInput(input: {
   const referenceMaterial = await loadTargetReferenceMaterial(input.target);
 
   if (lower.endsWith(".pdf") || input.mimeType === "application/pdf") {
-    const parsed = await pdfParse(input.buffer);
-    const extractedText = parsed.text.replace(/\s+/g, " ").trim();
+    // DEP-07: parse untrusted PDF uploads with unpdf (serverless PDF.js, isEvalSupported:false by
+    // default) instead of the stale, unmaintained pdf-parse.
+    const pdf = await getDocumentProxy(new Uint8Array(input.buffer), { isEvalSupported: false });
+    const { text, totalPages } = await extractText(pdf, { mergePages: true });
+    const extractedText = (text || "").replace(/\s+/g, " ").trim();
     const sanitized = sanitizeValidatorText(extractedText);
     const report = buildValidationReport({
       profile: input.profile,
@@ -81,7 +84,7 @@ export async function parseValidatorInput(input: {
       context: {
         sourceType: "pdf",
         filename: input.filename,
-        pages: parsed.numpages,
+        pages: totalPages,
         additionalContext: context,
         processingNotes: [...referenceMaterial.notes, ...sanitized.notes],
       },
@@ -90,7 +93,7 @@ export async function parseValidatorInput(input: {
     return {
       output: formatValidationReport(report),
       meta: {
-        pages: parsed.numpages,
+        pages: totalPages,
         words: sanitized.text.length ? sanitized.text.split(" ").length : 0,
         inputType: "pdf",
         profile: input.profile,

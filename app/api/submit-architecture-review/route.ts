@@ -26,6 +26,9 @@ const ARCH_REVIEW_WINDOW_MS = 60 * 60 * 1000;
 const ARCH_REVIEW_DAILY_LIMIT = Number(process.env.ARCH_REVIEW_DAILY_LIMIT ?? "24");
 const ARCH_REVIEW_DOMAIN_LIMIT = 1;
 const ARCH_REVIEW_DOMAIN_WINDOW_MS = 24 * 60 * 60 * 1000;
+// SEC-04: the client caps PDFs to 8 pages for OCR, but that is advisory. The server enforces the same
+// cap on the attacker-supplied bytes so an oversized PDF cannot exhaust the parser server-side.
+const SERVER_PDF_MAX_PAGES = 8;
 const MAX_METADATA_JSON_CHARS = 120_000;
 
 type RateLimitResult = {
@@ -200,12 +203,27 @@ async function parsePayloadFromRequest(request: Request) {
       throw new Error("INVALID_DIAGRAM_FILE");
     }
 
+    // SEC-04/SEC-05/DEP-07: inspect attacker-supplied PDF bytes with unpdf (serverless PDF.js,
+    // isEvalSupported:false by default) instead of the stale, unmaintained pdf-parse. Enforce the
+    // 8-page cap server-side, and only EXTRACT TEXT server-side when the client did not already
+    // provide it (avoid running text extraction on attacker bytes unnecessarily).
+    const { extractText, getDocumentProxy } = await import("unpdf");
+    let pdfDocument;
+    try {
+      pdfDocument = await getDocumentProxy(new Uint8Array(bytes), { isEvalSupported: false });
+    } catch {
+      throw new Error("INVALID_DIAGRAM_FILE");
+    }
+
+    if (pdfDocument.numPages > SERVER_PDF_MAX_PAGES) {
+      throw new Error("PDF_TOO_MANY_PAGES");
+    }
+
     let clientPdfText = metadata.clientPdfText?.trim() ?? "";
 
     if (!clientPdfText) {
-      const pdfParseModule = await import("pdf-parse");
-      const parsed = await pdfParseModule.default(Buffer.from(bytes));
-      clientPdfText = (parsed.text || "").replace(/\s+/g, " ").trim();
+      const { text } = await extractText(pdfDocument, { mergePages: true });
+      clientPdfText = (text || "").replace(/\s+/g, " ").trim();
     }
 
     if (!clientPdfText) {
@@ -453,6 +471,15 @@ export async function POST(request: Request) {
       return jsonResponse(
         requestId,
         { error: `Diagram too large. Max allowed is ${ARCHITECTURE_REVIEW_MAX_MB}MB.` },
+        413,
+        limiterContext,
+      );
+    }
+
+    if (error instanceof Error && error.message === "PDF_TOO_MANY_PAGES") {
+      return jsonResponse(
+        requestId,
+        { error: `PDF has too many pages. Upload a focused diagram of at most ${SERVER_PDF_MAX_PAGES} pages.` },
         413,
         limiterContext,
       );
