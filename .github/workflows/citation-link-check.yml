@@ -1,0 +1,24 @@
+name: Citation Link Check
+
+# CITE-09: verify every officialSourceLinks documentation URL the paid report can cite still resolves
+# with a clean 200 (no 404, no redirect). Catches silent link rot before it reaches a customer email.
+on:
+  schedule:
+    - cron: "33 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-links:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - name: Set up Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: "20"
+      - name: Verify citation URLs
+        run: node scripts/check_citation_links.mjs
