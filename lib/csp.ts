@@ -2,6 +2,7 @@ type BuildContentSecurityPolicyOptions = {
   gaMeasurementId?: string | null;
   nodeEnv?: string | null;
   reportUri?: string | null;
+  nonce?: string | null;
 };
 
 function normalizeValue(value: string | null | undefined) {
@@ -17,9 +18,20 @@ export function buildContentSecurityPolicy(options: BuildContentSecurityPolicyOp
     normalizeValue(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID);
   const reportUri =
     ("reportUri" in options ? normalizeValue(options.reportUri) : null) ?? "/api/security/csp-report";
+  const nonce = "nonce" in options ? normalizeValue(options.nonce) : null;
   const hasGa = Boolean(gaMeasurementId);
 
-  const scriptSrc = ["'self'", "'unsafe-inline'"];
+  // SEC-06: when a per-request nonce is supplied (by proxy.ts middleware), use nonce + 'strict-dynamic'
+  // instead of 'unsafe-inline'. Supporting browsers trust the nonce'd bootstrap and the scripts it
+  // loads (ignoring host allowlists); 'self' and the GA host remain as fallbacks for engines without
+  // strict-dynamic. The no-nonce branch preserves the historical policy for any caller that builds the
+  // CSP without a nonce.
+  const scriptSrc = ["'self'"];
+  if (nonce) {
+    scriptSrc.push(`'nonce-${nonce}'`, "'strict-dynamic'");
+  } else {
+    scriptSrc.push("'unsafe-inline'");
+  }
   if (nodeEnv !== "production") {
     scriptSrc.push("'unsafe-eval'");
   }

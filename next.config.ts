@@ -1,10 +1,12 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
-import { buildContentSecurityPolicy } from "./lib/csp";
 import { shouldUploadSentrySourceMaps } from "./lib/sentry-config";
 
-const contentSecurityPolicy = buildContentSecurityPolicy();
-
+// SEC-06/07: the Content-Security-Policy is now emitted per-request by proxy.ts (the Next 16
+// middleware) so it can carry a per-request nonce and drop 'unsafe-inline'. The remaining static
+// security headers stay here. HSTS is emitted in every environment (preview and production); browsers
+// ignore it over plain http (local dev), so an always-on value is safe and closes the SEC-07 gap
+// where these headers were only set when NODE_ENV=production.
 const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -14,12 +16,7 @@ const securityHeaders = [
     value:
       "camera=(), microphone=(), geolocation=(), browsing-topics=(), interest-cohort=()",
   },
-  ...(process.env.NODE_ENV === "production"
-    ? [
-        { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-        { key: "Content-Security-Policy", value: contentSecurityPolicy },
-      ]
-    : []),
+  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
 ];
 
 const nextConfig: NextConfig = {
