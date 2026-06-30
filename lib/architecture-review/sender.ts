@@ -6,6 +6,10 @@ type SendEmailInput = {
   subject: string;
   text: string;
   html?: string;
+  // REL-01: an optional provider idempotency key (`<event-type>/<entity-id>`, <=256 chars). Resend
+  // honours an `Idempotency-Key` header with a 24h dedup window; ZeptoMail and SMTP have no send-time
+  // idempotency, so on those paths the DB outbox unique key + status gate are the only guards.
+  idempotencyKey?: string;
 };
 
 export type SendEmailResult = {
@@ -120,6 +124,9 @@ async function sendWithResend(input: SendEmailInput): Promise<SendEmailResult> {
         headers: {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
+          // REL-01: dedup retries provider-side. Reusing the key with the same payload returns the
+          // original 200; the truncation keeps us under Resend's 256-char limit.
+          ...(input.idempotencyKey ? { "Idempotency-Key": input.idempotencyKey.slice(0, 256) } : {}),
         },
       body: JSON.stringify({
         from,
@@ -131,6 +138,15 @@ async function sendWithResend(input: SendEmailInput): Promise<SendEmailResult> {
       },
       12_000,
     );
+
+    // REL-01: a 409 (`invalid_idempotent_request` / `concurrent_idempotent_requests`) means this exact
+    // idempotent request was already accepted/in-flight. Treat it as delivered rather than re-sending.
+    if (response.status === 409 && input.idempotencyKey) {
+      return {
+        ok: true,
+        provider: "resend",
+      };
+    }
 
     if (!response.ok) {
       const errorBody = readResponseBodySnippet(await response.text(), 400);
