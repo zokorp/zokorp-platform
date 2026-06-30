@@ -51,6 +51,20 @@ export const onRequestError: Instrumentation.onRequestError = async (
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
+    // TYPE-04: validate required server env at boot. This runs when the server starts (NOT during
+    // `next build`), so it fails fast on a misconfigured production deploy without breaking the build.
+    // Production throws (crashing the deploy health check); development only warns so local work isn't
+    // blocked by a missing optional secret.
+    const { validateServerEnv } = await import("@/lib/env");
+    const result = validateServerEnv();
+    if (!result.ok) {
+      const message = `Invalid or missing required environment variables: ${result.message}`;
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(message);
+      }
+      console.warn(`[env] ${message}`);
+    }
+
     await import("./sentry.server.config");
   }
 

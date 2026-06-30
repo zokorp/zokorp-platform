@@ -55,12 +55,19 @@ async function maybeCleanupExpiredBuckets(nowMs: number) {
 }
 
 export function getRequestFingerprint(request: Request) {
-  const forwardedFor = request.headers.get("x-forwarded-for") ?? "";
-  const realIp = request.headers.get("x-real-ip") ?? "";
-  const candidate = forwardedFor.split(",")[0]?.trim() || realIp.trim();
+  // COST-01: do NOT trust the client-supplied left-most X-Forwarded-For entry — a caller can spoof it
+  // to rotate the rate-limit key. Prefer the platform-set client IP headers that Vercel overwrites at
+  // its edge (x-vercel-forwarded-for is proprietary and not client-forgeable; x-real-ip is set by the
+  // platform). The per-user daily limit remains the real abuse ceiling, so this only needs to be a
+  // best-effort, non-forgeable key — when no trusted header is present we fall back to the user agent
+  // rather than an attacker-controlled value.
+  const platformIp =
+    request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip")?.trim() ||
+    "";
 
-  if (candidate) {
-    return candidate;
+  if (platformIp) {
+    return platformIp;
   }
 
   const ua = request.headers.get("user-agent")?.trim() ?? "unknown-agent";

@@ -25,4 +25,12 @@ describe("content security policy builder", () => {
     expect(withoutGa).not.toContain("https://www.googletagmanager.com");
     expect(withGa).toContain("script-src 'self' 'unsafe-inline' https://www.googletagmanager.com");
   });
+
+  it("uses a nonce and strict-dynamic instead of unsafe-inline when a nonce is supplied (SEC-06)", () => {
+    const policy = buildContentSecurityPolicy({ nodeEnv: "production", nonce: "abc123" });
+
+    expect(policy).toContain("script-src 'self' 'nonce-abc123' 'strict-dynamic'");
+    // script-src no longer falls back to 'unsafe-inline' when a nonce is present.
+    expect(policy).not.toContain("script-src 'self' 'unsafe-inline'");
+  });
 });

@@ -1,0 +1,46 @@
+name: Refresh Disposable Email Domains
+
+# GATE-01: keep the vendored disposable-email-domains dataset current. Runs weekly, bumps the package,
+# and opens a PR only when the dataset actually changed (so list maintenance is reviewed, not silent).
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - name: Set up Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: "20"
+      - name: Bump disposable-email-domains and open a PR on change
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm install disposable-email-domains@latest --save --no-audit --no-fund
+          if git diff --quiet -- package.json package-lock.json; then
+            echo "Disposable-email-domains dataset is already up to date."
+            exit 0
+          fi
+          BRANCH="chore/refresh-disposable-domains-${GITHUB_RUN_ID}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add package.json package-lock.json
+          git commit -m "chore: refresh vendored disposable-email-domains dataset (GATE-01)"
+          git push origin "$BRANCH"
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "chore: refresh disposable-email-domains dataset" \
+            --body "Automated weekly refresh of the vendored disposable-email-domains dataset used by the business-email gate (GATE-01). Review the diff before merging."

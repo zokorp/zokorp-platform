@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import disposableEmailDomains from "disposable-email-domains";
 
 import { isAllowedFileType, isBusinessEmail, maxUploadBytes, parseAdminEmails } from "@/lib/security";
 
@@ -61,5 +62,17 @@ describe("security helpers", () => {
     expect(isBusinessEmail("burner@throwaway.email")).toBe(false);
     expect(isBusinessEmail("burner@maildrop.cc")).toBe(false);
     expect(isBusinessEmail("burner@temp-mail.org")).toBe(false);
+  });
+
+  it("blocks domains from the vendored disposable dataset (GATE-01)", () => {
+    // Sample the maintained dataset directly so the assertion tracks the data, not a hard-coded domain.
+    for (const domain of disposableEmailDomains.slice(0, 8)) {
+      expect(isBusinessEmail(`user@${domain}`), domain).toBe(false);
+    }
+  });
+
+  it("matches on the registrable domain (eTLD+1) for provider subdomains (GATE-03)", () => {
+    expect(isBusinessEmail("user@mail.gmail.com")).toBe(false);
+    expect(isBusinessEmail("user@corp.acme-industrial.com")).toBe(true);
   });
 });

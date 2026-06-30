@@ -107,4 +107,29 @@ describe("host routing proxy", () => {
     expect(response.headers.get("location")).toBeNull();
     expect(response.headers.get("x-robots-tag")).toBeNull();
   });
+
+  it("sets a per-request nonce CSP on rendered pages but not on redirects (SEC-06/07)", () => {
+    const pageResponse = proxy(
+      new NextRequest("https://www.zokorp.com/services", { headers: { host: "www.zokorp.com" } }),
+    );
+    const csp = pageResponse.headers.get("content-security-policy");
+    expect(csp).toContain("'strict-dynamic'");
+    expect(csp).toMatch(/'nonce-[^']+'/);
+    expect(csp).not.toContain("script-src 'self' 'unsafe-inline'");
+
+    const redirectResponse = proxy(
+      new NextRequest("https://zokorp.com/services", { headers: { host: "zokorp.com" } }),
+    );
+    expect(redirectResponse.status).toBe(301);
+    expect(redirectResponse.headers.get("content-security-policy")).toBeNull();
+  });
+
+  it("does not attach a nonce CSP to prefetch requests (SEC-06)", () => {
+    const response = proxy(
+      new NextRequest("https://www.zokorp.com/services", {
+        headers: { host: "www.zokorp.com", "next-router-prefetch": "1" },
+      }),
+    );
+    expect(response.headers.get("content-security-policy")).toBeNull();
+  });
 });

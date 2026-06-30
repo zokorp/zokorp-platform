@@ -588,7 +588,9 @@ model ArchitectureReviewEmailOutbox {
   job           ArchitectureReviewJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
   leadLog       LeadLog? @relation(fields: [leadLogId], references: [id], onDelete: SetNull)
 
-  @@index([jobId])
+  // REL-01: exactly one report-email outbox row per job. This is the idempotency anchor that prevents
+  // a double-send when the worker re-runs (the unique key also covers the @@index([jobId]) lookups).
+  @@unique([jobId])
   @@index([leadLogId])
   @@index([status])
 }

@@ -1,7 +1,6 @@
 import {
   calculateAnalysisConfidence,
   buildArchitectureConsultationQuote,
-  calculateConsultationQuoteUSD,
   calculateFixCostUSD,
   calculateOverallScore,
   compareFindingsDeterministically,
@@ -11,6 +10,7 @@ import {
   mergedEvidenceText,
   type ArchitectureQuoteContext,
 } from "@/lib/architecture-review/quote";
+import { buildFallbackArchitectureEstimateSnapshot } from "@/lib/architecture-review/estimate-snapshot";
 import { getArchitectureReviewRule } from "@/lib/architecture-review/rules";
 import { resolveArchitectureReviewScope } from "@/lib/architecture-review/scope";
 import {
@@ -201,7 +201,7 @@ export function buildArchitectureReviewReport(input: {
     });
   const findings = finalizeFindings(input.findings, input.provider);
   const overallScore = calculateOverallScore(findings);
-  const analysisConfidence = input.analysisConfidenceOverride ?? calculateAnalysisConfidence(findings, input.quoteContext);
+  const analysisConfidence = input.analysisConfidenceOverride ?? calculateAnalysisConfidence(findings);
   const quoteTier =
     input.quoteTierOverride ??
     determineQuoteTier({
@@ -210,15 +210,14 @@ export function buildArchitectureReviewReport(input: {
       analysisConfidence,
       regulatoryScope: input.quoteContext?.regulatoryScope,
     });
-  const consultationQuoteUSD = calculateConsultationQuoteUSD(findings, overallScore, input.quoteContext);
-  const consultationQuote = buildArchitectureConsultationQuote({
-    findings,
-    consultationQuoteUSD,
-    quoteTier,
-    analysisConfidence,
-  });
-
-  const report: ArchitectureReviewReport = {
+  // ARCH-Q02: store the SAME engine the customer sees. The email and Stripe checkout render
+  // Formula B (buildArchitectureEstimateSnapshot.totalUsd); the legacy Formula A figure was
+  // computed, stored, and never shown. Derive the stored headline from the canonical (no-override)
+  // snapshot so the persisted consultationQuoteUSD equals the deterministic number the customer is
+  // quoted, and there is no longer a second, divergent money formula in the report.
+  const generatedAtISO = input.generatedAtISO ?? new Date().toISOString();
+  const userEmail = input.userEmail.trim().toLowerCase();
+  const baseReport: ArchitectureReviewReport = {
     reportVersion: ARCHITECTURE_REVIEW_VERSION,
     provider: input.provider,
     reviewScope,
@@ -227,10 +226,37 @@ export function buildArchitectureReviewReport(input: {
     quoteTier,
     flowNarrative: truncate(input.flowNarrative, 2000),
     findings,
+    consultationQuoteUSD: 0,
+    consultationQuote: {
+      quoteLow: 0,
+      quoteHigh: 0,
+      lineItems: [
+        {
+          code: "architecture-advisory-baseline",
+          label: "Advisory review baseline",
+          amountLow: 0,
+          amountHigh: 0,
+          reason: "Placeholder used only to derive the canonical estimate snapshot.",
+        },
+      ],
+      rationaleLines: ["Placeholder."],
+    },
+    generatedAtISO,
+    userEmail,
+  };
+
+  const consultationQuoteUSD = buildFallbackArchitectureEstimateSnapshot(baseReport).snapshot.totalUsd;
+  const consultationQuote = buildArchitectureConsultationQuote({
+    findings,
+    consultationQuoteUSD,
+    quoteTier,
+    analysisConfidence,
+  });
+
+  const report: ArchitectureReviewReport = {
+    ...baseReport,
     consultationQuoteUSD,
     consultationQuote,
-    generatedAtISO: input.generatedAtISO ?? new Date().toISOString(),
-    userEmail: input.userEmail.trim().toLowerCase(),
   };
 
   const parsed = architectureReviewReportSchema.parse(report);

@@ -669,7 +669,8 @@ export default async function AccountPage() {
       }
     }
   } catch (error) {
-    console.error("Failed to load account page data.", { email, error });
+    // PRIV-01: do not log the authenticated user's email on the error path.
+    console.error("Failed to load account page data.", { error });
     accountLoadError = true;
   }
 

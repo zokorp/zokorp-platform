@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { buildContentSecurityPolicy } from "@/lib/csp";
 import { getAppSiteUrl, getMarketingSiteUrl } from "@/lib/site";
 
 const APEX_HOST = "zokorp.com";
@@ -81,6 +82,28 @@ function isRenderablePage(pathname: string) {
   return !pathname.startsWith("/_next/") && !pathname.startsWith("/api/") && !STATIC_FILE_PATH.test(pathname);
 }
 
+// SEC-06/07: a prefetch should not receive (and cache) a per-request nonce CSP — its scripts run in
+// the eventual real navigation, which gets its own nonce.
+function isPrefetchRequest(request: NextRequest) {
+  return (
+    request.headers.get("next-router-prefetch") !== null ||
+    request.headers.get("purpose") === "prefetch" ||
+    request.headers.get("x-middleware-prefetch") !== null
+  );
+}
+
+// SEC-06: generate a per-request nonce and the matching CSP, and forward the nonce to the renderer via
+// the request headers (Next reads the nonce from the request Content-Security-Policy header and
+// applies it to its framework scripts) so we can drop 'unsafe-inline' from script-src.
+function buildNonceCspContext(request: NextRequest) {
+  const nonce = btoa(crypto.randomUUID());
+  const csp = buildContentSecurityPolicy({ nonce });
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("content-security-policy", csp);
+  return { csp, requestHeaders };
+}
+
 function buildAppHostRobotsBody() {
   return [
     "User-agent: *",
@@ -157,12 +180,21 @@ export function proxy(request: NextRequest) {
     return redirectToHost(request, host, nextPathname);
   }
 
+  const renderable = isRenderablePage(pathname);
+  // Apply the nonce CSP to real HTML page renders only — not assets, API routes, or prefetches.
+  const cspContext = renderable && !isPrefetchRequest(request) ? buildNonceCspContext(request) : null;
+  const requestInit = cspContext ? { request: { headers: cspContext.requestHeaders } } : undefined;
+
   const response =
     host === APP_HOST && pathname === "/"
-      ? NextResponse.rewrite(new URL(APP_INTERNAL_LANDING_PATH, request.url))
-      : NextResponse.next();
+      ? NextResponse.rewrite(new URL(APP_INTERNAL_LANDING_PATH, request.url), requestInit)
+      : NextResponse.next(requestInit);
 
-  if (host === APP_HOST && isRenderablePage(pathname)) {
+  if (cspContext) {
+    response.headers.set("content-security-policy", cspContext.csp);
+  }
+
+  if (host === APP_HOST && renderable) {
     response.headers.set("x-robots-tag", appRobotsHeaderValue(pathname));
   }
 

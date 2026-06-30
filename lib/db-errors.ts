@@ -8,6 +8,10 @@ export function isSchemaDriftError(error: unknown) {
   return error.code === "P2021" || error.code === "P2022";
 }
 
+export function isUniqueConstraintError(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
+}
+
 export function isDatabasePoolPressureError(error: unknown) {
   if (!(error instanceof Prisma.PrismaClientInitializationError)) {
     return false;

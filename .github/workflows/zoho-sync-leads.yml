@@ -5,6 +5,9 @@ on:
     - cron: "17 14 * * 1"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   sync-leads:
     runs-on: ubuntu-latest

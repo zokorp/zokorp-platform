@@ -5,6 +5,9 @@ on:
     - cron: "25 * * * *"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   sync-estimate-companions:
     runs-on: ubuntu-latest

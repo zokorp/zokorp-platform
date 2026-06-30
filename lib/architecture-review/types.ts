@@ -208,7 +208,7 @@ export const architectureReviewMetadataSchema = z.object({
   paragraphInput: z.string().trim().min(1).max(2000).optional(),
   tokenCount: z.number().int().min(0).max(5000).optional(),
   ocrCharacterCount: z.number().int().min(0).max(50000).optional(),
-  mode: z.enum(["rules-only", "webllm"]).optional(),
+  mode: z.literal("rules-only").optional(),
   workloadCriticality: architectureWorkloadCriticalitySchema.optional(),
   regulatoryScope: architectureRegulatoryScopeSchema.optional(),
   environment: architectureEnvironmentSchema.optional(),

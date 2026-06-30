@@ -1194,6 +1194,45 @@ function resolveIconHref(node: DiagramNode) {
   return null;
 }
 
+// ARCH-01: the generated diagram is re-checked by the project's own `validateSvgMarkup`, which
+// rejects `data:` references (a defense for untrusted uploads). The icon embeds are
+// `data:image/svg+xml;base64,...` URIs, so a `<image href="data:...">` made the generator emit SVG
+// its own validator refused. Inline the icon markup instead — decode the base64 SVG and nest it as
+// a sized/positioned `<svg>` (keeping its root attributes and viewBox) so the output is self-
+// contained and passes validation, with no behavioural change to how the icon renders.
+function inlineIconMarkup(embed: string, x: number, y: number, size: number): string | null {
+  const prefix = "data:image/svg+xml;base64,";
+  if (!embed.startsWith(prefix)) {
+    return null;
+  }
+
+  let raw: string;
+  try {
+    raw = Buffer.from(embed.slice(prefix.length), "base64").toString("utf8");
+  } catch {
+    return null;
+  }
+
+  raw = raw
+    .replace(/<\?xml[\s\S]*?\?>/gi, "")
+    .replace(/<!DOCTYPE[\s\S]*?>/gi, "")
+    .trim();
+
+  const openMatch = raw.match(/<svg\b([^>]*)>/i);
+  if (!openMatch || !raw.includes("</svg>")) {
+    return null;
+  }
+
+  const keptAttrs = (openMatch[1] ?? "")
+    .replace(/\s(?:width|height|x|y)\s*=\s*["'][^"']*["']/gi, "")
+    .trim();
+  const hasViewBox = /viewBox\s*=/i.test(keptAttrs);
+  const sizing = `x="${x}" y="${y}" width="${size}" height="${size}" preserveAspectRatio="xMidYMid meet" overflow="visible"`;
+  const newOpen = `<svg ${hasViewBox ? "" : 'viewBox="0 0 40 40" '}${keptAttrs ? `${keptAttrs} ` : ""}${sizing}>`;
+
+  return raw.replace(openMatch[0], newOpen);
+}
+
 function buildBoundaryOverlays(provider: ArchitectureProvider, template: DiagramTemplate, layout: Layout): BoundaryOverlay[] {
   const edgeZone = layout.laneZones.edge;
   const appZone = layout.laneZones.application;
@@ -1413,9 +1452,13 @@ function renderSvg(input: {
       const iconSize = 32;
       const iconX = rect.x + 16;
       const iconY = rect.y + Math.round((rect.height - iconSize) / 2);
-      const iconSvg = iconHref
-        ? `<image href="${escapeXml(iconHref)}" x="${iconX}" y="${iconY}" width="${iconSize}" height="${iconSize}" preserveAspectRatio="xMidYMid meet" />`
-        : renderNodeFallbackIcon(rect, node.label, theme.accent);
+      const inlinedIcon =
+        iconHref && iconHref.startsWith("data:") ? inlineIconMarkup(iconHref, iconX, iconY, iconSize) : null;
+      const iconSvg = inlinedIcon
+        ? inlinedIcon
+        : iconHref && !iconHref.startsWith("data:")
+          ? `<image href="${escapeXml(iconHref)}" x="${iconX}" y="${iconY}" width="${iconSize}" height="${iconSize}" preserveAspectRatio="xMidYMid meet" />`
+          : renderNodeFallbackIcon(rect, node.label, theme.accent);
 
       return [
         `<rect x="${rect.x}" y="${rect.y}" width="${rect.width}" height="${rect.height}" rx="14" fill="${theme.nodeFill}" stroke="${theme.nodeStroke}" stroke-width="1.5" filter="url(#node-shadow)" />`,

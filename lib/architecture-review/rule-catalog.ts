@@ -1194,14 +1194,26 @@ export function parseArchitectureRuleCatalogFormInput(formData: FormData) {
     return parsed;
   };
 
+  const overrideMinPriceUsd = parseAmount("overrideMinPriceUsd");
+  const overrideMaxPriceUsd = parseAmount("overrideMaxPriceUsd");
+  // ARCH-Q04: reject an inverted override band so an admin typo (min > max) cannot be silently
+  // averaged into a plausible-but-wrong customer amount.
+  if (
+    typeof overrideMinPriceUsd === "number" &&
+    typeof overrideMaxPriceUsd === "number" &&
+    overrideMinPriceUsd > overrideMaxPriceUsd
+  ) {
+    throw new Error("Override minimum price cannot exceed the maximum price.");
+  }
+
   return {
     ruleId,
     serviceLineLabel: String(formData.get("serviceLineLabel") ?? ""),
     publicFixSummary: String(formData.get("publicFixSummary") ?? ""),
     internalResearchNotes: String(formData.get("internalResearchNotes") ?? ""),
     pricingMode,
-    overrideMinPriceUsd: parseAmount("overrideMinPriceUsd"),
-    overrideMaxPriceUsd: parseAmount("overrideMaxPriceUsd"),
+    overrideMinPriceUsd,
+    overrideMaxPriceUsd,
     nextReviewAt: parseDateInputValue(String(formData.get("nextReviewAt") ?? "")),
     changeSummary: String(formData.get("changeSummary") ?? ""),
   } satisfies EditableCatalogInput;

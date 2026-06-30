@@ -12,6 +12,13 @@ const mocks = vi.hoisted(() => ({
   architectureReviewJobCount: vi.fn(),
   isSchemaDriftError: vi.fn(),
   archiveArchitectureDiagramToWorkDrive: vi.fn(),
+  getDocumentProxy: vi.fn(),
+  extractText: vi.fn(),
+}));
+
+vi.mock("unpdf", () => ({
+  getDocumentProxy: mocks.getDocumentProxy,
+  extractText: mocks.extractText,
 }));
 
 vi.mock("@/lib/architecture-review/jobs", () => ({
@@ -78,6 +85,12 @@ function makePngFile() {
   return new File([pngBytes], "diagram.png", { type: "image/png" });
 }
 
+function makePdfFile() {
+  // "%PDF-1.4\n" — passes the server-side PDF magic-byte check.
+  const pdfBytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a]);
+  return new File([pdfBytes], "diagram.pdf", { type: "application/pdf" });
+}
+
 function makeMultipartRequest() {
   return makeMultipartRequestWithMetadata({
     provider: "aws",
@@ -125,6 +138,8 @@ describe("submit architecture review route", () => {
       fileId: "wd-diagram-123",
       error: null,
     });
+    mocks.getDocumentProxy.mockResolvedValue({ numPages: 2 });
+    mocks.extractText.mockResolvedValue({ totalPages: 2, text: "edge app service data store" });
   });
 
   it("rejects unverified or unsigned access before queueing a job", async () => {
@@ -163,6 +178,26 @@ describe("submit architecture review route", () => {
     await expect(response.json()).resolves.toMatchObject({
       error: "Invalid review payload.",
     });
+    expect(mocks.createArchitectureReviewJob).not.toHaveBeenCalled();
+  });
+
+  it("validates the payload before consuming any rate limit (ARCH-02)", async () => {
+    // A malformed submit (non-multipart body) must fail validation and return 400 WITHOUT
+    // consuming the domain's single daily slot or the per-user window. Before the fix the
+    // domain limiter ran first, so a typo'd submit burned the business domain's only slot.
+    const response = await POST(
+      new Request("http://localhost/api/submit-architecture-review", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "http://localhost",
+        },
+        body: JSON.stringify({ provider: "aws" }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(mocks.consumeRateLimit).not.toHaveBeenCalled();
     expect(mocks.createArchitectureReviewJob).not.toHaveBeenCalled();
   });
 
@@ -310,6 +345,46 @@ describe("submit architecture review route", () => {
       error: "Missing browser-extracted diagram evidence. Re-upload the file and retry.",
     });
     expect(mocks.createArchitectureReviewJob).not.toHaveBeenCalled();
+  });
+
+  it("enforces the 8-page PDF cap server-side and does not extract over-cap bytes (SEC-04)", async () => {
+    mocks.getDocumentProxy.mockResolvedValueOnce({ numPages: 12 });
+
+    const response = await POST(
+      makeMultipartRequestWithMetadata(
+        {
+          provider: "aws",
+          paragraphInput:
+            "Users enter through an edge layer, app services process requests, and data persists to a managed store.",
+          diagramFormat: "pdf",
+        },
+        makePdfFile(),
+      ),
+    );
+
+    expect(response.status).toBe(413);
+    expect(mocks.extractText).not.toHaveBeenCalled();
+    expect(mocks.createArchitectureReviewJob).not.toHaveBeenCalled();
+  });
+
+  it("does not re-extract PDF text server-side when the client already provided it (SEC-05)", async () => {
+    const response = await POST(
+      makeMultipartRequestWithMetadata(
+        {
+          provider: "aws",
+          paragraphInput:
+            "Users enter through an edge layer, app services process requests, and data persists to a managed store.",
+          diagramFormat: "pdf",
+          clientPdfText: "edge app service data store persists records",
+        },
+        makePdfFile(),
+      ),
+    );
+
+    expect(response.status).toBe(202);
+    // The page cap still runs (document loaded), but text is NOT re-extracted from attacker bytes.
+    expect(mocks.getDocumentProxy).toHaveBeenCalled();
+    expect(mocks.extractText).not.toHaveBeenCalled();
   });
 
   it("accepts Azure submissions under the expanded provider model", async () => {

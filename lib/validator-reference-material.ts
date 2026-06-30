@@ -1,3 +1,4 @@
+import { SsrfBlockedError, ssrfSafeFetch } from "@/lib/ssrf-safe-fetch";
 import type { ValidationTargetContext } from "@/lib/zokorp-validator-engine";
 
 type ReferenceMaterial = {
@@ -12,13 +13,35 @@ type CachedReferenceMaterial = ReferenceMaterial & {
 const CACHE_MAX_AGE_MS = 60 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 4500;
 const MAX_TEXT_CHARS = 120000;
+// SEC-03: the reference destination set is code-owned cloud documentation. This allowlist is the
+// PRIMARY SSRF control (the IP deny ranges in ssrf-safe-fetch are defense in depth). It covers the
+// four providers the validator supports.
 const ALLOWED_REFERENCE_HOST_SUFFIXES = [
+  // AWS
   "aws.amazon.com",
   "docs.aws.amazon.com",
   "awsstatic.com",
   "awspartner.com",
   "amazonaws.com",
+  // Azure
+  "learn.microsoft.com",
+  "docs.microsoft.com",
+  "azure.microsoft.com",
+  // GCP
+  "cloud.google.com",
+  "docs.cloud.google.com",
+  // Snowflake
+  "docs.snowflake.com",
+  "snowflake.com",
 ];
+
+function isReferenceHostAllowed(host: string) {
+  const lower = host.toLowerCase();
+  if (!lower || lower === "localhost") {
+    return false;
+  }
+  return ALLOWED_REFERENCE_HOST_SUFFIXES.some((suffix) => lower === suffix || lower.endsWith(`.${suffix}`));
+}
 
 const cache = new Map<string, CachedReferenceMaterial>();
 
@@ -88,30 +111,25 @@ function extractKeywordsFromText(text: string) {
 }
 
 async function fetchReferenceText(url: string): Promise<{ text: string; note?: string }> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => {
-    controller.abort();
-  }, REQUEST_TIMEOUT_MS);
-
   try {
-    const response = await fetch(url, {
-      method: "GET",
-      redirect: "follow",
-      signal: controller.signal,
+    // SEC-03: SSRF-safe GET — host allowlist (primary), IP deny ranges + connect-time pinning
+    // (defense in depth), manual per-hop redirect revalidation, and size/time caps.
+    const response = await ssrfSafeFetch(url, {
+      isHostAllowed: isReferenceHostAllowed,
+      timeoutMs: REQUEST_TIMEOUT_MS,
     });
 
-    if (!response.ok) {
+    if (response.status < 200 || response.status >= 300) {
       return {
         text: "",
         note: `Reference material unavailable (${response.status}) for ${url}`,
       };
     }
 
-    const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
+    const contentType = response.contentType;
 
     if (contentType.includes("text/html") || contentType.includes("text/plain") || contentType.includes("application/json")) {
-      const raw = await response.text();
-      const text = contentType.includes("text/html") ? stripHtmlTags(raw) : raw;
+      const text = contentType.includes("text/html") ? stripHtmlTags(response.text) : response.text;
       return { text: text.slice(0, MAX_TEXT_CHARS) };
     }
 
@@ -126,13 +144,17 @@ async function fetchReferenceText(url: string): Promise<{ text: string; note?: s
       text: "",
       note: `Reference material format not parsed automatically (${contentType || "unknown"}): ${url}`,
     };
-  } catch {
+  } catch (error) {
+    if (error instanceof SsrfBlockedError) {
+      return {
+        text: "",
+        note: `Reference material was blocked by the SSRF safety policy for ${url}`,
+      };
+    }
     return {
       text: "",
       note: `Reference material could not be fetched for ${url}`,
     };
-  } finally {
-    clearTimeout(timeout);
   }
 }
 
@@ -147,16 +169,7 @@ function isAllowedReferenceUrl(rawUrl: string) {
       return false;
     }
 
-    const host = parsed.hostname.toLowerCase();
-    if (!host) {
-      return false;
-    }
-
-    if (host === "localhost" || host === "127.0.0.1" || host === "::1") {
-      return false;
-    }
-
-    return ALLOWED_REFERENCE_HOST_SUFFIXES.some((suffix) => host === suffix || host.endsWith(`.${suffix}`));
+    return isReferenceHostAllowed(parsed.hostname);
   } catch {
     return false;
   }

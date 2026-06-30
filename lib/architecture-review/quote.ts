@@ -58,7 +58,9 @@ const EFFORT_HOURS: Record<ArchitectureCategory, Record<SeverityBand, number>> =
 export type ArchitectureQuoteContext = {
   tokenCount?: number;
   ocrCharacterCount?: number;
-  mode?: "rules-only" | "webllm";
+  // ARCH-Q05: the legacy "webllm" mode is gone (the local-model dependency was removed). Only the
+  // deterministic "rules-only" path remains.
+  mode?: "rules-only";
   workloadCriticality?: ArchitectureWorkloadCriticality;
   regulatoryScope?: ArchitectureRegulatoryScope;
   desiredEngagement?: ArchitectureEngagementPreference;
@@ -138,29 +140,26 @@ function hasHighFalsePositiveRiskFinding(
   return finding.category === "clarity" && finding.pointsDeducted > 0 && finding.pointsDeducted <= 6;
 }
 
-function estimateConfidence(findings: ArchitectureFindingLike[], context: ArchitectureQuoteContext | undefined) {
+function estimateConfidence(findings: ArchitectureFindingLike[]) {
   let confidence = 1;
   const highFalsePositiveCount = findings.filter(
     (finding) => finding.pointsDeducted > 0 && hasHighFalsePositiveRiskFinding(finding),
   ).length;
   confidence -= highFalsePositiveCount * 0.1;
 
-  if (context?.mode === "webllm" && (context.ocrCharacterCount ?? 0) >= 300) {
-    confidence += 0.05;
-  }
-
   return clamp(confidence, 0.7, 1.05);
 }
 
-export function calculateConfidenceScore(findings: ArchitectureFindingLike[], context: ArchitectureQuoteContext | undefined) {
-  return estimateConfidence(findings, context);
+// ARCH-Q05: confidence is now purely a function of the findings — the quote context no longer
+// influences it after the webllm mode was removed.
+export function calculateConfidenceScore(findings: ArchitectureFindingLike[]) {
+  return estimateConfidence(findings);
 }
 
 export function calculateAnalysisConfidence(
   findings: ArchitectureFindingLike[],
-  context: ArchitectureQuoteContext | undefined,
 ): ArchitectureAnalysisConfidence {
-  const confidence = calculateConfidenceScore(findings, context);
+  const confidence = calculateConfidenceScore(findings);
 
   if (confidence >= 0.95) {
     return "high";
@@ -644,6 +643,13 @@ export function selectQuickWins(
     .slice(0, maxItems);
 }
 
+/**
+ * @deprecated Legacy "Formula A" consultation quote. The customer-facing number is now the single
+ * source of truth in `estimate-snapshot.ts` (`buildArchitectureEstimateSnapshot.totalUsd`, "Formula
+ * B"), which the email, Stripe checkout, and the stored `report.consultationQuoteUSD` all derive
+ * from (see report.ts, ARCH-Q02). This function is retained only for its unit tests; do NOT wire it
+ * back into report generation, the email, or checkout without retiring Formula B first.
+ */
 export function calculateConsultationQuoteUSD(
   findings: ArchitectureFindingLike[],
   overallScore: number,
@@ -685,7 +691,7 @@ export function calculateConsultationQuoteUSD(
   const tokenCount = Math.max(0, context.tokenCount ?? 0);
   const complexity = 1 + clamp((tokenCount - 10) / 40, 0, 0.5);
   const criticality = criticalityMultiplier(context.workloadCriticality);
-  const confidence = estimateConfidence(positiveFindings, context);
+  const confidence = estimateConfidence(positiveFindings);
   const rate = context?.remediationRateUsdPerHour ?? DEFAULT_REMEDIATION_RATE_USD_PER_HOUR;
   const estimatedRemediationUsd = baseHours * rate * complexity * criticality * confidence;
 

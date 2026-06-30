@@ -10,7 +10,12 @@ import { calculateLeadScore } from "@/lib/architecture-review/lead";
 import { configuredArchitectureRemediationRateUsdPerHour } from "@/lib/architecture-review/quote";
 import { summarizeTopIssues } from "@/lib/architecture-review/report";
 import { getArchitectureReviewRuleCountForScope } from "@/lib/architecture-review/rules";
-import { sendArchitectureReviewEmail } from "@/lib/architecture-review/sender";
+import { sendArchitectureReviewEmail, type SendEmailResult } from "@/lib/architecture-review/sender";
+import {
+  claimEmailOutboxForSending,
+  ensureEmailOutbox,
+  resumeSendResultFromOutbox,
+} from "@/lib/architecture-review/email-outbox";
 import { resolveArchitectureReviewScope, reviewScopeLabel, selectedCatalogCount } from "@/lib/architecture-review/scope";
 import {
   architectureReviewMetadataSchema,
@@ -180,7 +185,9 @@ function timedPhases() {
 }
 
 function emlSecret() {
-  return process.env.ARCH_REVIEW_EML_SECRET ?? process.env.NEXTAUTH_SECRET ?? "";
+  // SEC-08: the .eml signing secret must be its own distinct value, never the auth secret. When unset
+  // the .eml download path degrades gracefully (no token) rather than reusing NEXTAUTH_SECRET.
+  return process.env.ARCH_REVIEW_EML_SECRET ?? "";
 }
 
 function parseDeviceClass(value: unknown): DeviceClass {
@@ -454,7 +461,15 @@ async function updatePhase(job: ArchitectureReviewJob, phase: ArchitectureReview
 }
 
 async function failJob(job: ArchitectureReviewJob, errorMessage: string) {
-  const retriable = job.attemptCount < MAX_ATTEMPTS;
+  // REL-01: never re-queue a job whose report email was already handed to the provider. Once the
+  // outbox row is past "pending", a full re-run would waste work and (without the claim guard below)
+  // risk a second send, so settle the job as failed instead of retrying.
+  const outbox = await db.architectureReviewEmailOutbox.findUnique({
+    where: { jobId: job.id },
+    select: { status: true },
+  });
+  const emailAlreadyAttempted = outbox != null && outbox.status !== "pending";
+  const retriable = job.attemptCount < MAX_ATTEMPTS && !emailAlreadyAttempted;
   return db.architectureReviewJob.update({
     where: { id: job.id },
     data: {
@@ -485,6 +500,7 @@ async function rejectJob(job: ArchitectureReviewJob, reason: string) {
     },
   });
 }
+
 
 function parseMetadata(job: ArchitectureReviewJob) {
   const parsed = submitArchitectureReviewMetadataSchema.safeParse(job.metadataJson);
@@ -919,16 +935,13 @@ export async function processArchitectureReviewJob(jobId: string): Promise<Archi
       }),
     });
 
-    const outbox = await db.architectureReviewEmailOutbox.create({
-      data: {
-        jobId: job.id,
-        leadLogId: createdLead?.id ?? null,
-        toEmail: job.userEmail,
-        subject: emailContent.subject,
-        textBody: emailContent.text,
-        htmlBody: emailContent.html,
-        status: "pending",
-      },
+    const outbox = await ensureEmailOutbox({
+      jobId: job.id,
+      leadLogId: createdLead?.id ?? null,
+      toEmail: job.userEmail,
+      subject: emailContent.subject,
+      textBody: emailContent.text,
+      htmlBody: emailContent.html,
     });
 
     job = await db.architectureReviewJob.update({
@@ -1000,21 +1013,32 @@ export async function processArchitectureReviewJob(jobId: string): Promise<Archi
       }
     }
 
-    const sendResult = await sendArchitectureReviewEmail({
-      to: job.userEmail,
-      subject: emailContent.subject,
-      text: emailContent.text,
-      html: emailContent.html,
-    });
+    // REL-01: claim the outbox immediately before the provider call. Only the claim winner sends; a
+    // re-run (e.g. after a crash in the post-send bookkeeping) sees a non-"pending" row and resumes
+    // from the recorded outcome instead of triggering a second send.
+    const maySend = await claimEmailOutboxForSending(job.id);
+    let sendResult: SendEmailResult;
+    if (maySend) {
+      sendResult = await sendArchitectureReviewEmail({
+        to: job.userEmail,
+        subject: emailContent.subject,
+        text: emailContent.text,
+        html: emailContent.html,
+        idempotencyKey: `architecture-review-report/${job.id}`,
+      });
+    } else {
+      const current = await db.architectureReviewEmailOutbox.findUnique({ where: { jobId: job.id } });
+      sendResult = current
+        ? resumeSendResultFromOutbox(current)
+        : { ok: false, provider: null, error: "EMAIL_OUTBOX_MISSING" };
+    }
 
     if (sendResult.ok) {
       await db.architectureReviewEmailOutbox.update({
         where: { id: outbox.id },
         data: {
+          // attemptCount was already incremented by the claim (claimEmailOutboxForSending).
           status: "sent",
-          attemptCount: {
-            increment: 1,
-          },
           provider: sendResult.provider,
           sentAt: new Date(),
           errorMessage: null,
@@ -1169,10 +1193,8 @@ export async function processArchitectureReviewJob(jobId: string): Promise<Archi
     await db.architectureReviewEmailOutbox.update({
       where: { id: outbox.id },
       data: {
+        // attemptCount was already incremented by the claim (claimEmailOutboxForSending).
         status: "fallback",
-        attemptCount: {
-          increment: 1,
-        },
         provider: sendResult.provider,
         errorMessage: sendResult.error ?? "EMAIL_DELIVERY_FAILED",
         textBody: redactedArchitectureEmailBody(),
