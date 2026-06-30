@@ -5,6 +5,9 @@ on:
     - cron: "11,26,41,56 * * * *"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   sync-service-requests:
     runs-on: ubuntu-latest

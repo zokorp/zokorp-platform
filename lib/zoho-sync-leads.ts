@@ -173,39 +173,12 @@ export async function runZohoLeadSync() {
           throw error;
         }
 
-        const legacyLeads = await db.leadLog.findMany({
-          where: {
-            syncedToZohoAt: null,
-          },
-          orderBy: { createdAt: "asc" },
-          take: 100,
-          select: {
-            id: true,
-            userEmail: true,
-            architectureProvider: true,
-            overallScore: true,
-            topIssues: true,
-            authProvider: true,
-            createdAt: true,
-          },
-        });
-
-        return legacyLeads.map((lead) => ({
-          ...lead,
-          userName: null,
-          workdriveUploadStatus: null,
-          analysisConfidence: null,
-          quoteTier: null,
-          emailDeliveryMode: null,
-          leadStage: "New Review",
-          leadScore: null,
-          utmSource: null,
-          utmMedium: null,
-          utmCampaign: null,
-          landingPage: null,
-          referrer: null,
-          ctaClicks: 0,
-        }));
+        // SWP-01: the consent column (allowCrmFollowUp) is unavailable (schema drift, e.g. a deploy
+        // ahead of its migration). Do NOT fall back to an unfiltered query — that would sync leads to
+        // the CRM that never consented to follow-up, bypassing the consent filter. Sync nothing until
+        // the schema is migrated; the consented leads sync on a later run once the column is back.
+        await createInternalAuditLog("internal.zoho_sync_leads.consent_filter_unavailable");
+        return [];
       }
     })();
 
