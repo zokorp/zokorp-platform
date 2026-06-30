@@ -4,6 +4,7 @@ import {
   generateArchitectureDiagramFromNarrative,
   makeGeneratedDiagramSvgFile,
 } from "@/lib/architecture-review/diagram-generator";
+import { validateSvgMarkup } from "@/lib/architecture-review/svg-safety";
 
 describe("architecture diagram generator", () => {
   it("generates deterministic svg output for the same narrative", () => {
@@ -21,8 +22,40 @@ describe("architecture diagram generator", () => {
     expect(first.edges.length).toBeGreaterThan(0);
     expect(first.svg).toContain("AWS");
     expect(first.svg).toContain("API Gateway");
-    expect(first.svg).toContain("data:image/svg+xml;base64,");
+    // ARCH-01: icons are now inlined, not referenced via a `data:` URI the validator rejects.
+    expect(first.svg).not.toContain("data:image/svg+xml;base64,");
     expect(first.nodes.some((node) => node.label === "Lambda")).toBe(true);
+  });
+
+  it("emits SVG that passes the project's own validateSvgMarkup (ARCH-01 round-trip)", () => {
+    const inputs = [
+      {
+        provider: "aws" as const,
+        narrative:
+          "Users call API Gateway, Lambda handles requests, DynamoDB stores records, and CloudWatch monitors errors.",
+      },
+      {
+        provider: "azure" as const,
+        narrative:
+          "Clients reach Front Door, App Service runs the app, SQL Database persists records, and Application Insights monitors.",
+      },
+      {
+        provider: "gcp" as const,
+        narrative:
+          "Traffic enters API Gateway, Cloud Run serves requests, Cloud SQL stores data, and Cloud Monitoring tracks errors.",
+      },
+    ];
+
+    for (const input of inputs) {
+      const generated = generateArchitectureDiagramFromNarrative(input);
+      const result = validateSvgMarkup(generated.svg);
+      expect(
+        result,
+        `validateSvgMarkup rejected the ${input.provider} diagram: ${"error" in result ? result.error : ""}`,
+      ).toEqual({ ok: true });
+      // No data: URI references survive in the generated output.
+      expect(generated.svg).not.toContain("data:image/svg+xml");
+    }
   });
 
   it("falls back to provider defaults for low-signal narrative", () => {
