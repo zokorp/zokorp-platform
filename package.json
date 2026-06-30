@@ -41,6 +41,7 @@
     "@sentry/nextjs": "^10.62.0",
     "@vercel/speed-insights": "^2.0.0",
     "clsx": "^2.1.1",
+    "disposable-email-domains": "^1.0.62",
     "exceljs": "^4.4.0",
     "jszip": "^3.10.1",
     "next": "^16.2.9",
@@ -52,8 +53,9 @@
     "react-dom": "19.2.3",
     "stripe": "^20.4.0",
     "tailwind-merge": "^3.5.0",
-    "undici": "^7.28.0",
     "tesseract.js": "^7.0.0",
+    "tldts": "^7.4.5",
+    "undici": "^7.28.0",
     "unpdf": "^1.6.2",
     "zod": "^4.3.6"
   },

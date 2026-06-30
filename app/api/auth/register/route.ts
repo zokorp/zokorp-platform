@@ -10,7 +10,7 @@ import { consumeRateLimit, getRequestFingerprint } from "@/lib/rate-limit";
 import { hashPassword, validatePasswordStrength } from "@/lib/password-auth";
 import { recordOperationalIssue } from "@/lib/operational-issues";
 import { requireSameOrigin } from "@/lib/request-origin";
-import { isBusinessEmail } from "@/lib/security";
+import { BUSINESS_EMAIL_REQUIRED_MESSAGE, isBusinessEmail } from "@/lib/security";
 import { getSiteOriginFromRequest } from "@/lib/site-origin";
 import { ensureUserAuthSchemaReady } from "@/lib/user-auth-schema";
 
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     const email = parsed.data.email.trim().toLowerCase();
     if (!isBusinessEmail(email)) {
       return NextResponse.json(
-        { error: "Personal email domains are not allowed. Use a business email." },
+        { error: BUSINESS_EMAIL_REQUIRED_MESSAGE },
         { status: 400 },
       );
     }

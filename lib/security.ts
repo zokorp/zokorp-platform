@@ -1,7 +1,17 @@
+import disposableEmailDomains from "disposable-email-domains";
+import { getDomain } from "tldts";
+
+import {
+  DISPOSABLE_EMAIL_DOMAIN_ADDITIONS,
+  DISPOSABLE_EMAIL_DOMAIN_ALLOWLIST,
+} from "@/lib/email-domain-overrides";
+
 const MAX_UPLOAD_MB_FALLBACK = 10;
 
+// GATE-01: the gate is a best-effort denylist, not a guarantee. The copy reflects that rather than
+// overstating it ("Personal email domains are not allowed").
 export const BUSINESS_EMAIL_REQUIRED_MESSAGE =
-  "Personal email domains are not allowed. Use a business email.";
+  "Please sign up with your work email — common personal and disposable email providers aren't accepted for this tool.";
 
 // Consumer / personal mailbox hosts. Edit this list to add or remove a domain.
 const CONSUMER_EMAIL_DOMAINS = [
@@ -95,10 +105,20 @@ const DISPOSABLE_EMAIL_DOMAINS = [
   "fakemail.net",
 ];
 
-const FREE_EMAIL_DOMAINS = new Set<string>([
-  ...CONSUMER_EMAIL_DOMAINS,
-  ...DISPOSABLE_EMAIL_DOMAINS,
-]);
+// GATE-01: combine the curated consumer list + the small inline disposable backstop + the vendored,
+// regularly-refreshed `disposable-email-domains` dataset (~120k domains) + local abuse-log additions,
+// minus any explicit allowlist. Built once at module load into a Set for O(1) lookups.
+const DISPOSABLE_ALLOWLIST = new Set(DISPOSABLE_EMAIL_DOMAIN_ALLOWLIST.map((domain) => domain.toLowerCase()));
+const FREE_EMAIL_DOMAINS = new Set<string>(
+  [
+    ...CONSUMER_EMAIL_DOMAINS,
+    ...DISPOSABLE_EMAIL_DOMAINS,
+    ...disposableEmailDomains,
+    ...DISPOSABLE_EMAIL_DOMAIN_ADDITIONS,
+  ]
+    .map((domain) => domain.toLowerCase())
+    .filter((domain) => !DISPOSABLE_ALLOWLIST.has(domain)),
+);
 
 export const ALLOWED_UPLOAD_MIME_TYPES = new Set([
   "application/pdf",
@@ -133,13 +153,32 @@ export function getEmailDomain(email: string): string | null {
   return parts[1];
 }
 
+// GATE-03: match on the registrable domain (eTLD+1) as well as the exact host, so a per-user subdomain
+// of a blocked provider (e.g. mail.gmail.com -> gmail.com) is also caught.
+export function getRegistrableEmailDomain(email: string): string | null {
+  const host = getEmailDomain(email);
+  if (!host) {
+    return null;
+  }
+  return getDomain(host) ?? host;
+}
+
 export function isBusinessEmail(email: string): boolean {
-  const domain = getEmailDomain(email);
-  if (!domain) {
+  const host = getEmailDomain(email);
+  if (!host) {
     return false;
   }
 
-  return !FREE_EMAIL_DOMAINS.has(domain);
+  if (FREE_EMAIL_DOMAINS.has(host)) {
+    return false;
+  }
+
+  const registrable = getDomain(host);
+  if (registrable && FREE_EMAIL_DOMAINS.has(registrable)) {
+    return false;
+  }
+
+  return true;
 }
 
 function startsWithBytes(buffer: Buffer, bytes: number[]) {
