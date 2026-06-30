@@ -83,7 +83,7 @@ describe("architecture review email content", () => {
     expect(content.html).not.toContain("Request scoped engagement");
   });
 
-  it("keeps low-confidence reviews estimate-first while still showing the estimate block", () => {
+  it("forces low-confidence reviews to consultation-first with no payable estimate (ARCH-Q03)", () => {
     const report = buildArchitectureReviewReport({
       provider: "aws",
       flowNarrative:
@@ -128,9 +128,11 @@ describe("architecture review email content", () => {
     const content = buildArchitectureReviewEmailContent(report);
 
     expect(report.analysisConfidence).toBe("low");
-    expect(content.text).toContain("Because the evidence confidence was low");
-    expect(content.text).toContain("Implementation estimate:");
-    expect(content.html).toContain("The estimate below is limited to the issues visible in the submitted material.");
+    // ARCH-Q03: a low-confidence review must not pre-approve a payable remediation scope. It is now
+    // routed to the consultation-first path instead of rendering an implementation estimate.
+    expect(content.text).toContain("Consultation first");
+    expect(content.text).not.toContain("Implementation estimate:");
+    expect(content.text).toContain("No payable remediation quote is being issued at this score band.");
   });
 
   it("lists each quoted rule line in the customer email", () => {

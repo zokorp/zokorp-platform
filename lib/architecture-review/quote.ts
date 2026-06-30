@@ -644,6 +644,13 @@ export function selectQuickWins(
     .slice(0, maxItems);
 }
 
+/**
+ * @deprecated Legacy "Formula A" consultation quote. The customer-facing number is now the single
+ * source of truth in `estimate-snapshot.ts` (`buildArchitectureEstimateSnapshot.totalUsd`, "Formula
+ * B"), which the email, Stripe checkout, and the stored `report.consultationQuoteUSD` all derive
+ * from (see report.ts, ARCH-Q02). This function is retained only for its unit tests; do NOT wire it
+ * back into report generation, the email, or checkout without retiring Formula B first.
+ */
 export function calculateConsultationQuoteUSD(
   findings: ArchitectureFindingLike[],
   overallScore: number,
