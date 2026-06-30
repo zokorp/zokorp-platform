@@ -3,7 +3,9 @@ import { getArchitectureCallUrl } from "@/lib/marketing-cta";
 import { getAppSiteUrl, getMarketingSiteUrl } from "@/lib/site";
 
 function ctaSecret() {
-  return process.env.ARCH_REVIEW_CTA_SECRET ?? process.env.ARCH_REVIEW_EML_SECRET ?? process.env.NEXTAUTH_SECRET ?? "";
+  // SEC-08: the CTA signing secret must be its own value (it may share the sibling arch-review .eml
+  // secret), but never the auth secret. When unset the CTA links degrade to plain marketing URLs.
+  return process.env.ARCH_REVIEW_CTA_SECRET ?? process.env.ARCH_REVIEW_EML_SECRET ?? "";
 }
 
 export async function buildArchitectureReviewCtaLinks(leadId: string) {

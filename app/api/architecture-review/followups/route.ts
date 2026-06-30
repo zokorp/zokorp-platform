@@ -40,10 +40,10 @@ function providedSecret(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const configuredSecret = process.env.ARCH_REVIEW_FOLLOWUP_SECRET ?? process.env.ZOHO_SYNC_SECRET ?? "";
+  // SEC-02: the follow-up endpoint authenticates with its OWN secret only. The previous fallback to
+  // ZOHO_SYNC_SECRET let an unrelated secret authorize this endpoint; it has been removed.
+  const configuredSecret = process.env.ARCH_REVIEW_FOLLOWUP_SECRET ?? "";
   const receivedSecret = providedSecret(request);
-  const usingZohoFallbackSecret =
-    !process.env.ARCH_REVIEW_FOLLOWUP_SECRET && Boolean(process.env.ZOHO_SYNC_SECRET);
 
   if (!configuredSecret) {
     await createInternalAuditLog("internal.architecture_review_followups.not_configured");
@@ -55,12 +55,6 @@ export async function POST(request: Request) {
 
   if (!receivedSecret || !safeSecretEqual(configuredSecret, receivedSecret)) {
     return jsonNoStore({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  if (usingZohoFallbackSecret) {
-    await createInternalAuditLog("internal.architecture_review_followups.secret_fallback", {
-      fallbackSecret: "ZOHO_SYNC_SECRET",
-    });
   }
 
   try {
@@ -169,7 +163,6 @@ export async function POST(request: Request) {
       skipped,
       optedOut,
       failed,
-      usedZohoSyncSecretFallback: usingZohoFallbackSecret,
     });
 
     return jsonNoStore({
@@ -181,9 +174,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     if (isSchemaDriftError(error)) {
-      await createInternalAuditLog("internal.architecture_review_followups.schema_unavailable", {
-        usedZohoSyncSecretFallback: usingZohoFallbackSecret,
-      });
+      await createInternalAuditLog("internal.architecture_review_followups.schema_unavailable");
       return jsonNoStore(
         {
           error: "Architecture follow-up run is unavailable.",
@@ -195,7 +186,6 @@ export async function POST(request: Request) {
     console.error("architecture follow-up run failed", error);
     await createInternalAuditLog("internal.architecture_review_followups.failed", {
       errorName: error instanceof Error ? error.name : "unknown_error",
-      usedZohoSyncSecretFallback: usingZohoFallbackSecret,
     });
 
     return jsonNoStore(

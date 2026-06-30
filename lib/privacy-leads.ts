@@ -52,11 +52,21 @@ function normalizeEmail(email: string) {
 }
 
 function archiveSecret() {
-  return (
-    process.env.ARCHIVE_ENCRYPTION_SECRET ??
-    process.env.NEXTAUTH_SECRET ??
-    "local-dev-archive-secret-not-for-production"
-  );
+  // PRIV-02: the archive encryption key must come from its own secret — never the auth secret, and
+  // never a hardcoded literal in production. Boot validation (lib/env.ts) makes ARCHIVE_ENCRYPTION_
+  // SECRET required in production; here we additionally fail loud if it is somehow missing at runtime,
+  // and only fall back to a clearly-labelled non-production constant so local/dev/test round-trips
+  // work without a real secret.
+  const secret = process.env.ARCHIVE_ENCRYPTION_SECRET?.trim();
+  if (secret) {
+    return secret;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("ARCHIVE_ENCRYPTION_SECRET is required in production.");
+  }
+
+  return "local-dev-archive-secret-not-for-production";
 }
 
 function deriveArchiveKey() {

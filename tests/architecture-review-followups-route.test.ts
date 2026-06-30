@@ -223,7 +223,6 @@ describe("architecture review follow-up route", () => {
           skipped: 0,
           optedOut: 1,
           failed: 0,
-          usedZohoSyncSecretFallback: false,
         }),
       },
     });

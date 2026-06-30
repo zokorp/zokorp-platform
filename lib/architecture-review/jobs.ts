@@ -185,7 +185,9 @@ function timedPhases() {
 }
 
 function emlSecret() {
-  return process.env.ARCH_REVIEW_EML_SECRET ?? process.env.NEXTAUTH_SECRET ?? "";
+  // SEC-08: the .eml signing secret must be its own distinct value, never the auth secret. When unset
+  // the .eml download path degrades gracefully (no token) rather than reusing NEXTAUTH_SECRET.
+  return process.env.ARCH_REVIEW_EML_SECRET ?? "";
 }
 
 function parseDeviceClass(value: unknown): DeviceClass {
